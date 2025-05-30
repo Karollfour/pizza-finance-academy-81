@@ -20,7 +20,7 @@ export const useRodadas = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setRodadaAtual(data || null);
+      setRodadaAtual(data ? (data as Rodada) : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar rodada');
     } finally {
@@ -78,7 +78,7 @@ export const useRodadas = () => {
 
       if (error) throw error;
       await fetchRodadaAtual();
-      return data;
+      return data as Rodada;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar rodada');
       throw err;

@@ -24,7 +24,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPizzas(data || []);
+      setPizzas((data || []) as Pizza[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar pizzas');
     } finally {
@@ -46,7 +46,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
 
       if (error) throw error;
       await fetchPizzas();
-      return data;
+      return data as Pizza;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao marcar pizza como pronta');
       throw err;

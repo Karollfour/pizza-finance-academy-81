@@ -20,7 +20,7 @@ export const useCompras = (equipeId?: string) => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCompras(data || []);
+      setCompras((data || []) as Compra[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar compras');
     } finally {
@@ -54,7 +54,7 @@ export const useCompras = (equipeId?: string) => {
 
       if (error) throw error;
       await fetchCompras();
-      return data;
+      return data as Compra;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao registrar compra');
       throw err;
