@@ -6,94 +6,40 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface Pizza {
-  id: string;
-  teamName: string;
-  round: number;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: Date;
-  evaluatedAt?: Date;
-  justification?: string;
-}
-
-interface TeamHistory {
-  teamName: string;
-  rounds: {
-    round: number;
-    made: number;
-    approved: number;
-    rejected: number;
-  }[];
-}
+import { usePizzas } from '@/hooks/usePizzas';
+import { useEquipes } from '@/hooks/useEquipes';
+import { useRodadas } from '@/hooks/useRodadas';
+import { toast } from 'sonner';
 
 const AvaliadorScreen = () => {
-  const [pendingPizzas, setPendingPizzas] = useState<Pizza[]>([
-    {
-      id: '1',
-      teamName: 'Equipe Pepperoni',
-      round: 1,
-      status: 'pending',
-      submittedAt: new Date(),
-    },
-    {
-      id: '2',
-      teamName: 'Equipe Margherita',
-      round: 1,
-      status: 'pending',
-      submittedAt: new Date(),
-    },
-    {
-      id: '3',
-      teamName: 'Equipe Calabresa',
-      round: 1,
-      status: 'pending',
-      submittedAt: new Date(),
-    },
-  ]);
-
-  const [evaluatedPizzas, setEvaluatedPizzas] = useState<Pizza[]>([]);
+  const { rodadaAtual } = useRodadas();
+  const { pizzas, avaliarPizza } = usePizzas();
+  const { equipes } = useEquipes();
   const [justifications, setJustifications] = useState<{ [key: string]: string }>({});
 
-  const [teamHistories] = useState<TeamHistory[]>([
-    {
-      teamName: 'Equipe Pepperoni',
-      rounds: [
-        { round: 1, made: 2, approved: 1, rejected: 1 },
-      ],
-    },
-    {
-      teamName: 'Equipe Margherita',
-      rounds: [
-        { round: 1, made: 3, approved: 2, rejected: 1 },
-      ],
-    },
-    {
-      teamName: 'Equipe Calabresa',
-      rounds: [
-        { round: 1, made: 1, approved: 1, rejected: 0 },
-      ],
-    },
-  ]);
+  const pizzasPendentes = pizzas.filter(p => p.status === 'pronta');
+  const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
 
-  const handleEvaluation = (pizzaId: string, approved: boolean) => {
-    const pizza = pendingPizzas.find(p => p.id === pizzaId);
-    if (!pizza) return;
+  const handleEvaluation = async (pizzaId: string, approved: boolean) => {
+    try {
+      const justificativa = approved ? 'Pizza aprovada!' : justifications[pizzaId] || 'Não atende aos critérios';
+      
+      await avaliarPizza(
+        pizzaId,
+        approved ? 'aprovada' : 'reprovada',
+        justificativa,
+        'Avaliador'
+      );
 
-    const evaluatedPizza: Pizza = {
-      ...pizza,
-      status: approved ? 'approved' : 'rejected',
-      evaluatedAt: new Date(),
-      justification: approved ? 'Pizza aprovada!' : justifications[pizzaId] || 'Não atende aos critérios',
-    };
+      // Limpar justificativa
+      const newJustifications = { ...justifications };
+      delete newJustifications[pizzaId];
+      setJustifications(newJustifications);
 
-    setPendingPizzas(pendingPizzas.filter(p => p.id !== pizzaId));
-    setEvaluatedPizzas([...evaluatedPizzas, evaluatedPizza]);
-    
-    // Limpar justificativa
-    const newJustifications = { ...justifications };
-    delete newJustifications[pizzaId];
-    setJustifications(newJustifications);
+      toast.success(`Pizza ${approved ? 'aprovada' : 'reprovada'} com sucesso!`);
+    } catch (error) {
+      toast.error('Erro ao avaliar pizza');
+    }
   };
 
   const updateJustification = (pizzaId: string, text: string) => {
@@ -103,23 +49,19 @@ const AvaliadorScreen = () => {
     });
   };
 
-  const getTeamStats = (teamName: string) => {
-    const history = teamHistories.find(h => h.teamName === teamName);
-    if (!history) return { made: 0, approved: 0, rejected: 0, successRate: 0 };
+  const getEquipeNome = (equipeId: string) => {
+    const equipe = equipes.find(e => e.id === equipeId);
+    return equipe ? equipe.nome : 'Equipe não encontrada';
+  };
 
-    const totals = history.rounds.reduce(
-      (acc, round) => ({
-        made: acc.made + round.made,
-        approved: acc.approved + round.approved,
-        rejected: acc.rejected + round.rejected,
-      }),
-      { made: 0, approved: 0, rejected: 0 }
-    );
+  const getTeamStats = (equipeId: string) => {
+    const pizzasEquipe = pizzas.filter(p => p.equipe_id === equipeId);
+    const made = pizzasEquipe.length;
+    const approved = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
+    const rejected = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
+    const successRate = made > 0 ? Math.round((approved / made) * 100) : 0;
 
-    return {
-      ...totals,
-      successRate: totals.made > 0 ? Math.round((totals.approved / totals.made) * 100) : 0,
-    };
+    return { made, approved, rejected, successRate };
   };
 
   return (
@@ -130,15 +72,22 @@ const AvaliadorScreen = () => {
             🧑‍🏫 Central de Avaliação
           </h1>
           <p className="text-gray-600">Avalie as pizzas produzidas pelas equipes</p>
+          {rodadaAtual && (
+            <div className="mt-4 p-3 bg-white/70 rounded-lg">
+              <span className="text-lg font-semibold text-purple-800">
+                Rodada {rodadaAtual.numero} - Status: {rodadaAtual.status}
+              </span>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pending">
-              🍕 Pendentes ({pendingPizzas.length})
+              🍕 Pendentes ({pizzasPendentes.length})
             </TabsTrigger>
             <TabsTrigger value="evaluated">
-              ✅ Avaliadas ({evaluatedPizzas.length})
+              ✅ Avaliadas ({pizzasAvaliadas.length})
             </TabsTrigger>
             <TabsTrigger value="history">
               📊 Histórico das Equipes
@@ -146,24 +95,26 @@ const AvaliadorScreen = () => {
           </TabsList>
 
           <TabsContent value="pending" className="space-y-6">
-            {pendingPizzas.length > 0 ? (
+            {pizzasPendentes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pendingPizzas.map((pizza) => (
-                  <Card key={pizza.id} className="pizza-card">
+                {pizzasPendentes.map((pizza) => (
+                  <Card key={pizza.id} className="shadow-lg border-2 border-yellow-200">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
-                        <span>{pizza.teamName}</span>
-                        <Badge variant="outline">Rodada {pizza.round}</Badge>
+                        <span>{getEquipeNome(pizza.equipe_id)}</span>
+                        <Badge variant="outline">
+                          Rodada {rodadaAtual?.numero || 'N/A'}
+                        </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Pizza #{pizza.id} • Enviada: {pizza.submittedAt.toLocaleTimeString()}
+                        Pizza #{pizza.id.slice(-6)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* Visualização da Pizza */}
                       <div className="bg-gradient-to-br from-yellow-100 to-orange-100 p-6 rounded-lg text-center">
                         <div className="text-6xl mb-2">🍕</div>
-                        <p className="text-gray-600">Pizza produzida pela {pizza.teamName}</p>
+                        <p className="text-gray-600">Pizza produzida pela {getEquipeNome(pizza.equipe_id)}</p>
                       </div>
 
                       {/* Área de Justificativa */}
@@ -206,7 +157,7 @@ const AvaliadorScreen = () => {
                 ))}
               </div>
             ) : (
-              <Card className="pizza-card">
+              <Card className="shadow-lg border-2 border-green-200">
                 <CardContent className="text-center py-12">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-xl font-bold text-gray-600 mb-2">
@@ -221,48 +172,50 @@ const AvaliadorScreen = () => {
           </TabsContent>
 
           <TabsContent value="evaluated" className="space-y-6">
-            {evaluatedPizzas.length > 0 ? (
+            {pizzasAvaliadas.length > 0 ? (
               <div className="space-y-4">
-                {evaluatedPizzas.map((pizza) => (
-                  <Card key={pizza.id} className="pizza-card">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="text-2xl">🍕</div>
-                          <div>
-                            <h3 className="font-bold">{pizza.teamName}</h3>
-                            <p className="text-sm text-gray-600">
-                              Pizza #{pizza.id} • Rodada {pizza.round}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Avaliada: {pizza.evaluatedAt?.toLocaleTimeString()}
-                            </p>
+                {pizzasAvaliadas
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .map((pizza) => (
+                    <Card key={pizza.id} className="shadow-lg border-2 border-blue-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="text-2xl">🍕</div>
+                            <div>
+                              <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
+                              <p className="text-sm text-gray-600">
+                                Pizza #{pizza.id.slice(-6)} • Rodada {rodadaAtual?.numero || 'N/A'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge
+                              variant={pizza.resultado === 'aprovada' ? 'default' : 'destructive'}
+                              className={
+                                pizza.resultado === 'aprovada'
+                                  ? 'bg-green-500'
+                                  : 'bg-red-500'
+                              }
+                            >
+                              {pizza.resultado === 'aprovada' ? '✅ Aprovada' : '❌ Reprovada'}
+                            </Badge>
+                            {pizza.justificativa_reprovacao && (
+                              <p className="text-sm text-gray-600 mt-2 max-w-xs">
+                                "{pizza.justificativa_reprovacao}"
+                              </p>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge
-                            variant={pizza.status === 'approved' ? 'default' : 'destructive'}
-                            className={
-                              pizza.status === 'approved'
-                                ? 'bg-green-500'
-                                : 'bg-red-500'
-                            }
-                          >
-                            {pizza.status === 'approved' ? '✅ Aprovada' : '❌ Reprovada'}
-                          </Badge>
-                          {pizza.justification && (
-                            <p className="text-sm text-gray-600 mt-2 max-w-xs">
-                              "{pizza.justification}"
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))}
               </div>
             ) : (
-              <Card className="pizza-card">
+              <Card className="shadow-lg border-2 border-gray-200">
                 <CardContent className="text-center py-12">
                   <div className="text-6xl mb-4">📝</div>
                   <h3 className="text-xl font-bold text-gray-600 mb-2">
@@ -278,12 +231,12 @@ const AvaliadorScreen = () => {
 
           <TabsContent value="history" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamHistories.map((team) => {
-                const stats = getTeamStats(team.teamName);
+              {equipes.map((equipe) => {
+                const stats = getTeamStats(equipe.id);
                 return (
-                  <Card key={team.teamName} className="team-card">
+                  <Card key={equipe.id} className="shadow-lg border-2 border-purple-200">
                     <CardHeader>
-                      <CardTitle>{team.teamName}</CardTitle>
+                      <CardTitle>{equipe.nome}</CardTitle>
                       <CardDescription>Histórico de desempenho</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -301,21 +254,19 @@ const AvaliadorScreen = () => {
 
                       <Separator />
 
-                      {/* Histórico por Rodada */}
+                      {/* Estatísticas Detalhadas */}
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Por Rodada:</h4>
-                        {team.rounds.map((round) => (
-                          <div key={round.round} className="border border-gray-200 rounded p-2 text-sm">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="font-medium">Rodada {round.round}</span>
-                              <span className="text-gray-500">{round.made} pizzas</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-green-600">✅ {round.approved}</span>
-                              <span className="text-red-600">❌ {round.rejected}</span>
-                            </div>
+                        <h4 className="font-semibold text-sm">Resultados:</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-green-600">✅ Aprovadas:</span>
+                            <span className="font-medium">{stats.approved}</span>
                           </div>
-                        ))}
+                          <div className="flex justify-between">
+                            <span className="text-red-600">❌ Reprovadas:</span>
+                            <span className="font-medium">{stats.rejected}</span>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
