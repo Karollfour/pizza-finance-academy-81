@@ -1,297 +1,297 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-
-interface Team {
-  id: string;
-  name: string;
-  initialBalance: number;
-  totalSpent: number;
-  remainingBalance: number;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  unit: string;
-  unitPrice: number;
-}
+import { useEquipes } from '@/hooks/useEquipes';
+import { useProdutos } from '@/hooks/useProdutos';
+import { useCompras } from '@/hooks/useCompras';
+import { useRodadas } from '@/hooks/useRodadas';
+import { toast } from 'sonner';
 
 const LojinhaScreen = () => {
-  const [teams, setTeams] = useState<Team[]>([
-    { id: '1', name: 'Equipe Pepperoni', initialBalance: 100, totalSpent: 25, remainingBalance: 75 },
-    { id: '2', name: 'Equipe Margherita', initialBalance: 100, totalSpent: 30, remainingBalance: 70 },
-    { id: '3', name: 'Equipe Calabresa', initialBalance: 100, totalSpent: 15, remainingBalance: 85 },
-  ]);
+  const { equipes, criarEquipe, loading: loadingEquipes } = useEquipes();
+  const { produtos, criarProduto, loading: loadingProdutos } = useProdutos();
+  const { registrarCompra, calcularGastoTotal } = useCompras();
+  const { rodadaAtual } = useRodadas();
 
-  const [products, setProducts] = useState<Product[]>([
-    { id: '1', name: 'Farinha', unit: 'kg', unitPrice: 5 },
-    { id: '2', name: 'Queijo', unit: 'kg', unitPrice: 15 },
-    { id: '3', name: 'Tomate', unit: 'kg', unitPrice: 8 },
-    { id: '4', name: 'Pepperoni', unit: 'kg', unitPrice: 20 },
-  ]);
+  const [novaEquipe, setNovaEquipe] = useState({ nome: '', saldo: 100, professor: '' });
+  const [novoProduto, setNovoProduto] = useState({ nome: '', unidade: '', valor: 0 });
+  const [compraAtual, setCompraAtual] = useState({ equipeId: '', produtoId: '', quantidade: 1 });
 
-  const [newTeam, setNewTeam] = useState({ name: '', balance: 0 });
-  const [newProduct, setNewProduct] = useState({ name: '', unit: '', price: 0 });
-  const [roundTime, setRoundTime] = useState(300); // 5 minutos em segundos
+  const handleCriarEquipe = async () => {
+    if (!novaEquipe.nome || !novaEquipe.professor) {
+      toast.error('Preencha todos os campos da equipe');
+      return;
+    }
 
-  const addTeam = () => {
-    if (newTeam.name && newTeam.balance > 0) {
-      const team: Team = {
-        id: Date.now().toString(),
-        name: newTeam.name,
-        initialBalance: newTeam.balance,
-        totalSpent: 0,
-        remainingBalance: newTeam.balance,
-      };
-      setTeams([...teams, team]);
-      setNewTeam({ name: '', balance: 0 });
+    try {
+      await criarEquipe(novaEquipe.nome, novaEquipe.saldo, novaEquipe.professor);
+      setNovaEquipe({ nome: '', saldo: 100, professor: '' });
+      toast.success('Equipe criada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao criar equipe');
     }
   };
 
-  const addProduct = () => {
-    if (newProduct.name && newProduct.unit && newProduct.price > 0) {
-      const product: Product = {
-        id: Date.now().toString(),
-        name: newProduct.name,
-        unit: newProduct.unit,
-        unitPrice: newProduct.price,
-      };
-      setProducts([...products, product]);
-      setNewProduct({ name: '', unit: '', price: 0 });
+  const handleCriarProduto = async () => {
+    if (!novoProduto.nome || !novoProduto.unidade || novoProduto.valor <= 0) {
+      toast.error('Preencha todos os campos do produto');
+      return;
+    }
+
+    try {
+      await criarProduto(novoProduto.nome, novoProduto.unidade, novoProduto.valor);
+      setNovoProduto({ nome: '', unidade: '', valor: 0 });
+      toast.success('Produto criado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao criar produto');
     }
   };
+
+  const handleRegistrarCompra = async () => {
+    if (!compraAtual.equipeId || !compraAtual.produtoId || compraAtual.quantidade <= 0) {
+      toast.error('Preencha todos os campos da compra');
+      return;
+    }
+
+    const produto = produtos.find(p => p.id === compraAtual.produtoId);
+    if (!produto) return;
+
+    const valorTotal = produto.valor_unitario * compraAtual.quantidade;
+
+    try {
+      await registrarCompra(
+        compraAtual.equipeId,
+        compraAtual.produtoId,
+        rodadaAtual?.id || null,
+        compraAtual.quantidade,
+        valorTotal,
+        'material'
+      );
+      setCompraAtual({ equipeId: '', produtoId: '', quantidade: 1 });
+      toast.success('Compra registrada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao registrar compra');
+    }
+  };
+
+  const handleRegistrarViagem = async (equipeId: string) => {
+    try {
+      await registrarCompra(
+        equipeId,
+        null,
+        rodadaAtual?.id || null,
+        1,
+        5.00, // Custo fixo da viagem
+        'viagem',
+        'Viagem à loja'
+      );
+      toast.success('Viagem registrada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao registrar viagem');
+    }
+  };
+
+  if (loadingEquipes || loadingProdutos) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
+        <div className="text-2xl text-orange-600">Carregando lojinha...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-4">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-600 mb-2">
-            🏪 Lojinha da Pizzaria
-          </h1>
-          <p className="text-gray-600">Administração de Recursos e Compras</p>
+          <h1 className="text-4xl font-bold text-orange-600 mb-2">🏪 Lojinha da Pizzaria</h1>
+          <p className="text-orange-700">Gerencie equipes, produtos e vendas</p>
+          {rodadaAtual && (
+            <div className="mt-4 p-3 bg-white/70 rounded-lg">
+              <span className="text-lg font-semibold text-orange-800">
+                Rodada {rodadaAtual.numero} - Status: {rodadaAtual.status}
+              </span>
+            </div>
+          )}
         </div>
 
-        <Tabs defaultValue="teams" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="teams">👥 Equipes</TabsTrigger>
-            <TabsTrigger value="products">📦 Produtos</TabsTrigger>
-            <TabsTrigger value="sales">💰 Vendas</TabsTrigger>
-            <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="teams" className="space-y-6">
-            <Card className="pizza-card">
-              <CardHeader>
-                <CardTitle>Cadastrar Nova Equipe</CardTitle>
-                <CardDescription>Adicione uma nova equipe ao sistema</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="teamName">Nome da Equipe</Label>
-                    <Input
-                      id="teamName"
-                      placeholder="Ex: Equipe Pepperoni"
-                      value={newTeam.name}
-                      onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="teamBalance">Saldo Inicial ($)</Label>
-                    <Input
-                      id="teamBalance"
-                      type="number"
-                      placeholder="100"
-                      value={newTeam.balance || ''}
-                      onChange={(e) => setNewTeam({ ...newTeam, balance: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={addTeam} className="w-full pizza-button">
-                      ➕ Adicionar Equipe
-                    </Button>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Gestão de Equipes */}
+          <Card className="shadow-lg border-2 border-orange-200">
+            <CardHeader className="bg-orange-50">
+              <CardTitle className="text-orange-600">👥 Gestão de Equipes</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4 mb-6">
+                <div>
+                  <Label htmlFor="nomeEquipe">Nome da Equipe</Label>
+                  <Input
+                    id="nomeEquipe"
+                    value={novaEquipe.nome}
+                    onChange={(e) => setNovaEquipe({ ...novaEquipe, nome: e.target.value })}
+                    placeholder="Ex: Equipe Alpha"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {teams.map((team) => (
-                <Card key={team.id} className="team-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center justify-between">
-                      {team.name}
-                      <Badge variant="secondary">Ativa</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Saldo Inicial:</span>
-                      <span className="font-bold text-green-600">${team.initialBalance}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total Gasto:</span>
-                      <span className="font-bold text-red-600">${team.totalSpent}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Saldo Restante:</span>
-                      <span className="font-bold text-blue-600">${team.remainingBalance}</span>
-                    </div>
-                    <Separator />
-                    <div className="space-y-2">
-                      <Button variant="outline" size="sm" className="w-full">
-                        📝 Ver Compras
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full">
-                        🚛 Registrar Viagem ($5)
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="products" className="space-y-6">
-            <Card className="pizza-card">
-              <CardHeader>
-                <CardTitle>Cadastrar Novo Produto</CardTitle>
-                <CardDescription>Adicione produtos disponíveis na loja</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="productName">Nome do Produto</Label>
-                    <Input
-                      id="productName"
-                      placeholder="Ex: Farinha"
-                      value={newProduct.name}
-                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="productUnit">Unidade</Label>
-                    <Input
-                      id="productUnit"
-                      placeholder="Ex: kg"
-                      value={newProduct.unit}
-                      onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="productPrice">Preço Unitário ($)</Label>
-                    <Input
-                      id="productPrice"
-                      type="number"
-                      placeholder="5"
-                      value={newProduct.price || ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={addProduct} className="w-full pizza-button">
-                      ➕ Adicionar
-                    </Button>
-                  </div>
+                <div>
+                  <Label htmlFor="professorEquipe">Professor Responsável</Label>
+                  <Input
+                    id="professorEquipe"
+                    value={novaEquipe.professor}
+                    onChange={(e) => setNovaEquipe({ ...novaEquipe, professor: e.target.value })}
+                    placeholder="Ex: Prof. Silva"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <Label htmlFor="saldoEquipe">Saldo Inicial</Label>
+                  <Input
+                    id="saldoEquipe"
+                    type="number"
+                    value={novaEquipe.saldo}
+                    onChange={(e) => setNovaEquipe({ ...novaEquipe, saldo: Number(e.target.value) })}
+                  />
+                </div>
+                <Button onClick={handleCriarEquipe} className="w-full bg-orange-500 hover:bg-orange-600">
+                  Criar Equipe
+                </Button>
+              </div>
 
-            <Card className="pizza-card">
-              <CardHeader>
-                <CardTitle>Produtos Disponíveis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {products.map((product) => (
-                    <div key={product.id} className="border border-orange-200 rounded-lg p-4 bg-white">
-                      <h3 className="font-bold text-lg">{product.name}</h3>
-                      <p className="text-gray-600">Unidade: {product.unit}</p>
-                      <p className="text-orange-600 font-bold">${product.unitPrice}/{product.unit}</p>
-                      <div className="mt-3 space-x-2">
-                        <Button variant="outline" size="sm">✏️ Editar</Button>
-                        <Button variant="destructive" size="sm">🗑️ Remover</Button>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-orange-600">Equipes Cadastradas:</h3>
+                {equipes.map((equipe) => (
+                  <div key={equipe.id} className="p-3 bg-white rounded-lg border border-orange-200 flex justify-between items-center">
+                    <div>
+                      <div className="font-medium">{equipe.nome}</div>
+                      <div className="text-sm text-gray-600">{equipe.professor_responsavel}</div>
+                      <div className="text-sm text-orange-600">
+                        Gasto: R$ {equipe.gasto_total.toFixed(2)} | Saldo: R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)}
                       </div>
+                    </div>
+                    <Button
+                      onClick={() => handleRegistrarViagem(equipe.id)}
+                      size="sm"
+                      variant="outline"
+                      className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                    >
+                      🚗 Viagem (R$ 5,00)
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gestão de Produtos */}
+          <Card className="shadow-lg border-2 border-orange-200">
+            <CardHeader className="bg-orange-50">
+              <CardTitle className="text-orange-600">🛒 Gestão de Produtos</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4 mb-6">
+                <div>
+                  <Label htmlFor="nomeProduto">Nome do Produto</Label>
+                  <Input
+                    id="nomeProduto"
+                    value={novoProduto.nome}
+                    onChange={(e) => setNovoProduto({ ...novoProduto, nome: e.target.value })}
+                    placeholder="Ex: Farinha"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="unidadeProduto">Unidade</Label>
+                  <Input
+                    id="unidadeProduto"
+                    value={novoProduto.unidade}
+                    onChange={(e) => setNovoProduto({ ...novoProduto, unidade: e.target.value })}
+                    placeholder="Ex: kg, lata, pacote"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="valorProduto">Valor Unitário</Label>
+                  <Input
+                    id="valorProduto"
+                    type="number"
+                    step="0.01"
+                    value={novoProduto.valor}
+                    onChange={(e) => setNovoProduto({ ...novoProduto, valor: Number(e.target.value) })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <Button onClick={handleCriarProduto} className="w-full bg-orange-500 hover:bg-orange-600">
+                  Criar Produto
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold text-orange-600">Produtos Disponíveis:</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {produtos.map((produto) => (
+                    <div key={produto.id} className="p-3 bg-white rounded-lg border border-orange-200">
+                      <div className="font-medium">{produto.nome}</div>
+                      <div className="text-sm text-gray-600">{produto.unidade}</div>
+                      <div className="text-sm text-green-600 font-semibold">R$ {produto.valor_unitario.toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="sales" className="space-y-6">
-            <Card className="pizza-card">
-              <CardHeader>
-                <CardTitle>Controle de Vendas</CardTitle>
-                <CardDescription>Registre compras e viagens das equipes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🛒</div>
-                  <h3 className="text-xl font-bold text-gray-600 mb-2">Sistema de Vendas</h3>
-                  <p className="text-gray-500">
-                    Funcionalidade em desenvolvimento para controle de compras
-                  </p>
+          {/* Registrar Compras */}
+          <Card className="shadow-lg border-2 border-orange-200 lg:col-span-2">
+            <CardHeader className="bg-orange-50">
+              <CardTitle className="text-orange-600">💰 Registrar Compras</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="equipeCompra">Equipe</Label>
+                  <select
+                    id="equipeCompra"
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    value={compraAtual.equipeId}
+                    onChange={(e) => setCompraAtual({ ...compraAtual, equipeId: e.target.value })}
+                  >
+                    <option value="">Selecione a equipe</option>
+                    {equipes.map((equipe) => (
+                      <option key={equipe.id} value={equipe.id}>{equipe.nome}</option>
+                    ))}
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            <Card className="pizza-card">
-              <CardHeader>
-                <CardTitle>Dashboard Final</CardTitle>
-                <CardDescription>Resumo e estatísticas do jogo</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-green-100 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-green-600">{teams.length}</div>
-                    <div className="text-sm text-green-700">Equipes Ativas</div>
-                  </div>
-                  <div className="bg-blue-100 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-blue-600">${teams.reduce((sum, team) => sum + team.totalSpent, 0)}</div>
-                    <div className="text-sm text-blue-700">Total Gasto</div>
-                  </div>
-                  <div className="bg-orange-100 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-orange-600">{products.length}</div>
-                    <div className="text-sm text-orange-700">Produtos Disponíveis</div>
-                  </div>
-                  <div className="bg-purple-100 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold text-purple-600">{Math.floor(roundTime / 60)}min</div>
-                    <div className="text-sm text-purple-700">Tempo por Rodada</div>
-                  </div>
+                <div>
+                  <Label htmlFor="produtoCompra">Produto</Label>
+                  <select
+                    id="produtoCompra"
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    value={compraAtual.produtoId}
+                    onChange={(e) => setCompraAtual({ ...compraAtual, produtoId: e.target.value })}
+                  >
+                    <option value="">Selecione o produto</option>
+                    {produtos.map((produto) => (
+                      <option key={produto.id} value={produto.id}>{produto.nome} - R$ {produto.valor_unitario.toFixed(2)}</option>
+                    ))}
+                  </select>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="roundTime">Tempo da Rodada (segundos)</Label>
-                    <Input
-                      id="roundTime"
-                      type="number"
-                      value={roundTime}
-                      onChange={(e) => setRoundTime(Number(e.target.value))}
-                      className="max-w-xs"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <Button className="pizza-button">🚀 Iniciar Nova Rodada</Button>
-                    <Button variant="outline">⏸️ Pausar Rodada</Button>
-                    <Button variant="destructive">⏹️ Finalizar Rodada</Button>
-                  </div>
+                <div>
+                  <Label htmlFor="quantidadeCompra">Quantidade</Label>
+                  <Input
+                    id="quantidadeCompra"
+                    type="number"
+                    min="1"
+                    value={compraAtual.quantidade}
+                    onChange={(e) => setCompraAtual({ ...compraAtual, quantidade: Number(e.target.value) })}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <div className="flex items-end">
+                  <Button onClick={handleRegistrarCompra} className="w-full bg-green-500 hover:bg-green-600">
+                    Registrar Compra
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

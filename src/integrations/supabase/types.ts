@@ -9,7 +9,226 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      compras: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          equipe_id: string
+          id: string
+          produto_id: string | null
+          quantidade: number | null
+          rodada_id: string | null
+          tipo: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          equipe_id: string
+          id?: string
+          produto_id?: string | null
+          quantidade?: number | null
+          rodada_id?: string | null
+          tipo: string
+          valor_total: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          equipe_id?: string
+          id?: string
+          produto_id?: string | null
+          quantidade?: number | null
+          rodada_id?: string | null
+          tipo?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compras_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_loja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compras_rodada_id_fkey"
+            columns: ["rodada_id"]
+            isOneToOne: false
+            referencedRelation: "rodadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracoes: {
+        Row: {
+          chave: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      equipes: {
+        Row: {
+          created_at: string
+          gasto_total: number
+          id: string
+          nome: string
+          professor_responsavel: string | null
+          saldo_inicial: number
+        }
+        Insert: {
+          created_at?: string
+          gasto_total?: number
+          id?: string
+          nome: string
+          professor_responsavel?: string | null
+          saldo_inicial?: number
+        }
+        Update: {
+          created_at?: string
+          gasto_total?: number
+          id?: string
+          nome?: string
+          professor_responsavel?: string | null
+          saldo_inicial?: number
+        }
+        Relationships: []
+      }
+      pizzas: {
+        Row: {
+          avaliado_por: string | null
+          created_at: string
+          equipe_id: string
+          id: string
+          justificativa_reprovacao: string | null
+          resultado: string | null
+          rodada_id: string
+          status: string
+          tempo_producao_segundos: number | null
+          updated_at: string
+        }
+        Insert: {
+          avaliado_por?: string | null
+          created_at?: string
+          equipe_id: string
+          id?: string
+          justificativa_reprovacao?: string | null
+          resultado?: string | null
+          rodada_id: string
+          status?: string
+          tempo_producao_segundos?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avaliado_por?: string | null
+          created_at?: string
+          equipe_id?: string
+          id?: string
+          justificativa_reprovacao?: string | null
+          resultado?: string | null
+          rodada_id?: string
+          status?: string
+          tempo_producao_segundos?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pizzas_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pizzas_rodada_id_fkey"
+            columns: ["rodada_id"]
+            isOneToOne: false
+            referencedRelation: "rodadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos_loja: {
+        Row: {
+          created_at: string
+          disponivel: boolean
+          id: string
+          nome: string
+          unidade: string
+          valor_unitario: number
+        }
+        Insert: {
+          created_at?: string
+          disponivel?: boolean
+          id?: string
+          nome: string
+          unidade: string
+          valor_unitario: number
+        }
+        Update: {
+          created_at?: string
+          disponivel?: boolean
+          id?: string
+          nome?: string
+          unidade?: string
+          valor_unitario?: number
+        }
+        Relationships: []
+      }
+      rodadas: {
+        Row: {
+          created_at: string
+          finalizou_em: string | null
+          id: string
+          iniciou_em: string | null
+          numero: number
+          status: string
+          tempo_limite: number
+        }
+        Insert: {
+          created_at?: string
+          finalizou_em?: string | null
+          id?: string
+          iniciou_em?: string | null
+          numero: number
+          status?: string
+          tempo_limite?: number
+        }
+        Update: {
+          created_at?: string
+          finalizou_em?: string | null
+          id?: string
+          iniciou_em?: string | null
+          numero?: number
+          status?: string
+          tempo_limite?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
