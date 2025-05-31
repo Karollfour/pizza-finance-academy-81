@@ -98,7 +98,10 @@ const Index = () => {
         </Button>
       </div>
 
-      {renderScreen()}
+      {/* Conteúdo principal com margem superior */}
+      <div className="pt-20">
+        {renderScreen()}
+      </div>
     </div>
   );
 };
