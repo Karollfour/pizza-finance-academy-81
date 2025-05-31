@@ -175,24 +175,33 @@ export type Database = {
       produtos_loja: {
         Row: {
           created_at: string
+          descricao: string | null
           disponivel: boolean
+          durabilidade: number | null
           id: string
+          imagem: string | null
           nome: string
           unidade: string
           valor_unitario: number
         }
         Insert: {
           created_at?: string
+          descricao?: string | null
           disponivel?: boolean
+          durabilidade?: number | null
           id?: string
+          imagem?: string | null
           nome: string
           unidade: string
           valor_unitario: number
         }
         Update: {
           created_at?: string
+          descricao?: string | null
           disponivel?: boolean
+          durabilidade?: number | null
           id?: string
+          imagem?: string | null
           nome?: string
           unidade?: string
           valor_unitario?: number

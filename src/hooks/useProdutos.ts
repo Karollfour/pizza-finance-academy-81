@@ -26,14 +26,24 @@ export const useProdutos = () => {
     }
   };
 
-  const criarProduto = async (nome: string, unidade: string, valorUnitario: number) => {
+  const criarProduto = async (
+    nome: string, 
+    unidade: string, 
+    valorUnitario: number, 
+    durabilidade?: number, 
+    descricao?: string, 
+    imagem?: string
+  ) => {
     try {
       const { data, error } = await supabase
         .from('produtos_loja')
         .insert({
           nome,
           unidade,
-          valor_unitario: valorUnitario
+          valor_unitario: valorUnitario,
+          durabilidade: durabilidade || 1,
+          descricao,
+          imagem
         })
         .select()
         .single();

@@ -14,6 +14,9 @@ export interface ProdutoLoja {
   unidade: string;
   valor_unitario: number;
   disponivel: boolean;
+  durabilidade: number | null;
+  descricao: string | null;
+  imagem: string | null;
   created_at: string;
 }
 

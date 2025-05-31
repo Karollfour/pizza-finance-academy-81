@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -61,7 +62,14 @@ const LojinhaScreen = () => {
     }
 
     try {
-      await criarProduto(novoProduto.nome, novoProduto.unidade, novoProduto.valor);
+      await criarProduto(
+        novoProduto.nome, 
+        novoProduto.unidade, 
+        novoProduto.valor,
+        novoProduto.durabilidade,
+        novoProduto.descricao || null,
+        null // Por enquanto sem upload de imagem
+      );
       setNovoProduto({ nome: '', unidade: '', valor: 0, durabilidade: 1, descricao: '', imagem: null });
       toast.success('Produto criado com sucesso!');
     } catch (error) {
@@ -105,7 +113,9 @@ const LojinhaScreen = () => {
       await atualizarProduto(produtoEditando, {
         nome: dadosEdicao.nome,
         unidade: dadosEdicao.unidade,
-        valor_unitario: dadosEdicao.valor
+        valor_unitario: dadosEdicao.valor,
+        durabilidade: dadosEdicao.durabilidade,
+        descricao: dadosEdicao.descricao || null
       });
       setProdutoEditando(null);
       toast.success('Produto atualizado com sucesso!');
