@@ -1,10 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useEquipes } from '@/hooks/useEquipes';
 
 interface LoginScreenProps {
   onLogin: (userType: string, teamId?: string) => void;
@@ -12,12 +12,16 @@ interface LoginScreenProps {
 
 const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   const [userType, setUserType] = useState('');
-  const [teamId, setTeamId] = useState('');
-  const [password, setPassword] = useState('');
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const { equipes, loading } = useEquipes();
 
   const handleLogin = () => {
-    if (userType && (userType !== 'equipe' || teamId)) {
-      onLogin(userType, teamId || undefined);
+    if (userType && (userType !== 'equipe' || selectedTeamId)) {
+      // Para equipes, passamos o nome da equipe selecionada
+      const teamName = userType === 'equipe' 
+        ? equipes.find(equipe => equipe.id === selectedTeamId)?.nome
+        : undefined;
+      onLogin(userType, teamName);
     }
   };
 
@@ -56,20 +60,43 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
 
           {userType === 'equipe' && (
             <div className="space-y-2">
-              <Label htmlFor="teamId">Nome da Equipe</Label>
-              <Input
-                id="teamId"
-                placeholder="Digite o nome da sua equipe"
-                value={teamId}
-                onChange={(e) => setTeamId(e.target.value)}
-              />
+              <Label htmlFor="teamSelect">Selecione sua Equipe</Label>
+              {loading ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="text-sm text-gray-500">Carregando equipes...</div>
+                </div>
+              ) : (
+                <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha sua equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipes.map((equipe) => (
+                      <SelectItem key={equipe.id} value={equipe.id}>
+                        <div className="flex items-center gap-2">
+                          <span>👥</span>
+                          <span>{equipe.nome}</span>
+                          <span className="text-xs text-gray-500">
+                            (R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)} disponível)
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {equipes.length === 0 && !loading && (
+                <div className="text-sm text-gray-500 text-center p-2">
+                  Nenhuma equipe cadastrada ainda
+                </div>
+              )}
             </div>
           )}
 
           <Button 
             onClick={handleLogin} 
             className="w-full pizza-button text-lg"
-            disabled={!userType || (userType === 'equipe' && !teamId)}
+            disabled={!userType || (userType === 'equipe' && !selectedTeamId) || loading}
           >
             🚀 Entrar na Pizzaria
           </Button>
