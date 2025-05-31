@@ -13,9 +13,22 @@ import { toast } from 'sonner';
 
 const AvaliadorScreen = () => {
   const { rodadaAtual } = useRodadas();
-  const { pizzas, avaliarPizza } = usePizzas();
   const { equipes } = useEquipes();
+  const [equipeParaAvaliar, setEquipeParaAvaliar] = useState<string | null>(null);
+  const { pizzas, avaliarPizza } = usePizzas(equipeParaAvaliar || undefined, rodadaAtual?.id);
   const [justifications, setJustifications] = useState<{ [key: string]: string }>({});
+
+  // Cores predefinidas para as equipes
+  const coresEquipe = [
+    'bg-red-500 hover:bg-red-600',
+    'bg-blue-500 hover:bg-blue-600', 
+    'bg-green-500 hover:bg-green-600',
+    'bg-yellow-500 hover:bg-yellow-600',
+    'bg-purple-500 hover:bg-purple-600',
+    'bg-pink-500 hover:bg-pink-600',
+    'bg-indigo-500 hover:bg-indigo-600',
+    'bg-orange-500 hover:bg-orange-600'
+  ];
 
   const pizzasPendentes = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
@@ -54,24 +67,115 @@ const AvaliadorScreen = () => {
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
 
-  const getTeamStats = (equipeId: string) => {
-    const pizzasEquipe = pizzas.filter(p => p.equipe_id === equipeId);
-    const made = pizzasEquipe.length;
-    const approved = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
-    const rejected = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
-    const successRate = made > 0 ? Math.round((approved / made) * 100) : 0;
-
-    return { made, approved, rejected, successRate };
+  const getEquipeSelecionada = () => {
+    return equipes.find(e => e.id === equipeParaAvaliar);
   };
+
+  const getCorEquipe = (index: number) => {
+    return coresEquipe[index % coresEquipe.length];
+  };
+
+  // Se não selecionou equipe ainda, mostrar seletor
+  if (!equipeParaAvaliar) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-purple-600 mb-2">
+              🧑‍🏫 Central de Avaliação
+            </h1>
+            <p className="text-purple-700">Selecione uma equipe para avaliar suas pizzas</p>
+            {rodadaAtual && (
+              <div className="mt-4 p-3 bg-white/70 rounded-lg">
+                <span className="text-lg font-semibold text-purple-800">
+                  Rodada {rodadaAtual.numero} - Status: {rodadaAtual.status}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <Card className="shadow-lg border-2 border-purple-200">
+            <CardHeader className="bg-purple-50">
+              <CardTitle className="text-purple-600 text-center text-2xl">
+                👥 Equipes para Avaliação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              {equipes.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">👥</div>
+                  <h3 className="text-2xl font-bold text-gray-600 mb-2">
+                    Nenhuma equipe cadastrada
+                  </h3>
+                  <p className="text-gray-500">
+                    Entre em contato com o professor para cadastrar as equipes
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {equipes.map((equipe, index) => {
+                    const cor = getCorEquipe(index);
+                    
+                    return (
+                      <Card 
+                        key={equipe.id} 
+                        className="shadow-lg border-2 border-gray-200 hover:border-purple-300 transition-all duration-200 hover:scale-105"
+                      >
+                        <CardContent className="p-6 text-center">
+                          <div className="mb-4">
+                            <div className="text-6xl mb-3">👥</div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">
+                              {equipe.nome}
+                            </h3>
+                            {equipe.professor_responsavel && (
+                              <p className="text-sm text-gray-600 mb-3">
+                                Prof: {equipe.professor_responsavel}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <Button
+                            onClick={() => setEquipeParaAvaliar(equipe.id)}
+                            className={`w-full text-white font-bold py-3 text-lg ${cor} transition-all duration-200`}
+                            size="lg"
+                          >
+                            🧑‍🏫 Avaliar Equipe
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const equipeSelecionada = getEquipeSelecionada();
+  const indexEquipe = equipes.findIndex(e => e.id === equipeParaAvaliar);
+  const corEquipe = getCorEquipe(indexEquipe);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6">
       <div className="max-w-6xl mx-auto">
+        {/* Header com equipe selecionada */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-purple-600 mb-2">
-            🧑‍🏫 Central de Avaliação
-          </h1>
-          <p className="text-gray-600">Avalie as pizzas produzidas pelas equipes</p>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Button
+              onClick={() => setEquipeParaAvaliar(null)}
+              variant="outline"
+              className="bg-white/90 backdrop-blur-sm border-2 border-purple-200 hover:bg-purple-50"
+            >
+              ← Voltar às Equipes
+            </Button>
+            <div className={`px-8 py-4 rounded-lg text-white shadow-lg ${corEquipe.split(' ')[0]}`}>
+              <h1 className="text-3xl font-bold">{equipeSelecionada?.nome}</h1>
+            </div>
+          </div>
+          <p className="text-gray-600">Avaliando pizzas da equipe selecionada</p>
           {rodadaAtual && (
             <div className="mt-4 p-3 bg-white/70 rounded-lg">
               <span className="text-lg font-semibold text-purple-800">
@@ -82,15 +186,12 @@ const AvaliadorScreen = () => {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pending">
               🍕 Pendentes ({pizzasPendentes.length})
             </TabsTrigger>
             <TabsTrigger value="evaluated">
               ✅ Avaliadas ({pizzasAvaliadas.length})
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              📊 Histórico das Equipes
             </TabsTrigger>
           </TabsList>
 
@@ -161,10 +262,10 @@ const AvaliadorScreen = () => {
                 <CardContent className="text-center py-12">
                   <div className="text-6xl mb-4">🎉</div>
                   <h3 className="text-xl font-bold text-gray-600 mb-2">
-                    Todas as pizzas foram avaliadas!
+                    Todas as pizzas desta equipe foram avaliadas!
                   </h3>
                   <p className="text-gray-500">
-                    Aguardando novas pizzas para avaliação
+                    Aguardando novas pizzas da {equipeSelecionada?.nome} para avaliação
                   </p>
                 </CardContent>
               </Card>
@@ -222,57 +323,11 @@ const AvaliadorScreen = () => {
                     Nenhuma pizza avaliada ainda
                   </h3>
                   <p className="text-gray-500">
-                    As pizzas avaliadas aparecerão aqui
+                    As pizzas avaliadas da {equipeSelecionada?.nome} aparecerão aqui
                   </p>
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {equipes.map((equipe) => {
-                const stats = getTeamStats(equipe.id);
-                return (
-                  <Card key={equipe.id} className="shadow-lg border-2 border-purple-200">
-                    <CardHeader>
-                      <CardTitle>{equipe.nome}</CardTitle>
-                      <CardDescription>Histórico de desempenho</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Estatísticas Gerais */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-blue-100 p-3 rounded-lg text-center">
-                          <div className="text-xl font-bold text-blue-600">{stats.made}</div>
-                          <div className="text-xs text-blue-700">Total Feitas</div>
-                        </div>
-                        <div className="bg-green-100 p-3 rounded-lg text-center">
-                          <div className="text-xl font-bold text-green-600">{stats.successRate}%</div>
-                          <div className="text-xs text-green-700">Taxa Sucesso</div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Estatísticas Detalhadas */}
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">Resultados:</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-green-600">✅ Aprovadas:</span>
-                            <span className="font-medium">{stats.approved}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-red-600">❌ Reprovadas:</span>
-                            <span className="font-medium">{stats.rejected}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
           </TabsContent>
         </Tabs>
       </div>
