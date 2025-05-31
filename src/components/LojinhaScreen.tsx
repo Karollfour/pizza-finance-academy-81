@@ -329,9 +329,9 @@ const LojinhaScreen = () => {
 
                 <div className="mt-8 space-y-3">
                   <h3 className="font-semibold text-orange-600">Produtos Disponíveis:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
                     {produtos.map((produto) => (
-                      <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200">
+                      <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
                         {produtoEditando === produto.id ? (
                           <div className="space-y-3">
                             <Input
@@ -391,44 +391,58 @@ const LojinhaScreen = () => {
                             </div>
                           </div>
                         ) : (
-                          <div>
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex-1">
-                                <div className="font-medium text-lg">{produto.nome}</div>
-                                <div className="text-sm text-gray-600">{produto.unidade}</div>
-                                <div className="text-sm text-green-600 font-semibold">R$ {produto.valor_unitario.toFixed(2)}</div>
-                                <div className="text-xs text-blue-600">Durabilidade: {produto.durabilidade || 1} pizzas</div>
-                                {produto.descricao && (
-                                  <div className="text-xs text-gray-500 mt-1">{produto.descricao}</div>
-                                )}
-                              </div>
-                              <div className="flex gap-1 ml-2">
-                                <Button
-                                  onClick={() => iniciarEdicaoProduto(produto)}
-                                  size="sm"
-                                  variant="outline"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  onClick={() => removerProduto(produto.id)}
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                            {produto.imagem && (
-                              <div className="mt-2">
+                          <div className="h-full flex flex-col">
+                            {/* Imagem do produto */}
+                            <div className="mb-3 flex justify-center">
+                              {produto.imagem ? (
                                 <img 
                                   src={produto.imagem} 
                                   alt={produto.nome}
-                                  className="w-full h-20 object-cover rounded border"
+                                  className="w-16 h-16 object-cover rounded-lg border shadow-sm"
                                 />
+                              ) : (
+                                <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                  <span className="text-2xl">📦</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Informações do produto */}
+                            <div className="flex-1 text-center">
+                              <div className="font-medium text-lg mb-1">{produto.nome}</div>
+                              <div className="text-sm text-gray-600 mb-1">{produto.unidade}</div>
+                              <div className="text-sm text-green-600 font-semibold mb-1">
+                                R$ {produto.valor_unitario.toFixed(2)}
                               </div>
-                            )}
+                              <div className="text-xs text-blue-600 mb-2">
+                                Durabilidade: {produto.durabilidade || 1} pizzas
+                              </div>
+                              {produto.descricao && (
+                                <div className="text-xs text-gray-500 mb-3 line-clamp-2">
+                                  {produto.descricao}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Botões de ação */}
+                            <div className="flex gap-1 justify-center">
+                              <Button
+                                onClick={() => iniciarEdicaoProduto(produto)}
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                onClick={() => removerProduto(produto.id)}
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:bg-red-50 flex-1"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>

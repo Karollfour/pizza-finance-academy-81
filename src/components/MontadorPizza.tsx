@@ -22,45 +22,53 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
   const [ingredientesSelecionados, setIngredientesSelecionados] = useState<string[]>([]);
   const [montandoPizza, setMontandoPizza] = useState(false);
 
-  // Ingredientes base necessários para fazer uma pizza
-  const ingredientesBase = ['massa_de_pizza', 'caneta_do_molho'];
+  // Ingredientes base necessários (por nome - podem ser configurados no banco)
+  const ingredientesBaseNomes = ['massa de pizza', 'molho', 'caneta do molho'];
   
-  // Mapear produtos com seus dados específicos
-  const produtosPizza = [
-    { id: 'massa_de_pizza', nome: 'Massa de Pizza', preco: 5, emoji: '🍕', tipo: 'base' },
-    { id: 'caneta_do_molho', nome: 'Caneta do Molho', preco: 5, emoji: '🖊️', tipo: 'base' },
-    { id: 'pepperoni', nome: 'Pepperoni', preco: 1, emoji: '🍖', tipo: 'topping' },
-    { id: 'queijo', nome: 'Queijo', preco: 2, emoji: '🧀', tipo: 'topping' },
-    { id: 'tomate', nome: 'Tomate', preco: 1, emoji: '🍅', tipo: 'topping' },
-    { id: 'oregano', nome: 'Orégano', preco: 1, emoji: '🌿', tipo: 'topping' }
-  ];
+  // Filtrar produtos disponíveis
+  const produtosDisponiveis = produtos.filter(produto => produto.disponivel);
+  
+  // Identificar ingredientes base
+  const ingredientesBase = produtosDisponiveis.filter(produto => 
+    ingredientesBaseNomes.some(nomeBase => 
+      produto.nome.toLowerCase().includes(nomeBase.toLowerCase())
+    )
+  );
+  
+  // Identificar toppings (todos os outros produtos)
+  const toppings = produtosDisponiveis.filter(produto => 
+    !ingredientesBaseNomes.some(nomeBase => 
+      produto.nome.toLowerCase().includes(nomeBase.toLowerCase())
+    )
+  );
 
-  const toggleIngrediente = (ingredienteId: string) => {
+  const toggleIngrediente = (produtoId: string) => {
     setIngredientesSelecionados(prev => {
-      if (prev.includes(ingredienteId)) {
-        return prev.filter(id => id !== ingredienteId);
+      if (prev.includes(produtoId)) {
+        return prev.filter(id => id !== produtoId);
       } else {
-        return [...prev, ingredienteId];
+        return [...prev, produtoId];
       }
     });
   };
 
   const calcularPrecoTotal = () => {
     const custoViagem = 5; // Cobrança fixa por viagem à loja
-    const custoIngredientes = ingredientesSelecionados.reduce((total, ingredienteId) => {
-      const produto = produtosPizza.find(p => p.id === ingredienteId);
-      return total + (produto?.preco || 0);
+    const custoIngredientes = ingredientesSelecionados.reduce((total, produtoId) => {
+      const produto = produtosDisponiveis.find(p => p.id === produtoId);
+      return total + (produto?.valor_unitario || 0);
     }, 0);
     return custoViagem + custoIngredientes;
   };
 
   const verificarIngredientesValidos = () => {
-    return ingredientesBase.every(base => ingredientesSelecionados.includes(base));
+    // Verificar se pelo menos um ingrediente base está selecionado
+    return ingredientesBase.some(base => ingredientesSelecionados.includes(base.id));
   };
 
   const confirmarPizza = async () => {
     if (!verificarIngredientesValidos()) {
-      toast.error('Pizza deve ter pelo menos massa e molho!');
+      toast.error('Pizza deve ter pelo menos um ingrediente base (massa ou molho)!');
       return;
     }
 
@@ -85,18 +93,15 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
       );
 
       // Registrar cada ingrediente comprado
-      for (const ingredienteId of ingredientesSelecionados) {
-        const produto = produtosPizza.find(p => p.id === ingredienteId);
+      for (const produtoId of ingredientesSelecionados) {
+        const produto = produtosDisponiveis.find(p => p.id === produtoId);
         if (produto) {
-          // Buscar o produto real do banco se existir, senão usar dados mock
-          const produtoReal = produtos.find(p => p.nome.toLowerCase().includes(produto.nome.toLowerCase()));
-          
           await registrarCompra(
             equipeId,
-            produtoReal?.id || null,
+            produto.id,
             rodadaAtual?.id || null,
             1,
-            produto.preco,
+            produto.valor_unitario,
             'material',
             `Ingrediente: ${produto.nome}`
           );
@@ -111,6 +116,38 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
     } finally {
       setMontandoPizza(false);
     }
+  };
+
+  const renderProdutoCard = (produto: any, tipo: 'base' | 'topping') => {
+    const isSelected = ingredientesSelecionados.includes(produto.id);
+    const corBase = tipo === 'base' ? 'orange' : 'green';
+    
+    return (
+      <Button
+        key={produto.id}
+        variant={isSelected ? "default" : "outline"}
+        className={`h-24 flex flex-col items-center justify-center space-y-1 p-2 ${
+          isSelected 
+            ? `bg-${corBase}-500 hover:bg-${corBase}-600` 
+            : `hover:bg-${corBase}-50`
+        }`}
+        onClick={() => toggleIngrediente(produto.id)}
+      >
+        {produto.imagem ? (
+          <img 
+            src={produto.imagem} 
+            alt={produto.nome}
+            className="w-8 h-8 object-cover rounded"
+          />
+        ) : (
+          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+            <span className="text-xs">📦</span>
+          </div>
+        )}
+        <span className="text-xs font-medium text-center">{produto.nome}</span>
+        <span className="text-xs">R$ {produto.valor_unitario.toFixed(2)}</span>
+      </Button>
+    );
   };
 
   return (
@@ -129,50 +166,33 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           </div>
 
           {/* Ingredientes Base (Obrigatórios) */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-orange-600">Ingredientes Base (Obrigatórios)</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {produtosPizza.filter(p => p.tipo === 'base').map((produto) => (
-                <Button
-                  key={produto.id}
-                  variant={ingredientesSelecionados.includes(produto.id) ? "default" : "outline"}
-                  className={`h-20 flex flex-col items-center justify-center space-y-1 ${
-                    ingredientesSelecionados.includes(produto.id) 
-                      ? 'bg-orange-500 hover:bg-orange-600' 
-                      : 'hover:bg-orange-50'
-                  }`}
-                  onClick={() => toggleIngrediente(produto.id)}
-                >
-                  <span className="text-2xl">{produto.emoji}</span>
-                  <span className="text-xs font-medium">{produto.nome}</span>
-                  <span className="text-xs">R$ {produto.preco}</span>
-                </Button>
-              ))}
+          {ingredientesBase.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-orange-600">Ingredientes Base (Obrigatórios)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {ingredientesBase.map((produto) => renderProdutoCard(produto, 'base'))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Toppings Opcionais */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-green-600">Toppings (Opcionais)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {produtosPizza.filter(p => p.tipo === 'topping').map((produto) => (
-                <Button
-                  key={produto.id}
-                  variant={ingredientesSelecionados.includes(produto.id) ? "default" : "outline"}
-                  className={`h-20 flex flex-col items-center justify-center space-y-1 ${
-                    ingredientesSelecionados.includes(produto.id) 
-                      ? 'bg-green-500 hover:bg-green-600' 
-                      : 'hover:bg-green-50'
-                  }`}
-                  onClick={() => toggleIngrediente(produto.id)}
-                >
-                  <span className="text-2xl">{produto.emoji}</span>
-                  <span className="text-xs font-medium">{produto.nome}</span>
-                  <span className="text-xs">R$ {produto.preco}</span>
-                </Button>
-              ))}
+          {toppings.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold text-green-600">Toppings (Opcionais)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {toppings.map((produto) => renderProdutoCard(produto, 'topping'))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Mensagem se não há produtos */}
+          {produtosDisponiveis.length === 0 && (
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <p className="text-yellow-700">
+                Nenhum produto disponível na loja. Aguarde o professor adicionar ingredientes.
+              </p>
+            </div>
+          )}
 
           {/* Resumo da Pizza */}
           {ingredientesSelecionados.length > 0 && (
@@ -183,12 +203,23 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
                   <span>Viagem à loja:</span>
                   <span>R$ 5,00</span>
                 </div>
-                {ingredientesSelecionados.map(ingredienteId => {
-                  const produto = produtosPizza.find(p => p.id === ingredienteId);
+                {ingredientesSelecionados.map(produtoId => {
+                  const produto = produtosDisponiveis.find(p => p.id === produtoId);
                   return produto ? (
-                    <div key={ingredienteId} className="flex justify-between text-sm">
-                      <span>{produto.emoji} {produto.nome}:</span>
-                      <span>R$ {produto.preco.toFixed(2)}</span>
+                    <div key={produtoId} className="flex justify-between text-sm items-center">
+                      <div className="flex items-center gap-2">
+                        {produto.imagem ? (
+                          <img 
+                            src={produto.imagem} 
+                            alt={produto.nome}
+                            className="w-4 h-4 object-cover rounded"
+                          />
+                        ) : (
+                          <span>📦</span>
+                        )}
+                        <span>{produto.nome}</span>
+                      </div>
+                      <span>R$ {produto.valor_unitario.toFixed(2)}</span>
                     </div>
                   ) : null;
                 })}
@@ -205,7 +236,7 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           {!verificarIngredientesValidos() && ingredientesSelecionados.length > 0 && (
             <div className="p-3 bg-red-50 rounded-lg">
               <p className="text-red-600 text-sm">
-                ⚠️ Adicione pelo menos massa e molho para fazer uma pizza válida!
+                ⚠️ Adicione pelo menos um ingrediente base para fazer uma pizza válida!
               </p>
             </div>
           )}
@@ -221,7 +252,7 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           {/* Botão Confirmar */}
           <Button
             onClick={confirmarPizza}
-            disabled={!verificarIngredientesValidos() || calcularPrecoTotal() > saldoDisponivel || montandoPizza}
+            disabled={!verificarIngredientesValidos() || calcularPrecoTotal() > saldoDisponivel || montandoPizza || produtosDisponiveis.length === 0}
             className="w-full h-14 text-lg bg-green-500 hover:bg-green-600"
           >
             {montandoPizza ? '🔄 Montando Pizza...' : '🍕 Confirmar Pizza'}
