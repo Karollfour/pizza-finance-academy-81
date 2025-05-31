@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useCompras } from '@/hooks/useCompras';
@@ -12,7 +12,7 @@ import { useRodadas } from '@/hooks/useRodadas';
 import { toast } from 'sonner';
 import DashboardLojinha from './DashboardLojinha';
 import ComprasPorEquipe from './ComprasPorEquipe';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Upload, Image } from 'lucide-react';
 
 const LojinhaScreen = () => {
   const { equipes, criarEquipe, loading: loadingEquipes } = useEquipes();
@@ -21,10 +21,23 @@ const LojinhaScreen = () => {
   const { rodadaAtual } = useRodadas();
 
   const [novaEquipe, setNovaEquipe] = useState({ nome: '', saldo: 100, professor: '' });
-  const [novoProduto, setNovoProduto] = useState({ nome: '', unidade: '', valor: 0 });
-  const [compraAtual, setCompraAtual] = useState({ equipeId: '', produtoId: '', quantidade: 1 });
+  const [novoProduto, setNovoProduto] = useState({ 
+    nome: '', 
+    unidade: '', 
+    valor: 0, 
+    durabilidade: 1, 
+    descricao: '',
+    imagem: null as File | null
+  });
   const [produtoEditando, setProdutoEditando] = useState<string | null>(null);
-  const [dadosEdicao, setDadosEdicao] = useState({ nome: '', unidade: '', valor: 0 });
+  const [dadosEdicao, setDadosEdicao] = useState({ 
+    nome: '', 
+    unidade: '', 
+    valor: 0, 
+    durabilidade: 1, 
+    descricao: '',
+    imagem: null as File | null
+  });
 
   const handleCriarEquipe = async () => {
     if (!novaEquipe.nome || !novaEquipe.professor) {
@@ -42,44 +55,17 @@ const LojinhaScreen = () => {
   };
 
   const handleCriarProduto = async () => {
-    if (!novoProduto.nome || !novoProduto.unidade || novoProduto.valor <= 0) {
-      toast.error('Preencha todos os campos do produto');
+    if (!novoProduto.nome || !novoProduto.unidade || novoProduto.valor <= 0 || novoProduto.durabilidade <= 0) {
+      toast.error('Preencha todos os campos obrigatórios do produto');
       return;
     }
 
     try {
       await criarProduto(novoProduto.nome, novoProduto.unidade, novoProduto.valor);
-      setNovoProduto({ nome: '', unidade: '', valor: 0 });
+      setNovoProduto({ nome: '', unidade: '', valor: 0, durabilidade: 1, descricao: '', imagem: null });
       toast.success('Produto criado com sucesso!');
     } catch (error) {
       toast.error('Erro ao criar produto');
-    }
-  };
-
-  const handleRegistrarCompra = async () => {
-    if (!compraAtual.equipeId || !compraAtual.produtoId || compraAtual.quantidade <= 0) {
-      toast.error('Preencha todos os campos da compra');
-      return;
-    }
-
-    const produto = produtos.find(p => p.id === compraAtual.produtoId);
-    if (!produto) return;
-
-    const valorTotal = produto.valor_unitario * compraAtual.quantidade;
-
-    try {
-      await registrarCompra(
-        compraAtual.equipeId,
-        compraAtual.produtoId,
-        rodadaAtual?.id || null,
-        compraAtual.quantidade,
-        valorTotal,
-        'material'
-      );
-      setCompraAtual({ equipeId: '', produtoId: '', quantidade: 1 });
-      toast.success('Compra registrada com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao registrar compra');
     }
   };
 
@@ -105,7 +91,10 @@ const LojinhaScreen = () => {
     setDadosEdicao({
       nome: produto.nome,
       unidade: produto.unidade,
-      valor: produto.valor_unitario
+      valor: produto.valor_unitario,
+      durabilidade: produto.durabilidade || 1,
+      descricao: produto.descricao || '',
+      imagem: null
     });
   };
 
@@ -131,6 +120,17 @@ const LojinhaScreen = () => {
       toast.success('Produto removido com sucesso!');
     } catch (error) {
       toast.error('Erro ao remover produto');
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditing = false) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (isEditing) {
+        setDadosEdicao({ ...dadosEdicao, imagem: file });
+      } else {
+        setNovoProduto({ ...novoProduto, imagem: file });
+      }
     }
   };
 
@@ -160,7 +160,7 @@ const LojinhaScreen = () => {
         <Tabs defaultValue="gestao" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
-            <TabsTrigger value="compras">🛒 Compras</TabsTrigger>
+            <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
@@ -230,95 +230,175 @@ const LojinhaScreen = () => {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
 
-              {/* Gestão de Produtos */}
-              <Card className="shadow-lg border-2 border-orange-200">
-                <CardHeader className="bg-orange-50">
-                  <CardTitle className="text-orange-600">🛒 Gestão de Produtos</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4 mb-6">
-                    <div>
-                      <Label htmlFor="nomeProduto">Nome do Produto</Label>
-                      <Input
-                        id="nomeProduto"
-                        value={novoProduto.nome}
-                        onChange={(e) => setNovoProduto({ ...novoProduto, nome: e.target.value })}
-                        placeholder="Ex: Farinha"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="unidadeProduto">Unidade</Label>
-                      <Input
-                        id="unidadeProduto"
-                        value={novoProduto.unidade}
-                        onChange={(e) => setNovoProduto({ ...novoProduto, unidade: e.target.value })}
-                        placeholder="Ex: kg, lata, pacote"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="valorProduto">Valor Unitário</Label>
-                      <Input
-                        id="valorProduto"
-                        type="number"
-                        step="0.01"
-                        value={novoProduto.valor}
-                        onChange={(e) => setNovoProduto({ ...novoProduto, valor: Number(e.target.value) })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <Button onClick={handleCriarProduto} className="w-full bg-orange-500 hover:bg-orange-600">
-                      Criar Produto
-                    </Button>
+          <TabsContent value="itens" className="space-y-6">
+            {/* Gerenciar Itens para Compra */}
+            <Card className="shadow-lg border-2 border-orange-200">
+              <CardHeader className="bg-orange-50">
+                <CardTitle className="text-orange-600">📦 Gerenciar Itens para Compra</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <Label htmlFor="nomeProduto">Nome do Produto *</Label>
+                    <Input
+                      id="nomeProduto"
+                      value={novoProduto.nome}
+                      onChange={(e) => setNovoProduto({ ...novoProduto, nome: e.target.value })}
+                      placeholder="Ex: Massa de Pizza"
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="unidadeProduto">Unidade *</Label>
+                    <Input
+                      id="unidadeProduto"
+                      value={novoProduto.unidade}
+                      onChange={(e) => setNovoProduto({ ...novoProduto, unidade: e.target.value })}
+                      placeholder="Ex: folha, unidade, pacote"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="valorProduto">Preço (R$) *</Label>
+                    <Input
+                      id="valorProduto"
+                      type="number"
+                      step="0.01"
+                      value={novoProduto.valor}
+                      onChange={(e) => setNovoProduto({ ...novoProduto, valor: Number(e.target.value) })}
+                      placeholder="5.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="durabilidadeProduto">Durabilidade (pizzas) *</Label>
+                    <Input
+                      id="durabilidadeProduto"
+                      type="number"
+                      min="1"
+                      value={novoProduto.durabilidade}
+                      onChange={(e) => setNovoProduto({ ...novoProduto, durabilidade: Number(e.target.value) })}
+                      placeholder="Quantas pizzas o item aguenta"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="imagemProduto">Imagem do Produto</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="imagemProduto"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e)}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('imagemProduto')?.click()}
+                        className="w-full"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        {novoProduto.imagem ? novoProduto.imagem.name : 'Escolher Imagem'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <Label htmlFor="descricaoProduto">Descrição (opcional)</Label>
+                    <Textarea
+                      id="descricaoProduto"
+                      value={novoProduto.descricao}
+                      onChange={(e) => setNovoProduto({ ...novoProduto, descricao: e.target.value })}
+                      placeholder="Descrição do produto para ajudar os jogadores"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleCriarProduto} className="w-full bg-orange-500 hover:bg-orange-600">
+                  Adicionar Produto
+                </Button>
 
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-orange-600">Produtos Disponíveis:</h3>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {produtos.map((produto) => (
-                        <div key={produto.id} className="p-3 bg-white rounded-lg border border-orange-200">
-                          {produtoEditando === produto.id ? (
-                            <div className="space-y-2">
+                <div className="mt-8 space-y-3">
+                  <h3 className="font-semibold text-orange-600">Produtos Disponíveis:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    {produtos.map((produto) => (
+                      <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200">
+                        {produtoEditando === produto.id ? (
+                          <div className="space-y-3">
+                            <Input
+                              value={dadosEdicao.nome}
+                              onChange={(e) => setDadosEdicao({ ...dadosEdicao, nome: e.target.value })}
+                              placeholder="Nome"
+                            />
+                            <Input
+                              value={dadosEdicao.unidade}
+                              onChange={(e) => setDadosEdicao({ ...dadosEdicao, unidade: e.target.value })}
+                              placeholder="Unidade"
+                            />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={dadosEdicao.valor}
+                              onChange={(e) => setDadosEdicao({ ...dadosEdicao, valor: Number(e.target.value) })}
+                              placeholder="Preço"
+                            />
+                            <Input
+                              type="number"
+                              min="1"
+                              value={dadosEdicao.durabilidade}
+                              onChange={(e) => setDadosEdicao({ ...dadosEdicao, durabilidade: Number(e.target.value) })}
+                              placeholder="Durabilidade"
+                            />
+                            <Textarea
+                              value={dadosEdicao.descricao}
+                              onChange={(e) => setDadosEdicao({ ...dadosEdicao, descricao: e.target.value })}
+                              placeholder="Descrição"
+                              rows={2}
+                            />
+                            <div className="flex items-center gap-2">
                               <Input
-                                value={dadosEdicao.nome}
-                                onChange={(e) => setDadosEdicao({ ...dadosEdicao, nome: e.target.value })}
-                                placeholder="Nome"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, true)}
+                                className="hidden"
+                                id={`edit-image-${produto.id}`}
                               />
-                              <Input
-                                value={dadosEdicao.unidade}
-                                onChange={(e) => setDadosEdicao({ ...dadosEdicao, unidade: e.target.value })}
-                                placeholder="Unidade"
-                              />
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={dadosEdicao.valor}
-                                onChange={(e) => setDadosEdicao({ ...dadosEdicao, valor: Number(e.target.value) })}
-                                placeholder="Valor"
-                              />
-                              <div className="flex gap-2">
-                                <Button onClick={salvarEdicaoProduto} size="sm" className="bg-green-500 hover:bg-green-600">
-                                  Salvar
-                                </Button>
-                                <Button onClick={() => setProdutoEditando(null)} size="sm" variant="outline">
-                                  Cancelar
-                                </Button>
-                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById(`edit-image-${produto.id}`)?.click()}
+                              >
+                                <Image className="w-4 h-4" />
+                              </Button>
                             </div>
-                          ) : (
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <div className="font-medium">{produto.nome}</div>
+                            <div className="flex gap-2">
+                              <Button onClick={salvarEdicaoProduto} size="sm" className="bg-green-500 hover:bg-green-600">
+                                Salvar
+                              </Button>
+                              <Button onClick={() => setProdutoEditando(null)} size="sm" variant="outline">
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <div className="font-medium text-lg">{produto.nome}</div>
                                 <div className="text-sm text-gray-600">{produto.unidade}</div>
                                 <div className="text-sm text-green-600 font-semibold">R$ {produto.valor_unitario.toFixed(2)}</div>
+                                <div className="text-xs text-blue-600">Durabilidade: {produto.durabilidade || 1} pizzas</div>
+                                {produto.descricao && (
+                                  <div className="text-xs text-gray-500 mt-1">{produto.descricao}</div>
+                                )}
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex gap-1 ml-2">
                                 <Button
                                   onClick={() => iniciarEdicaoProduto(produto)}
                                   size="sm"
                                   variant="outline"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   onClick={() => removerProduto(produto.id)}
@@ -326,70 +406,23 @@ const LojinhaScreen = () => {
                                   variant="outline"
                                   className="text-red-600 hover:bg-red-50"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="compras" className="space-y-6">
-            {/* Registrar Compras */}
-            <Card className="shadow-lg border-2 border-orange-200">
-              <CardHeader className="bg-orange-50">
-                <CardTitle className="text-orange-600">💰 Registrar Compras</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="equipeCompra">Equipe</Label>
-                    <select
-                      id="equipeCompra"
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={compraAtual.equipeId}
-                      onChange={(e) => setCompraAtual({ ...compraAtual, equipeId: e.target.value })}
-                    >
-                      <option value="">Selecione a equipe</option>
-                      {equipes.map((equipe) => (
-                        <option key={equipe.id} value={equipe.id}>{equipe.nome}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="produtoCompra">Produto</Label>
-                    <select
-                      id="produtoCompra"
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={compraAtual.produtoId}
-                      onChange={(e) => setCompraAtual({ ...compraAtual, produtoId: e.target.value })}
-                    >
-                      <option value="">Selecione o produto</option>
-                      {produtos.map((produto) => (
-                        <option key={produto.id} value={produto.id}>{produto.nome} - R$ {produto.valor_unitario.toFixed(2)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="quantidadeCompra">Quantidade</Label>
-                    <Input
-                      id="quantidadeCompra"
-                      type="number"
-                      min="1"
-                      value={compraAtual.quantidade}
-                      onChange={(e) => setCompraAtual({ ...compraAtual, quantidade: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={handleRegistrarCompra} className="w-full bg-green-500 hover:bg-green-600">
-                      Registrar Compra
-                    </Button>
+                            {produto.imagem && (
+                              <div className="mt-2">
+                                <img 
+                                  src={produto.imagem} 
+                                  alt={produto.nome}
+                                  className="w-full h-20 object-cover rounded border"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
