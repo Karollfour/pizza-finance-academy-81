@@ -26,15 +26,43 @@ export const useProdutos = () => {
     }
   };
 
+  const uploadImagem = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `produtos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('imagens')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('imagens')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Erro ao fazer upload da imagem:', err);
+      return null;
+    }
+  };
+
   const criarProduto = async (
     nome: string, 
     unidade: string, 
     valorUnitario: number, 
     durabilidade?: number, 
     descricao?: string, 
-    imagem?: string
+    imagemFile?: File
   ) => {
     try {
+      let imagemUrl = null;
+      if (imagemFile) {
+        imagemUrl = await uploadImagem(imagemFile);
+      }
+
       const { data, error } = await supabase
         .from('produtos_loja')
         .insert({
@@ -43,7 +71,7 @@ export const useProdutos = () => {
           valor_unitario: valorUnitario,
           durabilidade: durabilidade || 1,
           descricao,
-          imagem
+          imagem: imagemUrl
         })
         .select()
         .single();
@@ -57,11 +85,19 @@ export const useProdutos = () => {
     }
   };
 
-  const atualizarProduto = async (id: string, dados: Partial<ProdutoLoja>) => {
+  const atualizarProduto = async (id: string, dados: Partial<ProdutoLoja>, imagemFile?: File) => {
     try {
+      let imagemUrl = dados.imagem;
+      if (imagemFile) {
+        imagemUrl = await uploadImagem(imagemFile);
+      }
+
       const { error } = await supabase
         .from('produtos_loja')
-        .update(dados)
+        .update({
+          ...dados,
+          imagem: imagemUrl
+        })
         .eq('id', id);
 
       if (error) throw error;

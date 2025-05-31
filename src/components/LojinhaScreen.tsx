@@ -68,7 +68,7 @@ const LojinhaScreen = () => {
         novoProduto.valor,
         novoProduto.durabilidade,
         novoProduto.descricao || null,
-        null // Por enquanto sem upload de imagem
+        novoProduto.imagem || undefined
       );
       setNovoProduto({ nome: '', unidade: '', valor: 0, durabilidade: 1, descricao: '', imagem: null });
       toast.success('Produto criado com sucesso!');
@@ -116,7 +116,7 @@ const LojinhaScreen = () => {
         valor_unitario: dadosEdicao.valor,
         durabilidade: dadosEdicao.durabilidade,
         descricao: dadosEdicao.descricao || null
-      });
+      }, dadosEdicao.imagem || undefined);
       setProdutoEditando(null);
       toast.success('Produto atualizado com sucesso!');
     } catch (error) {
@@ -136,6 +136,18 @@ const LojinhaScreen = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditing = false) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+      
+      // Validar tamanho (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem muito grande. Máximo 5MB');
+        return;
+      }
+
       if (isEditing) {
         setDadosEdicao({ ...dadosEdicao, imagem: file });
       } else {
@@ -244,7 +256,6 @@ const LojinhaScreen = () => {
           </TabsContent>
 
           <TabsContent value="itens" className="space-y-6">
-            {/* Gerenciar Itens para Compra */}
             <Card className="shadow-lg border-2 border-orange-200">
               <CardHeader className="bg-orange-50">
                 <CardTitle className="text-orange-600">📦 Gerenciar Itens para Compra</CardTitle>
@@ -292,7 +303,7 @@ const LojinhaScreen = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="imagemProduto">Imagem do Produto</Label>
+                    <Label htmlFor="imagemProduto">Imagem do Produto *</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="imagemProduto"
@@ -311,6 +322,11 @@ const LojinhaScreen = () => {
                         {novoProduto.imagem ? novoProduto.imagem.name : 'Escolher Imagem'}
                       </Button>
                     </div>
+                    {novoProduto.imagem && (
+                      <div className="mt-2 text-sm text-green-600">
+                        ✓ Imagem selecionada: {novoProduto.imagem.name}
+                      </div>
+                    )}
                   </div>
                   <div className="md:col-span-2 lg:col-span-3">
                     <Label htmlFor="descricaoProduto">Descrição (opcional)</Label>
@@ -380,6 +396,9 @@ const LojinhaScreen = () => {
                               >
                                 <Image className="w-4 h-4" />
                               </Button>
+                              {dadosEdicao.imagem && (
+                                <span className="text-xs text-green-600">Nova imagem selecionada</span>
+                              )}
                             </div>
                             <div className="flex gap-2">
                               <Button onClick={salvarEdicaoProduto} size="sm" className="bg-green-500 hover:bg-green-600">
@@ -392,13 +411,16 @@ const LojinhaScreen = () => {
                           </div>
                         ) : (
                           <div className="h-full flex flex-col">
-                            {/* Imagem do produto */}
                             <div className="mb-3 flex justify-center">
                               {produto.imagem ? (
                                 <img 
                                   src={produto.imagem} 
                                   alt={produto.nome}
                                   className="w-16 h-16 object-cover rounded-lg border shadow-sm"
+                                  onError={(e) => {
+                                    console.log('Erro ao carregar imagem:', produto.imagem);
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
                                 />
                               ) : (
                                 <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
@@ -407,7 +429,6 @@ const LojinhaScreen = () => {
                               )}
                             </div>
                             
-                            {/* Informações do produto */}
                             <div className="flex-1 text-center">
                               <div className="font-medium text-lg mb-1">{produto.nome}</div>
                               <div className="text-sm text-gray-600 mb-1">{produto.unidade}</div>
@@ -424,7 +445,6 @@ const LojinhaScreen = () => {
                               )}
                             </div>
                             
-                            {/* Botões de ação */}
                             <div className="flex gap-1 justify-center">
                               <Button
                                 onClick={() => iniciarEdicaoProduto(produto)}
