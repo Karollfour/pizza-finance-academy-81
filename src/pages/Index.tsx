@@ -5,6 +5,7 @@ import LojinhaScreen from '@/components/LojinhaScreen';
 import ProducaoScreen from '@/components/ProducaoScreen';
 import EquipeScreen from '@/components/EquipeScreen';
 import AvaliadorScreen from '@/components/AvaliadorScreen';
+import SeletorEquipes from '@/components/SeletorEquipes';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -19,6 +20,10 @@ const Index = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
+  };
+
+  const handleEquipeSelecionada = (equipeNome: string) => {
+    setCurrentUser({ type: 'equipe', teamId: equipeNome });
   };
 
   // Se não estiver logado, mostrar tela de login
@@ -37,6 +42,8 @@ const Index = () => {
         return <AvaliadorScreen />;
       case 'equipe':
         return <EquipeScreen teamName={currentUser.teamId || 'Equipe Sem Nome'} />;
+      case 'seletor_equipes':
+        return <SeletorEquipes onEquipeSelecionada={handleEquipeSelecionada} />;
       default:
         return <LoginScreen onLogin={handleLogin} />;
     }
@@ -80,6 +87,14 @@ const Index = () => {
           className="bg-white/90 backdrop-blur-sm border-2 border-purple-200 hover:bg-purple-50"
         >
           🧑‍🏫 Avaliador
+        </Button>
+        <Button
+          onClick={() => setCurrentUser({ type: 'seletor_equipes' })}
+          variant="outline"
+          size="sm"
+          className="bg-white/90 backdrop-blur-sm border-2 border-green-200 hover:bg-green-50"
+        >
+          👥 Equipes
         </Button>
       </div>
 
