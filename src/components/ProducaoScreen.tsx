@@ -30,6 +30,7 @@ const ProducaoScreen = () => {
   const [novoTempoLimite, setNovoTempoLimite] = useState(300);
   const [saborAtual, setSaborAtual] = useState<string>('');
   const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
+  const [ultimaTrocaEmEquipes, setUltimaTrocaEmEquipes] = useState(0);
 
   // Função para gerar sabor aleatório
   const gerarSaborAleatorio = () => {
@@ -73,32 +74,36 @@ const ProducaoScreen = () => {
 
     const numEquipesQueEnviaram = equipesQueEnviaram.size;
     
-    // Se chegou na metade das equipes e há um sabor atual, trocar
-    if (numEquipesQueEnviaram > 0 && numEquipesQueEnviaram % metadeEquipes === 0) {
-      const ultimoSabor = historicoSabores[historicoSabores.length - 1];
+    // Só trocar se:
+    // 1. Chegou na metade das equipes
+    // 2. Ainda não trocou para este número de equipes
+    // 3. Há mais equipes que enviaram do que a última troca
+    if (numEquipesQueEnviaram > 0 && 
+        numEquipesQueEnviaram % metadeEquipes === 0 && 
+        numEquipesQueEnviaram > ultimaTrocaEmEquipes) {
       
-      // Verificar se precisa trocar (se o número de equipes que enviaram mudou)
-      if (!ultimoSabor || ultimoSabor.equipesQueEnviaram.length !== numEquipesQueEnviaram) {
-        // Atualizar histórico do sabor anterior
-        if (ultimoSabor) {
-          setHistoricoSabores(prev => prev.map((item, index) => 
-            index === prev.length - 1 
-              ? {
-                  ...item,
-                  pizzasEnviadas: pizzas.length,
-                  equipesQueEnviaram: Array.from(equipesQueEnviaram)
-                }
-              : item
-          ));
-        }
-        
-        // Iniciar novo sabor
-        setTimeout(() => {
-          iniciarNovoSabor();
-        }, 1000);
+      // Atualizar histórico do sabor anterior se existe
+      if (historicoSabores.length > 0) {
+        setHistoricoSabores(prev => prev.map((item, index) => 
+          index === prev.length - 1 
+            ? {
+                ...item,
+                pizzasEnviadas: pizzas.length,
+                equipesQueEnviaram: Array.from(equipesQueEnviaram)
+              }
+            : item
+        ));
       }
+      
+      // Marcar que já houve troca para este número de equipes
+      setUltimaTrocaEmEquipes(numEquipesQueEnviaram);
+      
+      // Iniciar novo sabor após um pequeno delay
+      setTimeout(() => {
+        iniciarNovoSabor();
+      }, 1000);
     }
-  }, [pizzas, equipes, rodadaAtual, historicoSabores]);
+  }, [pizzas.length, equipes.length, rodadaAtual?.id, ultimaTrocaEmEquipes]);
 
   // Timer da rodada e inicialização
   useEffect(() => {
@@ -106,6 +111,7 @@ const ProducaoScreen = () => {
       setTimeRemaining(0);
       setSaborAtual('');
       setHistoricoSabores([]);
+      setUltimaTrocaEmEquipes(0);
       return;
     }
 
@@ -128,6 +134,7 @@ const ProducaoScreen = () => {
         clearInterval(interval);
         setSaborAtual('');
         setHistoricoSabores([]);
+        setUltimaTrocaEmEquipes(0);
         handleFinalizarRodada();
       }
     }, 1000);
