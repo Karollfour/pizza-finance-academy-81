@@ -11,6 +11,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
+import { useResetJogo } from '@/hooks/useResetJogo';
 import { toast } from 'sonner';
 
 interface SaborRodada {
@@ -21,12 +22,13 @@ interface SaborRodada {
 }
 
 const ProducaoScreen = () => {
-  const { rodadaAtual, iniciarRodada, finalizarRodada, criarNovaRodada } = useRodadas();
+  const { rodadaAtual, iniciarRodada, finalizarRodada, criarNovaRodada, refetch: refetchRodadas } = useRodadas();
   const { proximoNumero, refetch: refetchCounter } = useRodadaCounter();
-  const { pizzas } = usePizzas(undefined, rodadaAtual?.id);
-  const { equipes } = useEquipes();
+  const { pizzas, refetch: refetchPizzas } = usePizzas(undefined, rodadaAtual?.id);
+  const { equipes, refetch: refetchEquipes } = useEquipes();
   const { atualizarConfiguracao, getConfiguracao } = useConfiguracoes();
   const { sabores } = useSabores();
+  const { resetarJogo, loading: resetLoading } = useResetJogo();
   
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [novoTempoLimite, setNovoTempoLimite] = useState(300);
@@ -199,6 +201,29 @@ const ProducaoScreen = () => {
     }
   };
 
+  const handleResetarJogo = async () => {
+    if (!confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?')) {
+      return;
+    }
+
+    if (!confirm('🚨 CONFIRMAÇÃO FINAL: Tem certeza absoluta de que deseja resetar todo o jogo? Todos os dados serão perdidos permanentemente!')) {
+      return;
+    }
+
+    try {
+      await resetarJogo();
+      // Atualizar todos os dados após o reset
+      await Promise.all([
+        refetchRodadas(),
+        refetchCounter(),
+        refetchPizzas(),
+        refetchEquipes()
+      ]);
+    } catch (error) {
+      console.error('Erro ao resetar jogo:', error);
+    }
+  };
+
   const progressPercentage = rodadaAtual?.tempo_limite 
     ? ((rodadaAtual.tempo_limite - timeRemaining) / rodadaAtual.tempo_limite) * 100 
     : 0;
@@ -287,6 +312,46 @@ const ProducaoScreen = () => {
                   </Button>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Botão de Reset do Jogo */}
+        <Card className="shadow-lg border-2 border-yellow-300 mb-8">
+          <CardHeader className="bg-yellow-50">
+            <CardTitle className="text-yellow-700">🚨 Zona de Perigo - Reset do Jogo</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-xl font-bold text-yellow-800">
+                Resetar Todo o Jogo
+              </h3>
+              <p className="text-yellow-700 max-w-2xl mx-auto">
+                Esta ação irá apagar permanentemente <strong>TODOS</strong> os dados do jogo:
+                rodadas, pizzas produzidas, compras realizadas e estatísticas das equipes.
+                Use apenas para iniciar um jogo completamente novo.
+              </p>
+              <Button
+                onClick={handleResetarJogo}
+                disabled={resetLoading}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-8 py-3"
+                size="lg"
+              >
+                {resetLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Resetando...
+                  </>
+                ) : (
+                  <>
+                    🔄 Resetar Jogo Completo
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-yellow-600">
+                ⚠️ Esta ação não pode ser desfeita!
+              </p>
             </div>
           </CardContent>
         </Card>
