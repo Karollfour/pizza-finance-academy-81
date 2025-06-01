@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRodadas } from '@/hooks/useRodadas';
+import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
@@ -21,6 +22,7 @@ interface SaborRodada {
 
 const ProducaoScreen = () => {
   const { rodadaAtual, iniciarRodada, finalizarRodada, criarNovaRodada } = useRodadas();
+  const { proximoNumero, refetch: refetchCounter } = useRodadaCounter();
   const { pizzas } = usePizzas(undefined, rodadaAtual?.id);
   const { equipes } = useEquipes();
   const { atualizarConfiguracao, getConfiguracao } = useConfiguracoes();
@@ -170,6 +172,8 @@ const ProducaoScreen = () => {
     try {
       await finalizarRodada(rodadaAtual.id);
       toast.success('Rodada finalizada!');
+      // Atualizar contador após finalizar rodada
+      await refetchCounter();
     } catch (error) {
       toast.error('Erro ao finalizar rodada');
     }
@@ -177,10 +181,10 @@ const ProducaoScreen = () => {
 
   const handleCriarNovaRodada = async () => {
     try {
-      // Se não há rodada atual, começar do 0, senão incrementar 1
-      const proximoNumero = rodadaAtual ? rodadaAtual.numero + 1 : 0;
       await criarNovaRodada(proximoNumero, novoTempoLimite);
       toast.success(`Rodada ${proximoNumero} criada!`);
+      // Atualizar contador após criar nova rodada
+      await refetchCounter();
     } catch (error) {
       toast.error('Erro ao criar nova rodada');
     }
@@ -262,7 +266,7 @@ const ProducaoScreen = () => {
                   className="w-full bg-blue-500 hover:bg-blue-600"
                   disabled={rodadaAtual?.status === 'ativa'}
                 >
-                  Criar Nova Rodada
+                  Criar Rodada {proximoNumero}
                 </Button>
               </div>
               <div className="flex items-end">
