@@ -12,6 +12,13 @@ import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 
+interface SaborRodada {
+  sabor: string;
+  iniciadoEm: string;
+  pizzasEnviadas: number;
+  equipesQueEnviaram: string[];
+}
+
 const ProducaoScreen = () => {
   const { rodadaAtual, iniciarRodada, finalizarRodada, criarNovaRodada } = useRodadas();
   const { pizzas } = usePizzas(undefined, rodadaAtual?.id);
@@ -22,28 +29,93 @@ const ProducaoScreen = () => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [novoTempoLimite, setNovoTempoLimite] = useState(300);
   const [saborAtual, setSaborAtual] = useState<string>('');
+  const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
 
   // Função para gerar sabor aleatório
   const gerarSaborAleatorio = () => {
     if (sabores.length > 0) {
       const saborAleatorio = sabores[Math.floor(Math.random() * sabores.length)];
-      setSaborAtual(saborAleatorio.nome);
+      return saborAleatorio.nome;
     }
+    return '';
   };
 
-  // Timer da rodada e geração de sabores
+  // Função para iniciar novo sabor
+  const iniciarNovoSabor = () => {
+    const novoSabor = gerarSaborAleatorio();
+    setSaborAtual(novoSabor);
+    
+    const novoSaborRodada: SaborRodada = {
+      sabor: novoSabor,
+      iniciadoEm: new Date().toISOString(),
+      pizzasEnviadas: 0,
+      equipesQueEnviaram: []
+    };
+    
+    setHistoricoSabores(prev => [...prev, novoSaborRodada]);
+    
+    toast.info(`🍕 Novo sabor da rodada: ${novoSabor}`, {
+      duration: 4000,
+    });
+  };
+
+  // Verificar se deve trocar de sabor baseado nas pizzas enviadas
+  useEffect(() => {
+    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || equipes.length === 0) return;
+
+    const metadeEquipes = Math.ceil(equipes.length / 2);
+    
+    // Contar pizzas únicas por equipe na rodada atual
+    const equipesQueEnviaram = new Set();
+    pizzas.forEach(pizza => {
+      equipesQueEnviaram.add(pizza.equipe_id);
+    });
+
+    const numEquipesQueEnviaram = equipesQueEnviaram.size;
+    
+    // Se chegou na metade das equipes e há um sabor atual, trocar
+    if (numEquipesQueEnviaram > 0 && numEquipesQueEnviaram % metadeEquipes === 0) {
+      const ultimoSabor = historicoSabores[historicoSabores.length - 1];
+      
+      // Verificar se precisa trocar (se o número de equipes que enviaram mudou)
+      if (!ultimoSabor || ultimoSabor.equipesQueEnviaram.length !== numEquipesQueEnviaram) {
+        // Atualizar histórico do sabor anterior
+        if (ultimoSabor) {
+          setHistoricoSabores(prev => prev.map((item, index) => 
+            index === prev.length - 1 
+              ? {
+                  ...item,
+                  pizzasEnviadas: pizzas.length,
+                  equipesQueEnviaram: Array.from(equipesQueEnviaram)
+                }
+              : item
+          ));
+        }
+        
+        // Iniciar novo sabor
+        setTimeout(() => {
+          iniciarNovoSabor();
+        }, 1000);
+      }
+    }
+  }, [pizzas, equipes, rodadaAtual, historicoSabores]);
+
+  // Timer da rodada e inicialização
   useEffect(() => {
     if (!rodadaAtual || rodadaAtual.status !== 'ativa' || !rodadaAtual.iniciou_em) {
       setTimeRemaining(0);
       setSaborAtual('');
+      setHistoricoSabores([]);
       return;
+    }
+
+    // Iniciar primeiro sabor se não há histórico
+    if (historicoSabores.length === 0) {
+      iniciarNovoSabor();
     }
 
     const inicioRodada = new Date(rodadaAtual.iniciou_em).getTime();
     const duracaoRodada = rodadaAtual.tempo_limite * 1000;
-
-    // Gerar sabor inicial
-    gerarSaborAleatorio();
 
     const interval = setInterval(() => {
       const agora = Date.now();
@@ -55,18 +127,13 @@ const ProducaoScreen = () => {
       if (resto <= 0) {
         clearInterval(interval);
         setSaborAtual('');
+        setHistoricoSabores([]);
         handleFinalizarRodada();
       }
     }, 1000);
 
-    // Intervalo para mudança de sabores (a cada 10 segundos)
-    const saborInterval = setInterval(() => {
-      gerarSaborAleatorio();
-    }, 10000);
-
     return () => {
       clearInterval(interval);
-      clearInterval(saborInterval);
     };
   }, [rodadaAtual, sabores]);
 
@@ -240,6 +307,30 @@ const ProducaoScreen = () => {
                     <p className="text-sm text-yellow-700 mt-1">
                       Sabor sendo produzido nesta rodada
                     </p>
+                  </div>
+                )}
+
+                {/* Histórico de Sabores da Rodada */}
+                {historicoSabores.length > 0 && (
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                    <h3 className="text-lg font-bold text-blue-800 mb-3">
+                      📜 Histórico de Sabores da Rodada
+                    </h3>
+                    <div className="space-y-2">
+                      {historicoSabores.map((sabor, index) => (
+                        <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
+                          <div>
+                            <span className="font-medium text-blue-600">{sabor.sabor}</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {new Date(sabor.iniciadoEm).toLocaleTimeString('pt-BR')}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="bg-blue-100">
+                            {sabor.equipesQueEnviaram.length} equipes
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
