@@ -67,7 +67,7 @@ const ProducaoScreen = () => {
     const metadeEquipes = Math.ceil(equipes.length / 2);
     
     // Contar pizzas únicas por equipe na rodada atual
-    const equipesQueEnviaram = new Set();
+    const equipesQueEnviaram = new Set<string>();
     pizzas.forEach(pizza => {
       equipesQueEnviaram.add(pizza.equipe_id);
     });
@@ -89,7 +89,7 @@ const ProducaoScreen = () => {
             ? {
                 ...item,
                 pizzasEnviadas: pizzas.length,
-                equipesQueEnviaram: Array.from(equipesQueEnviaram)
+                equipesQueEnviaram: Array.from(equipesQueEnviaram) as string[]
               }
             : item
         ));
@@ -111,7 +111,10 @@ const ProducaoScreen = () => {
       setTimeRemaining(0);
       setSaborAtual('');
       setHistoricoSabores([]);
-      setUltimaTrocaEmEquipes(0);
+      // Só resetar o contador se não há rodada ou se a rodada mudou
+      if (!rodadaAtual || rodadaAtual.status === 'aguardando') {
+        setUltimaTrocaEmEquipes(0);
+      }
       return;
     }
 
