@@ -409,6 +409,10 @@ const LojinhaScreen = () => {
     }
   };
 
+  const handleTaxaViagemChange = (checked: boolean) => {
+    setIncluirTaxaViagem(checked);
+  };
+
   if (loadingEquipes || loadingProdutos || loadingSabores) {
     return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
         <div className="text-2xl text-orange-600">Carregando lojinha...</div>
@@ -955,13 +959,13 @@ const LojinhaScreen = () => {
                       <div className="mt-4 p-3 border-t border-orange-200">
                         <div className="flex items-center space-x-2">
                           <Checkbox
-                            id="taxaViagem"
+                            id="taxa-viagem"
                             checked={incluirTaxaViagem}
-                            onCheckedChange={setIncluirTaxaViagem}
+                            onCheckedChange={handleTaxaViagemChange}
                           />
-                          <Label htmlFor="taxaViagem" className="text-sm">
-                            Incluir taxa de viagem à loja (R$ 5,00)
-                          </Label>
+                          <label htmlFor="taxa-viagem" className="text-sm">
+                            Incluir Taxa de Viagem (R$ 5,00)
+                          </label>
                         </div>
                       </div>
 

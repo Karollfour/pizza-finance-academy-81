@@ -1,6 +1,8 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEquipes } from '@/hooks/useEquipes';
+import { useCompras } from '@/hooks/useCompras';
 
 interface SeletorEquipesProps {
   onEquipeSelecionada: (equipeNome: string) => void;
@@ -8,6 +10,14 @@ interface SeletorEquipesProps {
 
 const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
   const { equipes } = useEquipes();
+  const { compras } = useCompras();
+
+  // Calcular gastos atualizados por equipe
+  const calcularGastosEquipe = (equipeId: string) => {
+    return compras
+      .filter(c => c.equipe_id === equipeId)
+      .reduce((sum, c) => sum + c.valor_total, 0);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-6">
@@ -41,6 +51,8 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
                 {equipes.map((equipe) => {
                   const corEquipe = equipe.cor_tema || '#3b82f6';
                   const emblemaEquipe = equipe.emblema || '👥';
+                  const gastoAtualizado = calcularGastosEquipe(equipe.id);
+                  const saldoRestante = equipe.saldo_inicial - gastoAtualizado;
                   
                   return (
                     <Card 
@@ -69,13 +81,13 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
                             <div className="flex justify-between">
                               <span>Gasto Total:</span>
                               <span className="font-medium text-red-600">
-                                R$ {equipe.gasto_total.toFixed(2)}
+                                R$ {gastoAtualizado.toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between border-t pt-2">
                               <span>Saldo Restante:</span>
-                              <span className="font-bold text-blue-600">
-                                R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)}
+                              <span className={`font-bold ${saldoRestante >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                R$ {saldoRestante.toFixed(2)}
                               </span>
                             </div>
                           </div>

@@ -1,10 +1,12 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useRodadas } from '@/hooks/useRodadas';
+import { usePizzas } from '@/hooks/usePizzas';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -13,6 +15,57 @@ const DashboardLojinha = () => {
   const { equipes } = useEquipes();
   const { produtos } = useProdutos();
   const { rodadaAtual } = useRodadas();
+  const { pizzas } = usePizzas();
+  const [rodadaSelecionada, setRodadaSelecionada] = useState<number | null>(null);
+
+  // Obter todas as rodadas disponíveis das pizzas
+  const rodadasDisponiveis = Array.from(new Set(pizzas.map(p => {
+    // Assumindo que temos acesso ao número da rodada através do ID
+    // Se não tiver, precisaremos buscar os dados da rodada
+    return 1; // Por enquanto, usando rodada 1 como exemplo
+  }))).sort((a, b) => a - b);
+
+  // Dados de pizzas por rodada e equipe
+  const dadosPizzasPorRodada = (rodada: number) => {
+    return equipes.map(equipe => {
+      const pizzasEquipe = pizzas.filter(p => 
+        p.equipe_id === equipe.id && 
+        p.status === 'avaliada'
+      );
+      
+      const aprovadas = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
+      const reprovadas = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
+      const total = aprovadas + reprovadas;
+      
+      return {
+        equipe: equipe.nome,
+        aprovadas,
+        reprovadas,
+        total,
+        corEquipe: equipe.cor_tema || '#3b82f6'
+      };
+    }).filter(dados => dados.total > 0);
+  };
+
+  // Dados gerais por equipe (todas as rodadas)
+  const dadosGeraisPorEquipe = equipes.map(equipe => {
+    const pizzasEquipe = pizzas.filter(p => 
+      p.equipe_id === equipe.id && 
+      p.status === 'avaliada'
+    );
+    
+    const aprovadas = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
+    const reprovadas = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
+    const total = aprovadas + reprovadas;
+    
+    return {
+      equipe: equipe.nome,
+      aprovadas,
+      reprovadas,
+      total,
+      corEquipe: equipe.cor_tema || '#3b82f6'
+    };
+  }).filter(dados => dados.total > 0);
 
   // Dados por equipe
   const dadosPorEquipe = equipes.map(equipe => {
@@ -52,6 +105,74 @@ const DashboardLojinha = () => {
 
   return (
     <div className="space-y-6">
+      {/* Seletor de Rodada para Análise de Pizzas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🍕 Análise de Pizzas por Rodada</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button
+              variant={rodadaSelecionada === null ? "default" : "outline"}
+              onClick={() => setRodadaSelecionada(null)}
+              size="sm"
+            >
+              Todas as Rodadas
+            </Button>
+            {rodadasDisponiveis.map(rodada => (
+              <Button
+                key={rodada}
+                variant={rodadaSelecionada === rodada ? "default" : "outline"}
+                onClick={() => setRodadaSelecionada(rodada)}
+                size="sm"
+              >
+                Rodada {rodada}
+              </Button>
+            ))}
+          </div>
+
+          {/* Gráfico de Pizzas por Equipe */}
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={rodadaSelecionada ? dadosPizzasPorRodada(rodadaSelecionada) : dadosGeraisPorEquipe}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="equipe" />
+              <YAxis />
+              <Tooltip 
+                formatter={(value, name) => [value, name === 'aprovadas' ? 'Aprovadas' : 'Reprovadas']}
+                labelFormatter={(label) => `Equipe: ${label}`}
+              />
+              <Bar dataKey="aprovadas" fill="#22c55e" name="Aprovadas" />
+              <Bar dataKey="reprovadas" fill="#ef4444" name="Reprovadas" />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Resumo das Pizzas */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(rodadaSelecionada ? dadosPizzasPorRodada(rodadaSelecionada) : dadosGeraisPorEquipe).map((dados, index) => (
+              <Card key={index} className="text-center">
+                <CardContent className="p-4">
+                  <h4 className="font-bold text-lg mb-2">{dados.equipe}</h4>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="bg-green-100 p-2 rounded">
+                      <div className="text-green-600 font-bold">{dados.aprovadas}</div>
+                      <div className="text-green-700">Aprovadas</div>
+                    </div>
+                    <div className="bg-red-100 p-2 rounded">
+                      <div className="text-red-600 font-bold">{dados.reprovadas}</div>
+                      <div className="text-red-700">Reprovadas</div>
+                    </div>
+                    <div className="bg-blue-100 p-2 rounded">
+                      <div className="text-blue-600 font-bold">{dados.total}</div>
+                      <div className="text-blue-700">Total</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gastos por Equipe */}
         <Card>
