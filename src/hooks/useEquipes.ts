@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipe } from '@/types/database';
+import { toast } from 'sonner';
 
 export interface EquipeExtended extends Equipe {
   cor_tema: string;
@@ -142,6 +143,67 @@ export const useEquipes = () => {
       throw err;
     }
   };
+
+  // Escutar mudanças em tempo real para equipes
+  useEffect(() => {
+    console.log('Configurando escuta em tempo real para equipes');
+    
+    const channel = supabase
+      .channel('equipes-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'equipes'
+        },
+        (payload) => {
+          console.log('Equipe atualizada:', payload);
+          
+          if (payload.eventType === 'UPDATE') {
+            const equipeAtualizada = payload.new as Equipe;
+            
+            // Atualizar lista local de equipes
+            setEquipes(prev => prev.map(equipe => {
+              if (equipe.id === equipeAtualizada.id) {
+                const extras = equipesLocais.get(equipe.id) || { cor_tema: '#3b82f6', emblema: '🍕' };
+                return {
+                  ...equipeAtualizada,
+                  cor_tema: extras.cor_tema,
+                  emblema: extras.emblema
+                };
+              }
+              return equipe;
+            }));
+            
+            // Notificar sobre atualizações importantes
+            if (payload.old?.gasto_total !== equipeAtualizada.gasto_total) {
+              console.log(`Saldo da equipe ${equipeAtualizada.nome} atualizado para R$ ${equipeAtualizada.gasto_total}`);
+            }
+          } else if (payload.eventType === 'INSERT') {
+            // Nova equipe criada
+            const novaEquipe = payload.new as Equipe;
+            toast.success(`Nova equipe "${novaEquipe.nome}" foi criada!`, {
+              duration: 3000,
+            });
+            fetchEquipes();
+          } else if (payload.eventType === 'DELETE') {
+            // Equipe removida
+            const equipeRemovida = payload.old as Equipe;
+            toast.info(`Equipe "${equipeRemovida.nome}" foi removida`, {
+              duration: 3000,
+            });
+            setEquipes(prev => prev.filter(equipe => equipe.id !== equipeRemovida.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Removendo escuta em tempo real para equipes');
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     fetchEquipes();

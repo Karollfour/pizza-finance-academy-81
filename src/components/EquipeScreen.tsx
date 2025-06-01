@@ -8,6 +8,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import FilaProducao from './FilaProducao';
+import ConnectionStatus from './ConnectionStatus';
 
 interface EquipeScreenProps {
   teamName: string;
@@ -27,21 +28,28 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
     setEquipeAtual(equipe);
   }, [equipes, teamName]);
 
-  // Timer da rodada
+  // Timer sincronizado da rodada
   useEffect(() => {
     if (!rodadaAtual || rodadaAtual.status !== 'ativa' || !rodadaAtual.iniciou_em) return;
 
     const inicioRodada = new Date(rodadaAtual.iniciou_em).getTime();
     const duracaoRodada = rodadaAtual.tempo_limite * 1000;
 
-    const interval = setInterval(() => {
+    const updateTimer = () => {
       const agora = Date.now();
       const tempoDecorrido = agora - inicioRodada;
       const resto = Math.max(0, duracaoRodada - tempoDecorrido);
       
       setTempoRestante(Math.ceil(resto / 1000));
       
-      if (resto <= 0) {
+      return resto > 0;
+    };
+
+    // Atualizar imediatamente
+    if (!updateTimer()) return;
+
+    const interval = setInterval(() => {
+      if (!updateTimer()) {
         clearInterval(interval);
       }
     }, 1000);
@@ -59,7 +67,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
     refetchPizzas();
   };
 
-  // Calcular total gasto
+  // Calcular total gasto em tempo real
   const totalGasto = compras.reduce((sum, c) => sum + c.valor_total, 0);
 
   // Usar cor e emblema da equipe do banco de dados
@@ -84,6 +92,9 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4">
+      {/* Status de Conexão */}
+      <ConnectionStatus showDetails={true} />
+      
       <div className="max-w-7xl mx-auto">
         {/* Header da Equipe */}
         <div className="text-center mb-6">

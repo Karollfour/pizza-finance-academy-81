@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
+import { toast } from 'sonner';
 
 export const useRodadas = () => {
   const [rodadaAtual, setRodadaAtual] = useState<Rodada | null>(null);
@@ -88,6 +89,61 @@ export const useRodadas = () => {
       throw err;
     }
   };
+
+  // Escutar mudanças em tempo real para rodadas
+  useEffect(() => {
+    console.log('Configurando escuta em tempo real para rodadas');
+    
+    const channel = supabase
+      .channel('rodadas-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rodadas'
+        },
+        (payload) => {
+          console.log('Rodada atualizada:', payload);
+          const rodadaAtualizada = payload.new as Rodada;
+          
+          if (payload.eventType === 'UPDATE') {
+            // Notificar sobre mudanças de status da rodada
+            if (rodadaAtualizada.status === 'ativa' && payload.old?.status === 'aguardando') {
+              toast.success(`🚀 Rodada ${rodadaAtualizada.numero} iniciada!`, {
+                duration: 4000,
+              });
+            } else if (rodadaAtualizada.status === 'finalizada' && payload.old?.status === 'ativa') {
+              toast.info(`⏱️ Rodada ${rodadaAtualizada.numero} finalizada!`, {
+                duration: 5000,
+              });
+            }
+            
+            // Atualizar rodada local se for a atual
+            setRodadaAtual(prev => {
+              if (prev?.id === rodadaAtualizada.id) {
+                return rodadaAtualizada;
+              }
+              return prev;
+            });
+          } else if (payload.eventType === 'INSERT') {
+            // Nova rodada criada
+            if (rodadaAtualizada.status === 'aguardando') {
+              toast.info(`📋 Nova rodada ${rodadaAtualizada.numero} criada!`, {
+                duration: 3000,
+              });
+              setRodadaAtual(rodadaAtualizada);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Removendo escuta em tempo real para rodadas');
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
     fetchRodadaAtual();

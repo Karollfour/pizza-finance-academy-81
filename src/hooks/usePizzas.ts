@@ -81,48 +81,67 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
     }
   };
 
-  // Escutar mudanças em tempo real para feedback visual
+  // Escutar mudanças em tempo real para pizzas
   useEffect(() => {
-    if (!equipeId) return;
-
-    console.log('Configurando escuta em tempo real para equipe:', equipeId);
+    console.log('Configurando escuta em tempo real para pizzas', equipeId ? `da equipe ${equipeId}` : 'globais');
     
     const channel = supabase
-      .channel('pizza-updates')
+      .channel(`pizzas-updates${equipeId ? `-${equipeId}` : ''}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'pizzas',
-          filter: `equipe_id=eq.${equipeId}`
+          ...(equipeId && { filter: `equipe_id=eq.${equipeId}` })
         },
         (payload) => {
           console.log('Pizza atualizada:', payload);
-          const pizzaAtualizada = payload.new as Pizza;
           
-          if (pizzaAtualizada.status === 'avaliada') {
-            if (pizzaAtualizada.resultado === 'aprovada') {
-              toast.success('🎉 Pizza aprovada! Parabéns pela qualidade!', {
-                duration: 5000,
-              });
-            } else if (pizzaAtualizada.resultado === 'reprovada') {
-              toast.error(`❌ Pizza reprovada: ${pizzaAtualizada.justificativa_reprovacao || 'Sem justificativa'}`, {
-                duration: 6000,
+          if (payload.eventType === 'INSERT') {
+            const novaPizza = payload.new as Pizza;
+            
+            // Adicionar à lista local
+            setPizzas(prev => [novaPizza, ...prev]);
+            
+            // Notificar sobre nova pizza apenas se não for da equipe atual
+            if (!equipeId || novaPizza.equipe_id !== equipeId) {
+              toast.info(`🍕 Nova pizza em produção!`, {
+                duration: 2000,
               });
             }
+          } else if (payload.eventType === 'UPDATE') {
+            const pizzaAtualizada = payload.new as Pizza;
             
-            // Atualizar lista local de pizzas
+            // Atualizar lista local
             setPizzas(prev => prev.map(pizza => 
               pizza.id === pizzaAtualizada.id ? pizzaAtualizada : pizza
             ));
+            
+            // Notificar sobre avaliações apenas para a equipe específica
+            if (equipeId && pizzaAtualizada.equipe_id === equipeId && pizzaAtualizada.status === 'avaliada') {
+              if (pizzaAtualizada.resultado === 'aprovada') {
+                toast.success('🎉 Pizza aprovada! Parabéns pela qualidade!', {
+                  duration: 5000,
+                });
+              } else if (pizzaAtualizada.resultado === 'reprovada') {
+                toast.error(`❌ Pizza reprovada: ${pizzaAtualizada.justificativa_reprovacao || 'Sem justificativa'}`, {
+                  duration: 6000,
+                });
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const pizzaRemovida = payload.old as Pizza;
+            
+            // Remover da lista local
+            setPizzas(prev => prev.filter(pizza => pizza.id !== pizzaRemovida.id));
           }
         }
       )
       .subscribe();
 
     return () => {
-      console.log('Removendo escuta em tempo real');
+      console.log('Removendo escuta em tempo real para pizzas');
       supabase.removeChannel(channel);
     };
   }, [equipeId]);

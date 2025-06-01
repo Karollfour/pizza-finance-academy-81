@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Compra } from '@/types/database';
+import { toast } from 'sonner';
 
 export const useCompras = (equipeId?: string) => {
   const [compras, setCompras] = useState<Compra[]>([]);
@@ -66,6 +67,58 @@ export const useCompras = (equipeId?: string) => {
       .filter(compra => compra.equipe_id === equipeId)
       .reduce((total, compra) => total + compra.valor_total, 0);
   };
+
+  // Escutar mudanças em tempo real para compras
+  useEffect(() => {
+    console.log('Configurando escuta em tempo real para compras', equipeId ? `da equipe ${equipeId}` : 'globais');
+    
+    const channel = supabase
+      .channel(`compras-updates${equipeId ? `-${equipeId}` : ''}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'compras',
+          ...(equipeId && { filter: `equipe_id=eq.${equipeId}` })
+        },
+        (payload) => {
+          console.log('Compra atualizada:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            const novaCompra = payload.new as Compra;
+            
+            // Adicionar à lista local
+            setCompras(prev => [novaCompra, ...prev]);
+            
+            // Notificar sobre nova compra apenas se não for da equipe atual
+            if (!equipeId || novaCompra.equipe_id !== equipeId) {
+              toast.info(`💰 Nova compra registrada: R$ ${novaCompra.valor_total.toFixed(2)}`, {
+                duration: 3000,
+              });
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const compraAtualizada = payload.new as Compra;
+            
+            // Atualizar lista local
+            setCompras(prev => prev.map(compra => 
+              compra.id === compraAtualizada.id ? compraAtualizada : compra
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const compraRemovida = payload.old as Compra;
+            
+            // Remover da lista local
+            setCompras(prev => prev.filter(compra => compra.id !== compraRemovida.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Removendo escuta em tempo real para compras');
+      supabase.removeChannel(channel);
+    };
+  }, [equipeId]);
 
   useEffect(() => {
     fetchCompras();
