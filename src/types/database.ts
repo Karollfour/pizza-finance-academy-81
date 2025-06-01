@@ -1,4 +1,3 @@
-
 export interface Equipe {
   id: string;
   nome: string;
@@ -27,6 +26,8 @@ export interface SaborPizza {
   nome: string;
   descricao: string | null;
   disponivel: boolean;
+  ingredientes?: string[];
+  imagem?: string | null;
   created_at: string;
 }
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -65,17 +64,9 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const totalGasto = compras.reduce((sum, c) => sum + c.valor_total, 0);
   const saldoRestante = (equipeAtual?.saldo_inicial || 0) - totalGasto;
 
-  // Definir cor da equipe (baseado no nome)
-  const coresEquipe = {
-    'Equipe 1': 'bg-red-500',
-    'Equipe 2': 'bg-blue-500', 
-    'Equipe 3': 'bg-green-500',
-    'Equipe 4': 'bg-yellow-500',
-    'Equipe 5': 'bg-purple-500',
-    'Equipe 6': 'bg-pink-500'
-  };
-  
-  const corEquipe = coresEquipe[teamName as keyof typeof coresEquipe] || 'bg-gray-500';
+  // Usar cor e emblema da equipe do banco de dados
+  const corEquipe = equipeAtual.cor_tema || '#3b82f6';
+  const emblemaEquipe = equipeAtual.emblema || '🍕';
 
   if (!equipeAtual) {
     return (
@@ -98,8 +89,14 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
       <div className="max-w-7xl mx-auto">
         {/* Header da Equipe */}
         <div className="text-center mb-6">
-          <div className={`inline-block px-8 py-4 rounded-lg ${corEquipe} text-white shadow-lg mb-4`}>
-            <h1 className="text-3xl font-bold">{teamName}</h1>
+          <div 
+            className="inline-block px-8 py-4 rounded-lg text-white shadow-lg mb-4"
+            style={{ backgroundColor: corEquipe }}
+          >
+            <div className="flex items-center justify-center space-x-3">
+              <span className="text-4xl">{emblemaEquipe}</span>
+              <h1 className="text-3xl font-bold">{teamName}</h1>
+            </div>
           </div>
           
           {/* Status da Rodada */}

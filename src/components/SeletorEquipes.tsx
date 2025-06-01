@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEquipes } from '@/hooks/useEquipes';
@@ -9,18 +8,6 @@ interface SeletorEquipesProps {
 
 const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
   const { equipes } = useEquipes();
-
-  // Cores predefinidas para as equipes
-  const coresEquipe = [
-    'bg-red-500 hover:bg-red-600',
-    'bg-blue-500 hover:bg-blue-600', 
-    'bg-green-500 hover:bg-green-600',
-    'bg-yellow-500 hover:bg-yellow-600',
-    'bg-purple-500 hover:bg-purple-600',
-    'bg-pink-500 hover:bg-pink-600',
-    'bg-indigo-500 hover:bg-indigo-600',
-    'bg-orange-500 hover:bg-orange-600'
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-6">
@@ -51,9 +38,9 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {equipes.map((equipe, index) => {
-                  const corIndex = index % coresEquipe.length;
-                  const cor = coresEquipe[corIndex];
+                {equipes.map((equipe) => {
+                  const corEquipe = equipe.cor_tema || '#3b82f6';
+                  const emblemaEquipe = equipe.emblema || '👥';
                   
                   return (
                     <Card 
@@ -62,7 +49,7 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
                     >
                       <CardContent className="p-6 text-center">
                         <div className="mb-4">
-                          <div className="text-6xl mb-3">👥</div>
+                          <div className="text-6xl mb-3">{emblemaEquipe}</div>
                           <h3 className="text-xl font-bold text-gray-800 mb-2">
                             {equipe.nome}
                           </h3>
@@ -96,7 +83,11 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
                         
                         <Button
                           onClick={() => onEquipeSelecionada(equipe.nome)}
-                          className={`w-full text-white font-bold py-3 text-lg ${cor} transition-all duration-200`}
+                          className="w-full text-white font-bold py-3 text-lg transition-all duration-200"
+                          style={{ 
+                            backgroundColor: corEquipe,
+                            ':hover': { backgroundColor: corEquipe + 'CC' }
+                          }}
                           size="lg"
                         >
                           🍕 Entrar na Cozinha
