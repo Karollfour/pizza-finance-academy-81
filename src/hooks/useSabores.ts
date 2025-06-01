@@ -118,15 +118,6 @@ export const useSabores = () => {
         created_at: new Date().toISOString(),
         ingredientes: [],
         imagem: null
-      },
-      { 
-        id: '3',
-        nome: 'Portuguesa', 
-        descricao: 'Pizza portuguesa com presunto, ovos, cebola e azeitonas',
-        disponivel: true,
-        created_at: new Date().toISOString(),
-        ingredientes: [],
-        imagem: null
       }
     ];
 
