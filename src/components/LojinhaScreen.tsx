@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useCompras } from '@/hooks/useCompras';
@@ -15,7 +16,8 @@ import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 import DashboardLojinha from './DashboardLojinha';
 import ComprasPorEquipe from './ComprasPorEquipe';
-import { Trash2, Edit, Upload, Image } from 'lucide-react';
+import { Trash2, Edit, Upload, Image, ShoppingCart, Plus } from 'lucide-react';
+
 const LojinhaScreen = () => {
   const {
     equipes,
@@ -89,8 +91,18 @@ const LojinhaScreen = () => {
     nome: '',
     descricao: ''
   });
+
+  // Estados para Gestão de Vendas
+  const [vendaAtual, setVendaAtual] = useState({
+    equipeId: '',
+    produtoId: '',
+    quantidade: 1,
+    tipo: 'material' as 'material' | 'viagem'
+  });
+
   const coresDisponiveis = ['#f97316', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899', '#6366f1'];
   const emblemasDisponiveis = ['🍕', '🏆', '⚡', '🔥', '🎯', '💎', '🚀', '⭐', '🎪', '🎨'];
+
   const handleCriarEquipe = async () => {
     if (!novaEquipe.nome || !novaEquipe.professor) {
       toast.error('Preencha todos os campos da equipe');
@@ -110,6 +122,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar equipe');
     }
   };
+
   const iniciarEdicaoEquipe = (equipe: any) => {
     setEquipeEditando(equipe.id);
     setDadosEdicaoEquipe({
@@ -120,6 +133,7 @@ const LojinhaScreen = () => {
       emblema: equipe.emblema || '🍕'
     });
   };
+
   const salvarEdicaoEquipe = async () => {
     if (!equipeEditando) return;
     try {
@@ -136,6 +150,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar equipe');
     }
   };
+
   const handleRemoverEquipe = async (equipeId: string) => {
     try {
       await removerEquipe(equipeId);
@@ -144,6 +159,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao remover equipe');
     }
   };
+
   const handleCriarProduto = async () => {
     if (!novoProduto.nome || !novoProduto.unidade || novoProduto.valor <= 0 || novoProduto.durabilidade <= 0) {
       toast.error('Preencha todos os campos obrigatórios do produto');
@@ -164,6 +180,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar produto');
     }
   };
+
   const handleRegistrarViagem = async (equipeId: string) => {
     try {
       await registrarCompra(equipeId, null, rodadaAtual?.id || null, 1, 5.00, 'viagem', 'Viagem à loja');
@@ -172,6 +189,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao registrar viagem');
     }
   };
+
   const iniciarEdicaoProduto = (produto: any) => {
     setProdutoEditando(produto.id);
     setDadosEdicao({
@@ -183,6 +201,7 @@ const LojinhaScreen = () => {
       imagem: null
     });
   };
+
   const salvarEdicaoProduto = async () => {
     if (!produtoEditando) return;
     try {
@@ -199,6 +218,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar produto');
     }
   };
+
   const removerProduto = async (produtoId: string) => {
     try {
       await atualizarProduto(produtoId, {
@@ -209,6 +229,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao remover produto');
     }
   };
+
   const handleCriarSabor = async () => {
     if (!novoSabor.nome) {
       toast.error('Digite o nome do sabor');
@@ -225,6 +246,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar sabor');
     }
   };
+
   const iniciarEdicaoSabor = (sabor: any) => {
     setSaborEditando(sabor.id);
     setDadosEdicaoSabor({
@@ -232,6 +254,7 @@ const LojinhaScreen = () => {
       descricao: sabor.descricao || ''
     });
   };
+
   const salvarEdicaoSabor = async () => {
     if (!saborEditando) return;
     try {
@@ -245,6 +268,7 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar sabor');
     }
   };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditing = false) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -269,11 +293,71 @@ const LojinhaScreen = () => {
       }
     }
   };
+
+  // Nova função para registrar venda manual
+  const handleRegistrarVenda = async () => {
+    if (!vendaAtual.equipeId) {
+      toast.error('Selecione uma equipe');
+      return;
+    }
+
+    if (vendaAtual.tipo === 'material' && !vendaAtual.produtoId) {
+      toast.error('Selecione um produto');
+      return;
+    }
+
+    if (vendaAtual.quantidade <= 0) {
+      toast.error('Quantidade deve ser maior que zero');
+      return;
+    }
+
+    try {
+      let valorTotal = 0;
+      let descricao = '';
+
+      if (vendaAtual.tipo === 'viagem') {
+        valorTotal = 5.00;
+        descricao = 'Viagem à loja';
+      } else {
+        const produto = produtos.find(p => p.id === vendaAtual.produtoId);
+        if (!produto) {
+          toast.error('Produto não encontrado');
+          return;
+        }
+        valorTotal = produto.valor_unitario * vendaAtual.quantidade;
+        descricao = `${vendaAtual.quantidade} ${produto.unidade} de ${produto.nome}`;
+      }
+
+      await registrarCompra(
+        vendaAtual.equipeId,
+        vendaAtual.tipo === 'material' ? vendaAtual.produtoId : null,
+        rodadaAtual?.id || null,
+        vendaAtual.quantidade,
+        valorTotal,
+        vendaAtual.tipo,
+        descricao
+      );
+
+      // Resetar formulário
+      setVendaAtual({
+        equipeId: '',
+        produtoId: '',
+        quantidade: 1,
+        tipo: 'material'
+      });
+
+      toast.success('Venda registrada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao registrar venda');
+    }
+  };
+
   if (loadingEquipes || loadingProdutos || loadingSabores) {
     return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
         <div className="text-2xl text-orange-600">Carregando lojinha...</div>
       </div>;
   }
+
   return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
@@ -287,10 +371,11 @@ const LojinhaScreen = () => {
         </div>
 
         <Tabs defaultValue="gestao" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
+            <TabsTrigger value="vendas">💰 Gestão de Vendas</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
@@ -681,6 +766,199 @@ const LojinhaScreen = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="vendas" className="space-y-6">
+            <Card className="shadow-lg border-2 border-orange-200">
+              <CardHeader className="bg-orange-50">
+                <CardTitle className="text-orange-600">💰 Gestão de Vendas</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Formulário de Venda */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-orange-600">Registrar Nova Venda</h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="tipoVenda">Tipo de Venda</Label>
+                        <Select value={vendaAtual.tipo} onValueChange={(value: 'material' | 'viagem') => setVendaAtual({...vendaAtual, tipo: value, produtoId: ''})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="material">📦 Material/Produto</SelectItem>
+                            <SelectItem value="viagem">🚗 Viagem (R$ 5,00)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="equipeVenda">Equipe</Label>
+                        <Select value={vendaAtual.equipeId} onValueChange={(value) => setVendaAtual({...vendaAtual, equipeId: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a equipe" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {equipes.map(equipe => (
+                              <SelectItem key={equipe.id} value={equipe.id}>
+                                <div className="flex items-center gap-2">
+                                  <span style={{color: equipe.cor_tema}}>{equipe.emblema}</span>
+                                  {equipe.nome}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {vendaAtual.tipo === 'material' && (
+                        <div>
+                          <Label htmlFor="produtoVenda">Produto</Label>
+                          <Select value={vendaAtual.produtoId} onValueChange={(value) => setVendaAtual({...vendaAtual, produtoId: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o produto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {produtos.map(produto => (
+                                <SelectItem key={produto.id} value={produto.id}>
+                                  <div className="flex justify-between items-center w-full">
+                                    <span>{produto.nome}</span>
+                                    <span className="text-green-600 font-semibold ml-2">
+                                      R$ {produto.valor_unitario.toFixed(2)}/{produto.unidade}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {vendaAtual.tipo === 'material' && (
+                        <div>
+                          <Label htmlFor="quantidadeVenda">Quantidade</Label>
+                          <Input 
+                            id="quantidadeVenda"
+                            type="number" 
+                            min="1" 
+                            value={vendaAtual.quantidade} 
+                            onChange={e => setVendaAtual({...vendaAtual, quantidade: Number(e.target.value)})}
+                          />
+                        </div>
+                      )}
+
+                      {/* Preview do valor */}
+                      {vendaAtual.equipeId && (vendaAtual.tipo === 'viagem' || vendaAtual.produtoId) && (
+                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                          <div className="font-semibold text-orange-700">Resumo da Venda:</div>
+                          <div className="mt-2">
+                            <div>Equipe: <span className="font-medium">{equipes.find(e => e.id === vendaAtual.equipeId)?.nome}</span></div>
+                            {vendaAtual.tipo === 'viagem' ? (
+                              <div>Tipo: <span className="font-medium">Viagem à loja</span></div>
+                            ) : (
+                              <>
+                                <div>Produto: <span className="font-medium">{produtos.find(p => p.id === vendaAtual.produtoId)?.nome}</span></div>
+                                <div>Quantidade: <span className="font-medium">{vendaAtual.quantidade}</span></div>
+                              </>
+                            )}
+                            <div className="text-lg font-bold text-green-600 mt-2">
+                              Total: R$ {vendaAtual.tipo === 'viagem' 
+                                ? '5,00' 
+                                : (produtos.find(p => p.id === vendaAtual.produtoId)?.valor_unitario * vendaAtual.quantidade || 0).toFixed(2)
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <Button 
+                        onClick={handleRegistrarVenda} 
+                        className="w-full bg-green-500 hover:bg-green-600"
+                        disabled={!vendaAtual.equipeId || (vendaAtual.tipo === 'material' && !vendaAtual.produtoId)}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Registrar Venda
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Lista de Produtos Disponíveis */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-orange-600">Produtos Disponíveis</h3>
+                    
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {produtos.map(produto => (
+                        <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
+                          <div className="flex items-center gap-3">
+                            {produto.imagem ? (
+                              <img 
+                                src={produto.imagem} 
+                                alt={produto.nome} 
+                                className="w-12 h-12 object-cover rounded-lg border"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                <span className="text-lg">📦</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex-1">
+                              <div className="font-medium text-lg">{produto.nome}</div>
+                              <div className="text-sm text-gray-600">{produto.unidade}</div>
+                              <div className="text-sm text-green-600 font-semibold">
+                                R$ {produto.valor_unitario.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-blue-600">
+                                Durabilidade: {produto.durabilidade || 1} pizzas
+                              </div>
+                            </div>
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setVendaAtual({
+                                ...vendaAtual,
+                                produtoId: produto.id,
+                                tipo: 'material'
+                              })}
+                              className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Selecionar
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Botão para viagem */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-lg">🚗 Viagem à Loja</div>
+                          <div className="text-sm text-gray-600">Transporte para compras</div>
+                          <div className="text-sm text-green-600 font-semibold">R$ 5,00</div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setVendaAtual({
+                            ...vendaAtual,
+                            tipo: 'viagem',
+                            produtoId: ''
+                          })}
+                          className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Selecionar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardLojinha />
           </TabsContent>
@@ -692,4 +970,5 @@ const LojinhaScreen = () => {
       </div>
     </div>;
 };
+
 export default LojinhaScreen;
