@@ -65,8 +65,8 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const saldoRestante = (equipeAtual?.saldo_inicial || 0) - totalGasto;
 
   // Usar cor e emblema da equipe do banco de dados
-  const corEquipe = equipeAtual.cor_tema || '#3b82f6';
-  const emblemaEquipe = equipeAtual.emblema || '🍕';
+  const corEquipe = equipeAtual?.cor_tema || '#3b82f6';
+  const emblemaEquipe = equipeAtual?.emblema || '🍕';
 
   if (!equipeAtual) {
     return (

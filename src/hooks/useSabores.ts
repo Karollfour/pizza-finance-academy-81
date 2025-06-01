@@ -1,11 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { SaborPizza } from '@/types/database';
 
 export interface Sabor extends SaborPizza {
-  ingredientes?: string[]; // IDs dos produtos usados como ingredientes
-  imagem?: string;
+  ingredientes: string[];
+  imagem: string | null;
 }
 
 export const useSabores = () => {
@@ -16,16 +15,10 @@ export const useSabores = () => {
   const fetchSabores = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('sabores_pizza')
-        .select('*')
-        .order('nome');
-
-      if (error) throw error;
-      setSabores(data || []);
+      // Por enquanto usar sistema local até a tabela ser criada no banco
+      inicializarSaboresDefault();
     } catch (err) {
       console.error('Erro ao carregar sabores:', err);
-      // Se a tabela não existir, usar sabores locais
       inicializarSaboresDefault();
     } finally {
       setLoading(false);
@@ -34,21 +27,8 @@ export const useSabores = () => {
 
   const uploadImagem = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `sabores/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('imagens')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('imagens')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      // Simular upload por enquanto - retornar URL de exemplo
+      return URL.createObjectURL(file);
     } catch (err) {
       console.error('Erro ao fazer upload da imagem:', err);
       return null;
@@ -67,38 +47,18 @@ export const useSabores = () => {
         imagemUrl = await uploadImagem(imagemFile);
       }
 
-      // Tentar criar no banco primeiro
-      try {
-        const { data, error } = await supabase
-          .from('sabores_pizza')
-          .insert({
-            nome,
-            descricao,
-            disponivel: true,
-            ingredientes: ingredientes || [],
-            imagem: imagemUrl
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        await fetchSabores();
-        return data;
-      } catch (dbError) {
-        // Se falhar, usar sistema local
-        const novoSabor: Sabor = {
-          id: Date.now().toString(),
-          nome,
-          descricao: descricao || null,
-          disponivel: true,
-          created_at: new Date().toISOString(),
-          ingredientes: ingredientes || [],
-          imagem: imagemUrl
-        };
-        
-        setSabores(prev => [...prev, novoSabor]);
-        return novoSabor;
-      }
+      const novoSabor: Sabor = {
+        id: Date.now().toString(),
+        nome,
+        descricao: descricao || null,
+        disponivel: true,
+        created_at: new Date().toISOString(),
+        ingredientes: ingredientes || [],
+        imagem: imagemUrl
+      };
+      
+      setSabores(prev => [...prev, novoSabor]);
+      return novoSabor;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar sabor');
       throw err;
@@ -121,21 +81,9 @@ export const useSabores = () => {
         imagem: imagemUrl
       };
 
-      // Tentar atualizar no banco primeiro
-      try {
-        const { error } = await supabase
-          .from('sabores_pizza')
-          .update(dadosAtualizados)
-          .eq('id', id);
-
-        if (error) throw error;
-        await fetchSabores();
-      } catch (dbError) {
-        // Se falhar, usar sistema local
-        setSabores(prev => prev.map(sabor => 
-          sabor.id === id ? { ...sabor, ...dadosAtualizados } : sabor
-        ));
-      }
+      setSabores(prev => prev.map(sabor => 
+        sabor.id === id ? { ...sabor, ...dadosAtualizados } : sabor
+      ));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar sabor');
       throw err;
@@ -144,19 +92,7 @@ export const useSabores = () => {
 
   const removerSabor = async (id: string) => {
     try {
-      // Tentar remover do banco primeiro
-      try {
-        const { error } = await supabase
-          .from('sabores_pizza')
-          .delete()
-          .eq('id', id);
-
-        if (error) throw error;
-        await fetchSabores();
-      } catch (dbError) {
-        // Se falhar, usar sistema local
-        setSabores(prev => prev.filter(sabor => sabor.id !== id));
-      }
+      setSabores(prev => prev.filter(sabor => sabor.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao remover sabor');
       throw err;

@@ -83,10 +83,9 @@ const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
                         
                         <Button
                           onClick={() => onEquipeSelecionada(equipe.nome)}
-                          className="w-full text-white font-bold py-3 text-lg transition-all duration-200"
+                          className="w-full text-white font-bold py-3 text-lg transition-all duration-200 hover:opacity-90"
                           style={{ 
-                            backgroundColor: corEquipe,
-                            ':hover': { backgroundColor: corEquipe + 'CC' }
+                            backgroundColor: corEquipe
                           }}
                           size="lg"
                         >
