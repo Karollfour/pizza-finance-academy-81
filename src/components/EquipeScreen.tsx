@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -6,7 +7,6 @@ import { useRodadas } from '@/hooks/useRodadas';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
-import MontadorPizza from './MontadorPizza';
 import FilaProducao from './FilaProducao';
 
 interface EquipeScreenProps {
@@ -18,7 +18,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const { equipes } = useEquipes();
   const [equipeAtual, setEquipeAtual] = useState<any>(null);
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
-  const { compras, refetch: refetchCompras } = useCompras(equipeAtual?.id);
+  const { compras } = useCompras(equipeAtual?.id);
   const [tempoRestante, setTempoRestante] = useState(0);
 
   // Encontrar a equipe pelo nome
@@ -55,14 +55,12 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePizzaMontada = () => {
+  const handlePizzaEnviada = () => {
     refetchPizzas();
-    refetchCompras();
   };
 
-  // Estatísticas financeiras
+  // Calcular total gasto
   const totalGasto = compras.reduce((sum, c) => sum + c.valor_total, 0);
-  const saldoRestante = (equipeAtual?.saldo_inicial || 0) - totalGasto;
 
   // Usar cor e emblema da equipe do banco de dados
   const corEquipe = equipeAtual?.cor_tema || '#3b82f6';
@@ -122,10 +120,10 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
                     )}
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-green-600">
-                      R$ {saldoRestante.toFixed(2)}
+                    <div className="text-2xl font-bold text-red-600">
+                      R$ {totalGasto.toFixed(2)}
                     </div>
-                    <div className="text-sm text-gray-600">Saldo Restante</div>
+                    <div className="text-sm text-gray-600">Total Gasto</div>
                   </div>
                 </div>
               ) : (
@@ -135,40 +133,14 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal */}
-        <Tabs defaultValue="producao" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="producao">🍕 Produção</TabsTrigger>
-            <TabsTrigger value="montador">🛒 Montar Pizza</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="producao" className="space-y-6">
-            <FilaProducao equipeId={equipeAtual.id} equipeNome={teamName} />
-          </TabsContent>
-
-          <TabsContent value="montador" className="space-y-6">
-            {rodadaAtual?.status === 'ativa' ? (
-              <MontadorPizza
-                equipeId={equipeAtual.id}
-                equipeNome={teamName}
-                saldoDisponivel={saldoRestante}
-                onPizzaMontada={handlePizzaMontada}
-              />
-            ) : (
-              <Card className="shadow-lg">
-                <CardContent className="p-8 text-center">
-                  <div className="text-6xl mb-4">⏳</div>
-                  <h3 className="text-2xl font-bold text-gray-600 mb-2">
-                    Aguardando Rodada
-                  </h3>
-                  <p className="text-gray-500">
-                    A montagem de pizzas só está disponível durante rodadas ativas
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* Conteúdo Principal - Apenas Produção */}
+        <div className="space-y-6">
+          <FilaProducao 
+            equipeId={equipeAtual.id} 
+            equipeNome={teamName}
+            onPizzaEnviada={handlePizzaEnviada}
+          />
+        </div>
 
         {/* Estatísticas Rápidas */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -190,9 +162,9 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
           </Card>
           <Card className="text-center p-4">
             <div className="text-2xl font-bold text-orange-600">
-              {compras.filter(c => c.tipo === 'viagem').length}
+              R$ {totalGasto.toFixed(2)}
             </div>
-            <div className="text-sm text-gray-600">Viagens</div>
+            <div className="text-sm text-gray-600">Gastos Totais</div>
           </Card>
         </div>
       </div>
