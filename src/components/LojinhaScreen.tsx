@@ -808,7 +808,7 @@ const LojinhaScreen = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
                         {produtos.map(produto => <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
                             <div className="flex items-center gap-3">
-                              {produto.imagem ? <img src={produto.imagem} alt={produto.nome} className="w-12 h-12 object-cover rounded-lg border" /> : <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
+                              {produto.imagem ? <img src={produto.imagem} alt={produto.nome} className="w-12 h-12 rounded-lg border object-scale-down" /> : <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
                                   <span className="text-lg">📦</span>
                                 </div>}
                               
