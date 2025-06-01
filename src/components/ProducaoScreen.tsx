@@ -177,7 +177,8 @@ const ProducaoScreen = () => {
 
   const handleCriarNovaRodada = async () => {
     try {
-      const proximoNumero = (rodadaAtual?.numero || 0) + 1;
+      // Se não há rodada atual, começar do 0, senão incrementar 1
+      const proximoNumero = rodadaAtual ? rodadaAtual.numero + 1 : 0;
       await criarNovaRodada(proximoNumero, novoTempoLimite);
       toast.success(`Rodada ${proximoNumero} criada!`);
     } catch (error) {
@@ -290,7 +291,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Rodada {rodadaAtual?.numero || 'N/A'}</span>
+              <span>Rodada {rodadaAtual?.numero ?? 'N/A'}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : 
                  rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
@@ -393,7 +394,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-green-200">
           <CardHeader>
             <CardTitle className="text-green-600">
-              📝 Histórico de Pizzas - Rodada {rodadaAtual?.numero || 'N/A'}
+              📝 Histórico de Pizzas - Rodada {rodadaAtual?.numero ?? 'N/A'}
             </CardTitle>
           </CardHeader>
           <CardContent>
