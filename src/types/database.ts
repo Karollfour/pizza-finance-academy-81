@@ -5,6 +5,8 @@ export interface Equipe {
   saldo_inicial: number;
   gasto_total: number;
   professor_responsavel: string | null;
+  cor_tema?: string;
+  emblema?: string;
   created_at: string;
 }
 
@@ -17,6 +19,14 @@ export interface ProdutoLoja {
   durabilidade: number | null;
   descricao: string | null;
   imagem: string | null;
+  created_at: string;
+}
+
+export interface SaborPizza {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  disponivel: boolean;
   created_at: string;
 }
 
