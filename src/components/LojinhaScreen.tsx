@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useCompras } from '@/hooks/useCompras';
@@ -16,7 +17,15 @@ import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 import DashboardLojinha from './DashboardLojinha';
 import ComprasPorEquipe from './ComprasPorEquipe';
-import { Trash2, Edit, Upload, Image, ShoppingCart, Plus } from 'lucide-react';
+import { Trash2, Edit, Upload, Image, ShoppingCart, Plus, Minus, X } from 'lucide-react';
+
+interface ItemCarrinho {
+  produtoId: string;
+  produtoNome: string;
+  quantidade: number;
+  valorUnitario: number;
+  valorTotal: number;
+}
 
 const LojinhaScreen = () => {
   const {
@@ -92,13 +101,10 @@ const LojinhaScreen = () => {
     descricao: ''
   });
 
-  // Estados para Gestão de Vendas
-  const [vendaAtual, setVendaAtual] = useState({
-    equipeId: '',
-    produtoId: '',
-    quantidade: 1,
-    tipo: 'material' as 'material' | 'viagem'
-  });
+  // Estados para o carrinho de compras
+  const [carrinhoEquipeId, setCarrinhoEquipeId] = useState('');
+  const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
+  const [incluirTaxaViagem, setIncluirTaxaViagem] = useState(false);
 
   const coresDisponiveis = ['#f97316', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899', '#6366f1'];
   const emblemasDisponiveis = ['🍕', '🏆', '⚡', '🔥', '🎯', '💎', '🚀', '⭐', '🎪', '🎨'];
@@ -294,61 +300,112 @@ const LojinhaScreen = () => {
     }
   };
 
-  // Nova função para registrar venda manual
-  const handleRegistrarVenda = async () => {
-    if (!vendaAtual.equipeId) {
+  // Funções do carrinho de compras
+  const adicionarAoCarrinho = (produto: any, quantidade: number = 1) => {
+    const itemExistente = itensCarrinho.find(item => item.produtoId === produto.id);
+    
+    if (itemExistente) {
+      setItensCarrinho(itens =>
+        itens.map(item =>
+          item.produtoId === produto.id
+            ? {
+                ...item,
+                quantidade: item.quantidade + quantidade,
+                valorTotal: (item.quantidade + quantidade) * item.valorUnitario
+              }
+            : item
+        )
+      );
+    } else {
+      const novoItem: ItemCarrinho = {
+        produtoId: produto.id,
+        produtoNome: produto.nome,
+        quantidade,
+        valorUnitario: produto.valor_unitario,
+        valorTotal: quantidade * produto.valor_unitario
+      };
+      setItensCarrinho([...itensCarrinho, novoItem]);
+    }
+    toast.success(`${produto.nome} adicionado ao carrinho`);
+  };
+
+  const atualizarQuantidadeCarrinho = (produtoId: string, novaQuantidade: number) => {
+    if (novaQuantidade <= 0) {
+      removerDoCarrinho(produtoId);
+      return;
+    }
+    
+    setItensCarrinho(itens =>
+      itens.map(item =>
+        item.produtoId === produtoId
+          ? {
+              ...item,
+              quantidade: novaQuantidade,
+              valorTotal: novaQuantidade * item.valorUnitario
+            }
+          : item
+      )
+    );
+  };
+
+  const removerDoCarrinho = (produtoId: string) => {
+    setItensCarrinho(itens => itens.filter(item => item.produtoId !== produtoId));
+  };
+
+  const calcularTotalCarrinho = () => {
+    const totalProdutos = itensCarrinho.reduce((total, item) => total + item.valorTotal, 0);
+    const taxaViagem = incluirTaxaViagem ? 5.00 : 0;
+    return totalProdutos + taxaViagem;
+  };
+
+  const limparCarrinho = () => {
+    setItensCarrinho([]);
+    setCarrinhoEquipeId('');
+    setIncluirTaxaViagem(false);
+  };
+
+  const finalizarCompra = async () => {
+    if (!carrinhoEquipeId) {
       toast.error('Selecione uma equipe');
       return;
     }
 
-    if (vendaAtual.tipo === 'material' && !vendaAtual.produtoId) {
-      toast.error('Selecione um produto');
-      return;
-    }
-
-    if (vendaAtual.quantidade <= 0) {
-      toast.error('Quantidade deve ser maior que zero');
+    if (itensCarrinho.length === 0 && !incluirTaxaViagem) {
+      toast.error('Adicione pelo menos um item ao carrinho ou marque a taxa de viagem');
       return;
     }
 
     try {
-      let valorTotal = 0;
-      let descricao = '';
-
-      if (vendaAtual.tipo === 'viagem') {
-        valorTotal = 5.00;
-        descricao = 'Viagem à loja';
-      } else {
-        const produto = produtos.find(p => p.id === vendaAtual.produtoId);
-        if (!produto) {
-          toast.error('Produto não encontrado');
-          return;
-        }
-        valorTotal = produto.valor_unitario * vendaAtual.quantidade;
-        descricao = `${vendaAtual.quantidade} ${produto.unidade} de ${produto.nome}`;
+      // Registrar cada item do carrinho
+      for (const item of itensCarrinho) {
+        await registrarCompra(
+          carrinhoEquipeId,
+          item.produtoId,
+          rodadaAtual?.id || null,
+          item.quantidade,
+          item.valorTotal,
+          'material',
+          `${item.quantidade} ${produtos.find(p => p.id === item.produtoId)?.unidade} de ${item.produtoNome}`
+        );
       }
 
-      await registrarCompra(
-        vendaAtual.equipeId,
-        vendaAtual.tipo === 'material' ? vendaAtual.produtoId : null,
-        rodadaAtual?.id || null,
-        vendaAtual.quantidade,
-        valorTotal,
-        vendaAtual.tipo,
-        descricao
-      );
+      // Registrar taxa de viagem se marcada
+      if (incluirTaxaViagem) {
+        await registrarCompra(
+          carrinhoEquipeId,
+          null,
+          rodadaAtual?.id || null,
+          1,
+          5.00,
+          'viagem',
+          'Viagem à loja'
+        );
+      }
 
-      // Resetar formulário
-      setVendaAtual({
-        equipeId: '',
-        produtoId: '',
-        quantidade: 1,
-        tipo: 'material'
-      });
-
-      toast.success('Venda registrada com sucesso!');
+      limparCarrinho();
+      toast.success('Compra finalizada com sucesso!');
     } catch (error) {
-      toast.error('Erro ao registrar venda');
+      toast.error('Erro ao finalizar compra');
     }
   };
 
@@ -769,187 +826,170 @@ const LojinhaScreen = () => {
           <TabsContent value="vendas" className="space-y-6">
             <Card className="shadow-lg border-2 border-orange-200">
               <CardHeader className="bg-orange-50">
-                <CardTitle className="text-orange-600">💰 Gestão de Vendas</CardTitle>
+                <CardTitle className="text-orange-600">🛒 Carrinho de Compras</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Formulário de Venda */}
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-orange-600">Registrar Nova Venda</h3>
-                    
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  
+                  {/* Seleção de Equipe e Carrinho */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div>
+                      <Label htmlFor="equipeCarrinho">Selecionar Equipe</Label>
+                      <Select value={carrinhoEquipeId} onValueChange={setCarrinhoEquipeId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Escolha a equipe que está fazendo a compra" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {equipes.map(equipe => (
+                            <SelectItem key={equipe.id} value={equipe.id}>
+                              <div className="flex items-center gap-2">
+                                <span style={{color: equipe.cor_tema}}>{equipe.emblema}</span>
+                                {equipe.nome}
+                                <span className="text-xs text-gray-500">
+                                  (Saldo: R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Lista de Produtos Disponíveis */}
                     <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="tipoVenda">Tipo de Venda</Label>
-                        <Select value={vendaAtual.tipo} onValueChange={(value: 'material' | 'viagem') => setVendaAtual({...vendaAtual, tipo: value, produtoId: ''})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="material">📦 Material/Produto</SelectItem>
-                            <SelectItem value="viagem">🚗 Viagem (R$ 5,00)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="equipeVenda">Equipe</Label>
-                        <Select value={vendaAtual.equipeId} onValueChange={(value) => setVendaAtual({...vendaAtual, equipeId: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a equipe" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {equipes.map(equipe => (
-                              <SelectItem key={equipe.id} value={equipe.id}>
-                                <div className="flex items-center gap-2">
-                                  <span style={{color: equipe.cor_tema}}>{equipe.emblema}</span>
-                                  {equipe.nome}
+                      <h3 className="text-xl font-semibold text-orange-600">Produtos Disponíveis</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                        {produtos.map(produto => (
+                          <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              {produto.imagem ? (
+                                <img 
+                                  src={produto.imagem} 
+                                  alt={produto.nome} 
+                                  className="w-12 h-12 object-cover rounded-lg border"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
+                                  <span className="text-lg">📦</span>
                                 </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {vendaAtual.tipo === 'material' && (
-                        <div>
-                          <Label htmlFor="produtoVenda">Produto</Label>
-                          <Select value={vendaAtual.produtoId} onValueChange={(value) => setVendaAtual({...vendaAtual, produtoId: value})}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o produto" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {produtos.map(produto => (
-                                <SelectItem key={produto.id} value={produto.id}>
-                                  <div className="flex justify-between items-center w-full">
-                                    <span>{produto.nome}</span>
-                                    <span className="text-green-600 font-semibold ml-2">
-                                      R$ {produto.valor_unitario.toFixed(2)}/{produto.unidade}
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {vendaAtual.tipo === 'material' && (
-                        <div>
-                          <Label htmlFor="quantidadeVenda">Quantidade</Label>
-                          <Input 
-                            id="quantidadeVenda"
-                            type="number" 
-                            min="1" 
-                            value={vendaAtual.quantidade} 
-                            onChange={e => setVendaAtual({...vendaAtual, quantidade: Number(e.target.value)})}
-                          />
-                        </div>
-                      )}
-
-                      {/* Preview do valor */}
-                      {vendaAtual.equipeId && (vendaAtual.tipo === 'viagem' || vendaAtual.produtoId) && (
-                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                          <div className="font-semibold text-orange-700">Resumo da Venda:</div>
-                          <div className="mt-2">
-                            <div>Equipe: <span className="font-medium">{equipes.find(e => e.id === vendaAtual.equipeId)?.nome}</span></div>
-                            {vendaAtual.tipo === 'viagem' ? (
-                              <div>Tipo: <span className="font-medium">Viagem à loja</span></div>
-                            ) : (
-                              <>
-                                <div>Produto: <span className="font-medium">{produtos.find(p => p.id === vendaAtual.produtoId)?.nome}</span></div>
-                                <div>Quantidade: <span className="font-medium">{vendaAtual.quantidade}</span></div>
-                              </>
-                            )}
-                            <div className="text-lg font-bold text-green-600 mt-2">
-                              Total: R$ {vendaAtual.tipo === 'viagem' 
-                                ? '5,00' 
-                                : (produtos.find(p => p.id === vendaAtual.produtoId)?.valor_unitario * vendaAtual.quantidade || 0).toFixed(2)
-                              }
+                              )}
+                              
+                              <div className="flex-1">
+                                <div className="font-medium">{produto.nome}</div>
+                                <div className="text-sm text-gray-600">{produto.unidade}</div>
+                                <div className="text-sm text-green-600 font-semibold">
+                                  R$ {produto.valor_unitario.toFixed(2)}
+                                </div>
+                              </div>
+                              
+                              <Button
+                                size="sm"
+                                onClick={() => adicionarAoCarrinho(produto)}
+                                className="bg-orange-500 hover:bg-orange-600"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
-                        </div>
-                      )}
-
-                      <Button 
-                        onClick={handleRegistrarVenda} 
-                        className="w-full bg-green-500 hover:bg-green-600"
-                        disabled={!vendaAtual.equipeId || (vendaAtual.tipo === 'material' && !vendaAtual.produtoId)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Registrar Venda
-                      </Button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Lista de Produtos Disponíveis */}
+                  {/* Carrinho e Finalização */}
                   <div className="space-y-6">
-                    <h3 className="text-xl font-semibold text-orange-600">Produtos Disponíveis</h3>
-                    
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {produtos.map(produto => (
-                        <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            {produto.imagem ? (
-                              <img 
-                                src={produto.imagem} 
-                                alt={produto.nome} 
-                                className="w-12 h-12 object-cover rounded-lg border"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
-                                <span className="text-lg">📦</span>
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <h3 className="text-lg font-semibold text-orange-600 mb-4">Carrinho</h3>
+                      
+                      {itensCarrinho.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">Carrinho vazio</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {itensCarrinho.map(item => (
+                            <div key={item.produtoId} className="flex items-center justify-between bg-white p-3 rounded border">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{item.produtoNome}</div>
+                                <div className="text-xs text-gray-600">
+                                  R$ {item.valorUnitario.toFixed(2)} cada
+                                </div>
                               </div>
-                            )}
-                            
-                            <div className="flex-1">
-                              <div className="font-medium text-lg">{produto.nome}</div>
-                              <div className="text-sm text-gray-600">{produto.unidade}</div>
-                              <div className="text-sm text-green-600 font-semibold">
-                                R$ {produto.valor_unitario.toFixed(2)}
+                              
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade - 1)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                
+                                <span className="w-8 text-center text-sm">{item.quantidade}</span>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade + 1)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                                
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => removerDoCarrinho(item.produtoId)}
+                                  className="text-red-600 hover:bg-red-50"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
                               </div>
-                              <div className="text-xs text-blue-600">
-                                Durabilidade: {produto.durabilidade || 1} pizzas
+                              
+                              <div className="text-sm font-semibold text-green-600 w-16 text-right">
+                                R$ {item.valorTotal.toFixed(2)}
                               </div>
                             </div>
-                            
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setVendaAtual({
-                                ...vendaAtual,
-                                produtoId: produto.id,
-                                tipo: 'material'
-                              })}
-                              className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Selecionar
-                            </Button>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )}
 
-                    {/* Botão para viagem */}
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-lg">🚗 Viagem à Loja</div>
-                          <div className="text-sm text-gray-600">Transporte para compras</div>
-                          <div className="text-sm text-green-600 font-semibold">R$ 5,00</div>
+                      {/* Taxa de Viagem */}
+                      <div className="mt-4 p-3 border-t border-orange-200">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="taxaViagem"
+                            checked={incluirTaxaViagem}
+                            onCheckedChange={setIncluirTaxaViagem}
+                          />
+                          <Label htmlFor="taxaViagem" className="text-sm">
+                            Incluir taxa de viagem à loja (R$ 5,00)
+                          </Label>
                         </div>
+                      </div>
+
+                      {/* Total */}
+                      <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+                        <div className="text-lg font-bold text-green-700">
+                          Total: R$ {calcularTotalCarrinho().toFixed(2)}
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação */}
+                      <div className="mt-4 space-y-2">
                         <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setVendaAtual({
-                            ...vendaAtual,
-                            tipo: 'viagem',
-                            produtoId: ''
-                          })}
-                          className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                          onClick={finalizarCompra}
+                          className="w-full bg-green-500 hover:bg-green-600"
+                          disabled={!carrinhoEquipeId || (itensCarrinho.length === 0 && !incluirTaxaViagem)}
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Selecionar
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Finalizar Compra
+                        </Button>
+                        
+                        <Button
+                          onClick={limparCarrinho}
+                          variant="outline"
+                          className="w-full"
+                          disabled={itensCarrinho.length === 0 && !incluirTaxaViagem}
+                        >
+                          Limpar Carrinho
                         </Button>
                       </div>
                     </div>
