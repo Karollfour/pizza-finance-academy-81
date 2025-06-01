@@ -238,6 +238,72 @@ export type Database = {
         }
         Relationships: []
       }
+      sabor_ingredientes: {
+        Row: {
+          created_at: string
+          id: string
+          produto_id: string
+          quantidade: number
+          sabor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          produto_id: string
+          quantidade?: number
+          sabor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          sabor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sabor_ingredientes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos_loja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sabor_ingredientes_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores_pizza"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sabores_pizza: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          disponivel: boolean
+          id: string
+          imagem: string | null
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          disponivel?: boolean
+          id?: string
+          imagem?: string | null
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          disponivel?: boolean
+          id?: string
+          imagem?: string | null
+          nome?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
