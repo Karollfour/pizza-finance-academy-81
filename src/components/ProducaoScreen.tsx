@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import { useRodadas } from '@/hooks/useRodadas';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
+import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 
 const ProducaoScreen = () => {
@@ -17,19 +17,33 @@ const ProducaoScreen = () => {
   const { pizzas } = usePizzas(undefined, rodadaAtual?.id);
   const { equipes } = useEquipes();
   const { atualizarConfiguracao, getConfiguracao } = useConfiguracoes();
+  const { sabores } = useSabores();
   
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [novoTempoLimite, setNovoTempoLimite] = useState(300);
+  const [saborAtual, setSaborAtual] = useState<string>('');
 
-  // Timer da rodada
+  // Função para gerar sabor aleatório
+  const gerarSaborAleatorio = () => {
+    if (sabores.length > 0) {
+      const saborAleatorio = sabores[Math.floor(Math.random() * sabores.length)];
+      setSaborAtual(saborAleatorio.nome);
+    }
+  };
+
+  // Timer da rodada e geração de sabores
   useEffect(() => {
     if (!rodadaAtual || rodadaAtual.status !== 'ativa' || !rodadaAtual.iniciou_em) {
       setTimeRemaining(0);
+      setSaborAtual('');
       return;
     }
 
     const inicioRodada = new Date(rodadaAtual.iniciou_em).getTime();
     const duracaoRodada = rodadaAtual.tempo_limite * 1000;
+
+    // Gerar sabor inicial
+    gerarSaborAleatorio();
 
     const interval = setInterval(() => {
       const agora = Date.now();
@@ -40,12 +54,21 @@ const ProducaoScreen = () => {
       
       if (resto <= 0) {
         clearInterval(interval);
+        setSaborAtual('');
         handleFinalizarRodada();
       }
     }, 1000);
 
-    return () => clearInterval(interval);
-  }, [rodadaAtual]);
+    // Intervalo para mudança de sabores (a cada 10 segundos)
+    const saborInterval = setInterval(() => {
+      gerarSaborAleatorio();
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(saborInterval);
+    };
+  }, [rodadaAtual, sabores]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -203,7 +226,22 @@ const ProducaoScreen = () => {
                 <div className="text-4xl font-bold text-red-600 mb-2">
                   {formatTime(timeRemaining)}
                 </div>
-                <Progress value={progressPercentage} className="w-full" />
+                <Progress value={progressPercentage} className="w-full mb-4" />
+                
+                {/* Sabor Atual da Rodada */}
+                {rodadaAtual?.status === 'ativa' && saborAtual && (
+                  <div className="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-4 mb-4">
+                    <h3 className="text-lg font-bold text-yellow-800 mb-2">
+                      🍕 Sabor Atual da Rodada
+                    </h3>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {saborAtual}
+                    </div>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Sabor sendo produzido nesta rodada
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-4 gap-4 text-center">
