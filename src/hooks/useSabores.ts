@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface Sabor {
   id: string;
@@ -12,41 +11,21 @@ export interface Sabor {
 
 export const useSabores = () => {
   const [sabores, setSabores] = useState<Sabor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchSabores = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('sabores_pizza')
-        .select('*')
-        .eq('disponivel', true)
-        .order('nome');
-
-      if (error) throw error;
-      setSabores(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar sabores');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const criarSabor = async (nome: string, descricao?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('sabores_pizza')
-        .insert({
-          nome,
-          descricao
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      await fetchSabores();
-      return data;
+      const novoSabor: Sabor = {
+        id: Date.now().toString(),
+        nome,
+        descricao,
+        disponivel: true,
+        created_at: new Date().toISOString()
+      };
+      
+      setSabores(prev => [...prev, novoSabor]);
+      return novoSabor;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar sabor');
       throw err;
@@ -55,45 +34,34 @@ export const useSabores = () => {
 
   const atualizarSabor = async (id: string, dados: Partial<Sabor>) => {
     try {
-      const { error } = await supabase
-        .from('sabores_pizza')
-        .update(dados)
-        .eq('id', id);
-
-      if (error) throw error;
-      await fetchSabores();
+      setSabores(prev => prev.map(sabor => 
+        sabor.id === id ? { ...sabor, ...dados } : sabor
+      ));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar sabor');
       throw err;
     }
   };
 
-  const inicializarSaboresDefault = async () => {
-    try {
-      const saboresDefault = [
-        { nome: 'Pepperoni', descricao: 'Pizza de pepperoni com queijo mussarela' },
-        { nome: 'Mussarela', descricao: 'Pizza de queijo mussarela' },
-        { nome: 'Portuguesa', descricao: 'Pizza portuguesa com presunto, ovos, cebola e azeitonas' }
-      ];
+  const inicializarSaboresDefault = () => {
+    const saboresDefault = [
+      { nome: 'Pepperoni', descricao: 'Pizza de pepperoni com queijo mussarela' },
+      { nome: 'Mussarela', descricao: 'Pizza de queijo mussarela' },
+      { nome: 'Portuguesa', descricao: 'Pizza portuguesa com presunto, ovos, cebola e azeitonas' }
+    ];
 
-      for (const sabor of saboresDefault) {
-        const { data: existing } = await supabase
-          .from('sabores_pizza')
-          .select('id')
-          .eq('nome', sabor.nome)
-          .single();
+    const saboresIniciais: Sabor[] = saboresDefault.map((sabor, index) => ({
+      id: (index + 1).toString(),
+      nome: sabor.nome,
+      descricao: sabor.descricao,
+      disponivel: true,
+      created_at: new Date().toISOString()
+    }));
 
-        if (!existing) {
-          await criarSabor(sabor.nome, sabor.descricao);
-        }
-      }
-    } catch (err) {
-      console.error('Erro ao inicializar sabores:', err);
-    }
+    setSabores(saboresIniciais);
   };
 
   useEffect(() => {
-    fetchSabores();
     inicializarSaboresDefault();
   }, []);
 
@@ -103,6 +71,6 @@ export const useSabores = () => {
     error,
     criarSabor,
     atualizarSabor,
-    refetch: fetchSabores
+    refetch: () => {}
   };
 };

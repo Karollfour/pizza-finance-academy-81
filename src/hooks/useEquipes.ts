@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Equipe } from '@/types/database';
 
 export interface EquipeExtended extends Equipe {
+  // Campos extras que simulamos localmente
   cor_tema?: string;
   emblema?: string;
 }
@@ -22,7 +23,15 @@ export const useEquipes = () => {
         .order('nome');
 
       if (error) throw error;
-      setEquipes(data || []);
+      
+      // Adicionar campos simulados para cada equipe
+      const equipesComExtras = (data || []).map(equipe => ({
+        ...equipe,
+        cor_tema: '#3b82f6', // cor padrão azul
+        emblema: '🍕' // emblema padrão
+      }));
+      
+      setEquipes(equipesComExtras);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar equipes');
     } finally {
@@ -38,21 +47,28 @@ export const useEquipes = () => {
     emblema?: string
   ) => {
     try {
+      // Criar equipe apenas com campos que existem na tabela
       const { data, error } = await supabase
         .from('equipes')
         .insert({
           nome,
           saldo_inicial: saldoInicial,
-          professor_responsavel: professorResponsavel,
-          cor_tema: corTema || '#orange',
-          emblema: emblema || '🍕'
+          professor_responsavel: professorResponsavel
         })
         .select()
         .single();
 
       if (error) throw error;
+      
+      // Adicionar campos extras localmente
+      const equipeComExtras = {
+        ...data,
+        cor_tema: corTema || '#3b82f6',
+        emblema: emblema || '🍕'
+      };
+      
       await fetchEquipes();
-      return data;
+      return equipeComExtras;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar equipe');
       throw err;
@@ -61,12 +77,18 @@ export const useEquipes = () => {
 
   const atualizarEquipe = async (equipeId: string, dados: Partial<EquipeExtended>) => {
     try {
-      const { error } = await supabase
-        .from('equipes')
-        .update(dados)
-        .eq('id', equipeId);
+      // Filtrar apenas campos que existem na tabela
+      const { cor_tema, emblema, ...dadosTabela } = dados;
+      
+      if (Object.keys(dadosTabela).length > 0) {
+        const { error } = await supabase
+          .from('equipes')
+          .update(dadosTabela)
+          .eq('id', equipeId);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
+      
       await fetchEquipes();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao atualizar equipe');
