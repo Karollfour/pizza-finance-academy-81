@@ -252,7 +252,28 @@ const ProducaoScreen = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
+      {/* Botão de Reset fixo no topo */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <Button
+          onClick={handleResetarJogo}
+          disabled={resetLoading}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg"
+          size="lg"
+        >
+          {resetLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Resetando...
+            </>
+          ) : (
+            <>
+              🔄 Resetar Jogo
+            </>
+          )}
+        </Button>
+      </div>
+
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-red-600 mb-2">
@@ -312,46 +333,6 @@ const ProducaoScreen = () => {
                   </Button>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Botão de Reset do Jogo */}
-        <Card className="shadow-lg border-2 border-yellow-300 mb-8">
-          <CardHeader className="bg-yellow-50">
-            <CardTitle className="text-yellow-700">🚨 Zona de Perigo - Reset do Jogo</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <div className="text-6xl mb-4">⚠️</div>
-              <h3 className="text-xl font-bold text-yellow-800">
-                Resetar Todo o Jogo
-              </h3>
-              <p className="text-yellow-700 max-w-2xl mx-auto">
-                Esta ação irá apagar permanentemente <strong>TODOS</strong> os dados do jogo:
-                rodadas, pizzas produzidas, compras realizadas e estatísticas das equipes.
-                Use apenas para iniciar um jogo completamente novo.
-              </p>
-              <Button
-                onClick={handleResetarJogo}
-                disabled={resetLoading}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold px-8 py-3"
-                size="lg"
-              >
-                {resetLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Resetando...
-                  </>
-                ) : (
-                  <>
-                    🔄 Resetar Jogo Completo
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-yellow-600">
-                ⚠️ Esta ação não pode ser desfeita!
-              </p>
             </div>
           </CardContent>
         </Card>
