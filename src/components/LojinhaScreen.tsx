@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import DashboardLojinha from './DashboardLojinha';
 import ComprasPorEquipe from './ComprasPorEquipe';
 import { Trash2, Edit, Upload, Image, ShoppingCart, Plus, Minus, X } from 'lucide-react';
-
 interface ItemCarrinho {
   produtoId: string;
   produtoNome: string;
@@ -26,7 +25,6 @@ interface ItemCarrinho {
   valorUnitario: number;
   valorTotal: number;
 }
-
 const LojinhaScreen = () => {
   const {
     equipes,
@@ -105,10 +103,8 @@ const LojinhaScreen = () => {
   const [carrinhoEquipeId, setCarrinhoEquipeId] = useState('');
   const [itensCarrinho, setItensCarrinho] = useState<ItemCarrinho[]>([]);
   const [incluirTaxaViagem, setIncluirTaxaViagem] = useState(false);
-
   const coresDisponiveis = ['#f97316', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#84cc16', '#ec4899', '#6366f1'];
   const emblemasDisponiveis = ['🍕', '🏆', '⚡', '🔥', '🎯', '💎', '🚀', '⭐', '🎪', '🎨'];
-
   const handleCriarEquipe = async () => {
     if (!novaEquipe.nome || !novaEquipe.professor) {
       toast.error('Preencha todos os campos da equipe');
@@ -128,7 +124,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar equipe');
     }
   };
-
   const iniciarEdicaoEquipe = (equipe: any) => {
     setEquipeEditando(equipe.id);
     setDadosEdicaoEquipe({
@@ -139,7 +134,6 @@ const LojinhaScreen = () => {
       emblema: equipe.emblema || '🍕'
     });
   };
-
   const salvarEdicaoEquipe = async () => {
     if (!equipeEditando) return;
     try {
@@ -156,7 +150,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar equipe');
     }
   };
-
   const handleRemoverEquipe = async (equipeId: string) => {
     try {
       await removerEquipe(equipeId);
@@ -165,7 +158,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao remover equipe');
     }
   };
-
   const handleCriarProduto = async () => {
     if (!novoProduto.nome || !novoProduto.unidade || novoProduto.valor <= 0 || novoProduto.durabilidade <= 0) {
       toast.error('Preencha todos os campos obrigatórios do produto');
@@ -186,7 +178,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar produto');
     }
   };
-
   const handleRegistrarViagem = async (equipeId: string) => {
     try {
       await registrarCompra(equipeId, null, rodadaAtual?.id || null, 1, 5.00, 'viagem', 'Viagem à loja');
@@ -195,7 +186,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao registrar viagem');
     }
   };
-
   const iniciarEdicaoProduto = (produto: any) => {
     setProdutoEditando(produto.id);
     setDadosEdicao({
@@ -207,7 +197,6 @@ const LojinhaScreen = () => {
       imagem: null
     });
   };
-
   const salvarEdicaoProduto = async () => {
     if (!produtoEditando) return;
     try {
@@ -224,7 +213,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar produto');
     }
   };
-
   const removerProduto = async (produtoId: string) => {
     try {
       await atualizarProduto(produtoId, {
@@ -235,7 +223,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao remover produto');
     }
   };
-
   const handleCriarSabor = async () => {
     if (!novoSabor.nome) {
       toast.error('Digite o nome do sabor');
@@ -252,7 +239,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao criar sabor');
     }
   };
-
   const iniciarEdicaoSabor = (sabor: any) => {
     setSaborEditando(sabor.id);
     setDadosEdicaoSabor({
@@ -260,7 +246,6 @@ const LojinhaScreen = () => {
       descricao: sabor.descricao || ''
     });
   };
-
   const salvarEdicaoSabor = async () => {
     if (!saborEditando) return;
     try {
@@ -274,7 +259,6 @@ const LojinhaScreen = () => {
       toast.error('Erro ao atualizar sabor');
     }
   };
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isEditing = false) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -303,19 +287,12 @@ const LojinhaScreen = () => {
   // Funções do carrinho de compras
   const adicionarAoCarrinho = (produto: any, quantidade: number = 1) => {
     const itemExistente = itensCarrinho.find(item => item.produtoId === produto.id);
-    
     if (itemExistente) {
-      setItensCarrinho(itens =>
-        itens.map(item =>
-          item.produtoId === produto.id
-            ? {
-                ...item,
-                quantidade: item.quantidade + quantidade,
-                valorTotal: (item.quantidade + quantidade) * item.valorUnitario
-              }
-            : item
-        )
-      );
+      setItensCarrinho(itens => itens.map(item => item.produtoId === produto.id ? {
+        ...item,
+        quantidade: item.quantidade + quantidade,
+        valorTotal: (item.quantidade + quantidade) * item.valorUnitario
+      } : item));
     } else {
       const novoItem: ItemCarrinho = {
         produtoId: produto.id,
@@ -328,97 +305,63 @@ const LojinhaScreen = () => {
     }
     toast.success(`${produto.nome} adicionado ao carrinho`);
   };
-
   const atualizarQuantidadeCarrinho = (produtoId: string, novaQuantidade: number) => {
     if (novaQuantidade <= 0) {
       removerDoCarrinho(produtoId);
       return;
     }
-    
-    setItensCarrinho(itens =>
-      itens.map(item =>
-        item.produtoId === produtoId
-          ? {
-              ...item,
-              quantidade: novaQuantidade,
-              valorTotal: novaQuantidade * item.valorUnitario
-            }
-          : item
-      )
-    );
+    setItensCarrinho(itens => itens.map(item => item.produtoId === produtoId ? {
+      ...item,
+      quantidade: novaQuantidade,
+      valorTotal: novaQuantidade * item.valorUnitario
+    } : item));
   };
-
   const removerDoCarrinho = (produtoId: string) => {
     setItensCarrinho(itens => itens.filter(item => item.produtoId !== produtoId));
   };
-
   const calcularTotalCarrinho = () => {
     const totalProdutos = itensCarrinho.reduce((total, item) => total + item.valorTotal, 0);
     const taxaViagem = incluirTaxaViagem ? 5.00 : 0;
     return totalProdutos + taxaViagem;
   };
-
   const limparCarrinho = () => {
     setItensCarrinho([]);
     setCarrinhoEquipeId('');
     setIncluirTaxaViagem(false);
   };
-
   const finalizarCompra = async () => {
     if (!carrinhoEquipeId) {
       toast.error('Selecione uma equipe');
       return;
     }
-
     if (itensCarrinho.length === 0 && !incluirTaxaViagem) {
       toast.error('Adicione pelo menos um item ao carrinho ou marque a taxa de viagem');
       return;
     }
-
     try {
       // Registrar cada item do carrinho
       for (const item of itensCarrinho) {
-        await registrarCompra(
-          carrinhoEquipeId,
-          item.produtoId,
-          rodadaAtual?.id || null,
-          item.quantidade,
-          item.valorTotal,
-          'material',
-          `${item.quantidade} ${produtos.find(p => p.id === item.produtoId)?.unidade} de ${item.produtoNome}`
-        );
+        await registrarCompra(carrinhoEquipeId, item.produtoId, rodadaAtual?.id || null, item.quantidade, item.valorTotal, 'material', `${item.quantidade} ${produtos.find(p => p.id === item.produtoId)?.unidade} de ${item.produtoNome}`);
       }
 
       // Registrar taxa de viagem se marcada
       if (incluirTaxaViagem) {
-        await registrarCompra(
-          carrinhoEquipeId,
-          null,
-          rodadaAtual?.id || null,
-          1,
-          5.00,
-          'viagem',
-          'Viagem à loja'
-        );
+        await registrarCompra(carrinhoEquipeId, null, rodadaAtual?.id || null, 1, 5.00, 'viagem', 'Viagem à loja');
       }
-
       limparCarrinho();
       toast.success('Compra finalizada com sucesso!');
     } catch (error) {
       toast.error('Erro ao finalizar compra');
     }
   };
-
   const handleTaxaViagemChange = (checked: boolean) => {
     setIncluirTaxaViagem(checked);
   };
-
   if (loadingEquipes || loadingProdutos || loadingSabores) {
     return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
         <div className="text-2xl text-orange-600">Carregando lojinha...</div>
       </div>;
   }
-
   return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
@@ -700,10 +643,10 @@ const LojinhaScreen = () => {
                             </div>
                           </div> : <div className="h-full flex flex-col">
                             <div className="mb-3 flex justify-center">
-                              {produto.imagem ? <img src={produto.imagem} alt={produto.nome} className="w-16 h-16 object-cover rounded-lg border shadow-sm" onError={e => {
+                              {produto.imagem ? <img src={produto.imagem} alt={produto.nome} onError={e => {
                           console.log('Erro ao carregar imagem:', produto.imagem);
                           (e.target as HTMLImageElement).style.display = 'none';
-                        }} /> : <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
+                        }} className="w-16 h-16 rounded-lg border shadow-sm object-scale-down" /> : <div className="w-16 h-16 bg-gray-100 rounded-lg border flex items-center justify-center">
                                   <span className="text-2xl">📦</span>
                                 </div>}
                             </div>
@@ -844,17 +787,17 @@ const LojinhaScreen = () => {
                           <SelectValue placeholder="Escolha a equipe que está fazendo a compra" />
                         </SelectTrigger>
                         <SelectContent>
-                          {equipes.map(equipe => (
-                            <SelectItem key={equipe.id} value={equipe.id}>
+                          {equipes.map(equipe => <SelectItem key={equipe.id} value={equipe.id}>
                               <div className="flex items-center gap-2">
-                                <span style={{color: equipe.cor_tema}}>{equipe.emblema}</span>
+                                <span style={{
+                              color: equipe.cor_tema
+                            }}>{equipe.emblema}</span>
                                 {equipe.nome}
                                 <span className="text-xs text-gray-500">
                                   (Saldo: R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)})
                                 </span>
                               </div>
-                            </SelectItem>
-                          ))}
+                            </SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -863,20 +806,11 @@ const LojinhaScreen = () => {
                     <div className="space-y-4">
                       <h3 className="text-xl font-semibold text-orange-600">Produtos Disponíveis</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                        {produtos.map(produto => (
-                          <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
+                        {produtos.map(produto => <div key={produto.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
                             <div className="flex items-center gap-3">
-                              {produto.imagem ? (
-                                <img 
-                                  src={produto.imagem} 
-                                  alt={produto.nome} 
-                                  className="w-12 h-12 object-cover rounded-lg border"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
+                              {produto.imagem ? <img src={produto.imagem} alt={produto.nome} className="w-12 h-12 object-cover rounded-lg border" /> : <div className="w-12 h-12 bg-gray-100 rounded-lg border flex items-center justify-center">
                                   <span className="text-lg">📦</span>
-                                </div>
-                              )}
+                                </div>}
                               
                               <div className="flex-1">
                                 <div className="font-medium">{produto.nome}</div>
@@ -886,16 +820,11 @@ const LojinhaScreen = () => {
                                 </div>
                               </div>
                               
-                              <Button
-                                size="sm"
-                                onClick={() => adicionarAoCarrinho(produto)}
-                                className="bg-orange-500 hover:bg-orange-600"
-                              >
+                              <Button size="sm" onClick={() => adicionarAoCarrinho(produto)} className="bg-orange-500 hover:bg-orange-600">
                                 <Plus className="h-4 w-4" />
                               </Button>
                             </div>
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                     </div>
                   </div>
@@ -905,12 +834,8 @@ const LojinhaScreen = () => {
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                       <h3 className="text-lg font-semibold text-orange-600 mb-4">Carrinho</h3>
                       
-                      {itensCarrinho.length === 0 ? (
-                        <p className="text-gray-500 text-center py-4">Carrinho vazio</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {itensCarrinho.map(item => (
-                            <div key={item.produtoId} className="flex items-center justify-between bg-white p-3 rounded border">
+                      {itensCarrinho.length === 0 ? <p className="text-gray-500 text-center py-4">Carrinho vazio</p> : <div className="space-y-3">
+                          {itensCarrinho.map(item => <div key={item.produtoId} className="flex items-center justify-between bg-white p-3 rounded border">
                               <div className="flex-1">
                                 <div className="font-medium text-sm">{item.produtoNome}</div>
                                 <div className="text-xs text-gray-600">
@@ -919,30 +844,17 @@ const LojinhaScreen = () => {
                               </div>
                               
                               <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade - 1)}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade - 1)}>
                                   <Minus className="h-3 w-3" />
                                 </Button>
                                 
                                 <span className="w-8 text-center text-sm">{item.quantidade}</span>
                                 
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade + 1)}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => atualizarQuantidadeCarrinho(item.produtoId, item.quantidade + 1)}>
                                   <Plus className="h-3 w-3" />
                                 </Button>
                                 
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => removerDoCarrinho(item.produtoId)}
-                                  className="text-red-600 hover:bg-red-50"
-                                >
+                                <Button size="sm" variant="outline" onClick={() => removerDoCarrinho(item.produtoId)} className="text-red-600 hover:bg-red-50">
                                   <X className="h-3 w-3" />
                                 </Button>
                               </div>
@@ -950,19 +862,13 @@ const LojinhaScreen = () => {
                               <div className="text-sm font-semibold text-green-600 w-16 text-right">
                                 R$ {item.valorTotal.toFixed(2)}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            </div>)}
+                        </div>}
 
                       {/* Taxa de Viagem */}
                       <div className="mt-4 p-3 border-t border-orange-200">
                         <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="taxa-viagem"
-                            checked={incluirTaxaViagem}
-                            onCheckedChange={handleTaxaViagemChange}
-                          />
+                          <Checkbox id="taxa-viagem" checked={incluirTaxaViagem} onCheckedChange={handleTaxaViagemChange} />
                           <label htmlFor="taxa-viagem" className="text-sm">
                             Incluir Taxa de Viagem (R$ 5,00)
                           </label>
@@ -978,21 +884,12 @@ const LojinhaScreen = () => {
 
                       {/* Botões de Ação */}
                       <div className="mt-4 space-y-2">
-                        <Button
-                          onClick={finalizarCompra}
-                          className="w-full bg-green-500 hover:bg-green-600"
-                          disabled={!carrinhoEquipeId || (itensCarrinho.length === 0 && !incluirTaxaViagem)}
-                        >
+                        <Button onClick={finalizarCompra} className="w-full bg-green-500 hover:bg-green-600" disabled={!carrinhoEquipeId || itensCarrinho.length === 0 && !incluirTaxaViagem}>
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           Finalizar Compra
                         </Button>
                         
-                        <Button
-                          onClick={limparCarrinho}
-                          variant="outline"
-                          className="w-full"
-                          disabled={itensCarrinho.length === 0 && !incluirTaxaViagem}
-                        >
+                        <Button onClick={limparCarrinho} variant="outline" className="w-full" disabled={itensCarrinho.length === 0 && !incluirTaxaViagem}>
                           Limpar Carrinho
                         </Button>
                       </div>
@@ -1014,5 +911,4 @@ const LojinhaScreen = () => {
       </div>
     </div>;
 };
-
 export default LojinhaScreen;
