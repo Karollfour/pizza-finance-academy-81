@@ -77,6 +77,10 @@ export const useRodadas = () => {
         .single();
 
       if (error) throw error;
+
+      // Incrementar o contador após criar a rodada com sucesso
+      await supabase.rpc('obter_proximo_numero_rodada');
+      
       await fetchRodadaAtual();
       return data as Rodada;
     } catch (err) {

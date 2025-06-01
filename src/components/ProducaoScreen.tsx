@@ -26,7 +26,7 @@ const ProducaoScreen = () => {
   const { proximoNumero, refetch: refetchCounter } = useRodadaCounter();
   const { pizzas, refetch: refetchPizzas } = usePizzas(undefined, rodadaAtual?.id);
   const { equipes, refetch: refetchEquipes } = useEquipes();
-  const { atualizarConfiguracao, getConfiguracao } = useConfiguracoes();
+  const { atualizarConfiguracao } = useConfiguracoes();
   const { sabores } = useSabores();
   const { resetarJogo, loading: resetLoading } = useResetJogo();
   
@@ -251,6 +251,9 @@ const ProducaoScreen = () => {
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
 
+  // Obter número da rodada para exibição
+  const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       {/* Botão de Reset fixo no topo */}
@@ -341,7 +344,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Rodada {rodadaAtual?.numero ?? 'N/A'}</span>
+              <span>Rodada {numeroRodadaDisplay}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : 
                  rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
@@ -444,7 +447,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-green-200">
           <CardHeader>
             <CardTitle className="text-green-600">
-              📝 Histórico de Pizzas - Rodada {rodadaAtual?.numero ?? 'N/A'}
+              📝 Histórico de Pizzas - Rodada {numeroRodadaDisplay}
             </CardTitle>
           </CardHeader>
           <CardContent>

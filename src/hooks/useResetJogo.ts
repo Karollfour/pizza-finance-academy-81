@@ -42,6 +42,10 @@ export const useResetJogo = () => {
 
       if (equipesError) throw equipesError;
 
+      // Resetar contadores usando a função do banco
+      const { error: contadorError } = await supabase.rpc('resetar_contadores_jogo');
+      if (contadorError) throw contadorError;
+
       toast.success('🎮 Jogo resetado com sucesso! Todos os históricos foram apagados.');
       
       return true;

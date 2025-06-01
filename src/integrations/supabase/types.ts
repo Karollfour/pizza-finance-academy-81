@@ -91,6 +91,30 @@ export type Database = {
         }
         Relationships: []
       }
+      contadores_jogo: {
+        Row: {
+          chave: string
+          created_at: string
+          id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       equipes: {
         Row: {
           created_at: string
@@ -309,7 +333,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      obter_proximo_numero_rodada: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      resetar_contadores_jogo: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

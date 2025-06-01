@@ -3,28 +3,38 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useRodadaCounter = () => {
-  const [proximoNumero, setProximoNumero] = useState(0);
+  const [proximoNumero, setProximoNumero] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const fetchProximoNumero = async () => {
     try {
       setLoading(true);
       
-      // Buscar o maior número de rodada existente
+      // Buscar o contador atual da tabela contadores_jogo
       const { data, error } = await supabase
-        .from('rodadas')
-        .select('numero')
-        .order('numero', { ascending: false })
-        .limit(1);
+        .from('contadores_jogo')
+        .select('valor')
+        .eq('chave', 'proximo_numero_rodada')
+        .single();
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
 
-      // Se não há rodadas, começar do 0, senão incrementar 1
-      const ultimaRodada = data && data.length > 0 ? data[0].numero : -1;
-      setProximoNumero(ultimaRodada + 1);
+      // Se não existe contador, inicializar com 1
+      if (!data) {
+        const { data: insertData, error: insertError } = await supabase
+          .from('contadores_jogo')
+          .insert({ chave: 'proximo_numero_rodada', valor: 1 })
+          .select('valor')
+          .single();
+        
+        if (insertError) throw insertError;
+        setProximoNumero(insertData.valor);
+      } else {
+        setProximoNumero(data.valor);
+      }
     } catch (err) {
       console.error('Erro ao buscar próximo número da rodada:', err);
-      setProximoNumero(0);
+      setProximoNumero(1);
     } finally {
       setLoading(false);
     }
