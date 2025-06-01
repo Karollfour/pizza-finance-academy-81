@@ -375,7 +375,7 @@ const LojinhaScreen = () => {
         </div>
 
         <Tabs defaultValue="gestao" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
