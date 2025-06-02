@@ -82,7 +82,7 @@ const Index = () => {
         </Button>
         <Button onClick={() => setCurrentUser({
         type: 'seletor_equipes'
-      })} variant="outline" size="sm" className="bg-white/90 backdrop-blur-sm border-2 border-green-200 hover:bg-green-50 mx-0 my-[8px]">
+      })} variant="outline" size="sm" className="bg-white/90 backdrop-blur-sm border-2 border-green-200 hover:bg-green-50 mx-0 my-[6px]">
           👥 Equipes
         </Button>
       </div>

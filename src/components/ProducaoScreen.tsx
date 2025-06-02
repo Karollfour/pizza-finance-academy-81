@@ -13,7 +13,6 @@ import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
 import { toast } from 'sonner';
-
 interface SaborRodada {
   sabor: string;
   iniciadoEm: string;
@@ -240,12 +239,7 @@ const ProducaoScreen = () => {
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       {/* Botão de Reset responsivo */}
       <div className="fixed top-4 right-4 md:top-4 md:left-1/2 md:transform md:-translate-x-1/2 z-50">
-        <Button 
-          onClick={handleResetarJogo} 
-          disabled={resetLoading} 
-          size="sm"
-          className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg text-xs md:text-sm px-3 py-2 md:px-4 md:py-2"
-        >
+        <Button onClick={handleResetarJogo} disabled={resetLoading} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg text-xs md:text-sm md:px-4 md:py-2 py-0 px-[4px] mx-0 my-[40px]">
           {resetLoading ? <>
               <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white mr-1 md:mr-2"></div>
               <span className="hidden sm:inline">Resetando...</span>
