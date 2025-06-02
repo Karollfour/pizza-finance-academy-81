@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useCompras } from '@/hooks/useCompras';
 import { useRodadas } from '@/hooks/useRodadas';
+import { usePizzas } from '@/hooks/usePizzas';
+import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 
 interface MontadorPizzaProps {
@@ -19,8 +20,11 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
   const { produtos } = useProdutos();
   const { registrarCompra } = useCompras();
   const { rodadaAtual } = useRodadas();
+  const { marcarPizzaPronta } = usePizzas();
+  const { sabores } = useSabores();
   const [ingredientesSelecionados, setIngredientesSelecionados] = useState<string[]>([]);
   const [montandoPizza, setMontandoPizza] = useState(false);
+  const [saborSelecionado, setSaborSelecionado] = useState<string>('');
 
   // Ingredientes base necessários (por nome - podem ser configurados no banco)
   const ingredientesBaseNomes = ['massa de pizza', 'molho', 'caneta do molho'];
@@ -72,6 +76,11 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
       return;
     }
 
+    if (!saborSelecionado) {
+      toast.error('Selecione o sabor da pizza!');
+      return;
+    }
+
     const precoTotal = calcularPrecoTotal();
     if (precoTotal > saldoDisponivel) {
       toast.error('Saldo insuficiente para esta pizza!');
@@ -108,8 +117,12 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
         }
       }
 
-      toast.success('🍕 Pizza montada com sucesso!');
+      // Criar a pizza no banco de dados com o sabor selecionado
+      await marcarPizzaPronta(equipeId, rodadaAtual?.id || '', saborSelecionado);
+
+      toast.success('🍕 Pizza montada e enviada para avaliação com sucesso!');
       setIngredientesSelecionados([]);
+      setSaborSelecionado('');
       onPizzaMontada();
     } catch (error) {
       toast.error('Erro ao montar pizza');
@@ -150,6 +163,8 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
     );
   };
 
+  const saboresDisponiveis = sabores.filter(sabor => sabor.disponivel);
+
   return (
     <Card className="shadow-lg border-2 border-orange-200">
       <CardHeader className="bg-orange-50">
@@ -163,6 +178,45 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
               R$ {saldoDisponivel.toFixed(2)}
             </div>
             <div className="text-sm text-blue-700">Saldo Disponível</div>
+          </div>
+
+          {/* Seleção de Sabor */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-purple-600">Sabor da Pizza (Obrigatório)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {saboresDisponiveis.map((sabor) => (
+                <Button
+                  key={sabor.id}
+                  variant={saborSelecionado === sabor.id ? "default" : "outline"}
+                  className={`h-20 flex flex-col items-center justify-center space-y-1 p-2 ${
+                    saborSelecionado === sabor.id 
+                      ? 'bg-purple-500 hover:bg-purple-600' 
+                      : 'hover:bg-purple-50'
+                  }`}
+                  onClick={() => setSaborSelecionado(sabor.id)}
+                >
+                  {sabor.imagem ? (
+                    <img 
+                      src={sabor.imagem} 
+                      alt={sabor.nome}
+                      className="w-8 h-8 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center">
+                      <span className="text-xs">🍕</span>
+                    </div>
+                  )}
+                  <span className="text-xs font-medium text-center">{sabor.nome}</span>
+                </Button>
+              ))}
+            </div>
+            {saboresDisponiveis.length === 0 && (
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <p className="text-yellow-700">
+                  Nenhum sabor disponível. Entre em contato com o professor.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Ingredientes Base (Obrigatórios) */}
@@ -195,10 +249,19 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           )}
 
           {/* Resumo da Pizza */}
-          {ingredientesSelecionados.length > 0 && (
+          {(ingredientesSelecionados.length > 0 || saborSelecionado) && (
             <div className="p-4 bg-yellow-50 rounded-lg">
               <h4 className="font-medium text-yellow-700 mb-2">Resumo da Pizza:</h4>
               <div className="space-y-1">
+                {saborSelecionado && (
+                  <div className="flex justify-between text-sm items-center">
+                    <div className="flex items-center gap-2">
+                      <span>🍕</span>
+                      <span>Sabor: {saboresDisponiveis.find(s => s.id === saborSelecionado)?.nome}</span>
+                    </div>
+                    <span className="text-purple-600 font-medium">Incluído</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span>Viagem à loja:</span>
                   <span>R$ 5,00</span>
@@ -233,6 +296,14 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           )}
 
           {/* Validações */}
+          {!saborSelecionado && (
+            <div className="p-3 bg-red-50 rounded-lg">
+              <p className="text-red-600 text-sm">
+                ⚠️ Selecione o sabor da pizza!
+              </p>
+            </div>
+          )}
+
           {!verificarIngredientesValidos() && ingredientesSelecionados.length > 0 && (
             <div className="p-3 bg-red-50 rounded-lg">
               <p className="text-red-600 text-sm">
@@ -252,7 +323,14 @@ const MontadorPizza = ({ equipeId, equipeNome, saldoDisponivel, onPizzaMontada }
           {/* Botão Confirmar */}
           <Button
             onClick={confirmarPizza}
-            disabled={!verificarIngredientesValidos() || calcularPrecoTotal() > saldoDisponivel || montandoPizza || produtosDisponiveis.length === 0}
+            disabled={
+              !verificarIngredientesValidos() || 
+              !saborSelecionado ||
+              calcularPrecoTotal() > saldoDisponivel || 
+              montandoPizza || 
+              produtosDisponiveis.length === 0 ||
+              saboresDisponiveis.length === 0
+            }
             className="w-full h-14 text-lg bg-green-500 hover:bg-green-600"
           >
             {montandoPizza ? '🔄 Montando Pizza...' : '🍕 Confirmar Pizza'}
