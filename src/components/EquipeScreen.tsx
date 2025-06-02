@@ -3,26 +3,60 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useRodadas } from '@/hooks/useRodadas';
+import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
+import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import { useHistoricoRodadas } from '@/hooks/useHistoricoRodadas';
+import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
 import FilaProducao from './FilaProducao';
-import ConnectionStatus from './ConnectionStatus';
+import RealtimeConnectionIndicator from './RealtimeConnectionIndicator';
+import { toast } from 'sonner';
 
 interface EquipeScreenProps {
   teamName: string;
 }
 
 const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
-  const { rodadaAtual } = useRodadas();
+  const { rodadaAtual, lastUpdate } = useOptimizedRodadas();
   const { equipes } = useEquipes();
   const [equipeAtual, setEquipeAtual] = useState<any>(null);
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
   const { compras } = useCompras(equipeAtual?.id);
   const { rodadas: historicoRodadas } = useHistoricoRodadas(equipeAtual?.id);
-  const [tempoRestante, setTempoRestante] = useState(0);
+
+  // Sistema realtime centralizado
+  const { isConnected } = useGlobalRealtime({
+    enableHeartbeat: true,
+    silent: true
+  });
+
+  // Timer sincronizado
+  const {
+    timeRemaining,
+    formattedTime,
+    timeColor,
+    progressPercentage
+  } = useSynchronizedTimer(rodadaAtual, {
+    onTimeUp: () => {
+      toast.info('⏰ Tempo da rodada esgotado!', {
+        duration: 5000,
+      });
+    },
+    onWarning: (secondsLeft) => {
+      if (secondsLeft === 30) {
+        toast.warning('⚠️ Atenção: 30 segundos restantes!', {
+          duration: 4000,
+        });
+      } else if (secondsLeft === 10) {
+        toast.error('🚨 Últimos 10 segundos!', {
+          duration: 3000,
+        });
+      }
+    },
+    warningThreshold: 30
+  });
 
   // Encontrar a equipe pelo nome
   useEffect(() => {
@@ -30,40 +64,37 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
     setEquipeAtual(equipe);
   }, [equipes, teamName]);
 
-  // Timer sincronizado da rodada
+  // Escutar eventos globais de rodada para feedback instantâneo
   useEffect(() => {
-    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || !rodadaAtual.iniciou_em) return;
-
-    const inicioRodada = new Date(rodadaAtual.iniciou_em).getTime();
-    const duracaoRodada = rodadaAtual.tempo_limite * 1000;
-
-    const updateTimer = () => {
-      const agora = Date.now();
-      const tempoDecorrido = agora - inicioRodada;
-      const resto = Math.max(0, duracaoRodada - tempoDecorrido);
-      
-      setTempoRestante(Math.ceil(resto / 1000));
-      
-      return resto > 0;
+    const handleRodadaIniciada = () => {
+      toast.success('🚀 Nova rodada iniciada! Boa sorte!', {
+        duration: 4000,
+      });
     };
 
-    // Atualizar imediatamente
-    if (!updateTimer()) return;
+    const handleRodadaFinalizada = () => {
+      toast.info('🏁 Rodada finalizada!', {
+        duration: 4000,
+      });
+    };
 
-    const interval = setInterval(() => {
-      if (!updateTimer()) {
-        clearInterval(interval);
-      }
-    }, 1000);
+    const handleRodadaCriada = (event: CustomEvent) => {
+      const { rodada } = event.detail;
+      toast.info(`🎯 Nova rodada ${rodada.numero} criada e aguardando início`, {
+        duration: 3000,
+      });
+    };
 
-    return () => clearInterval(interval);
-  }, [rodadaAtual]);
+    window.addEventListener('rodada-iniciada', handleRodadaIniciada);
+    window.addEventListener('rodada-finalizada', handleRodadaFinalizada);
+    window.addEventListener('rodada-criada', handleRodadaCriada as EventListener);
 
-  const formatarTempo = (segundos: number) => {
-    const mins = Math.floor(segundos / 60);
-    const secs = segundos % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+    return () => {
+      window.removeEventListener('rodada-iniciada', handleRodadaIniciada);
+      window.removeEventListener('rodada-finalizada', handleRodadaFinalizada);
+      window.removeEventListener('rodada-criada', handleRodadaCriada as EventListener);
+    };
+  }, []);
 
   const handlePizzaEnviada = () => {
     refetchPizzas();
@@ -94,8 +125,10 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4">
-      {/* Conexão silenciosa em segundo plano */}
-      <ConnectionStatus silent={true} />
+      {/* Indicador de conexão no canto superior direito */}
+      <div className="fixed top-4 right-20 z-50">
+        <RealtimeConnectionIndicator showDetails={false} />
+      </div>
       
       <div className="max-w-7xl mx-auto">
         {/* Header da Equipe */}
@@ -110,7 +143,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
             </div>
           </div>
           
-          {/* Status da Rodada */}
+          {/* Status da Rodada com informações de sincronização */}
           <Card className="shadow-lg border-2 border-yellow-200">
             <CardContent className="p-4">
               {rodadaAtual ? (
@@ -119,12 +152,17 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
                     <div className="text-2xl font-bold text-yellow-600">
                       Rodada {rodadaAtual.numero}
                     </div>
-                    <div className="text-sm text-gray-600 capitalize">{rodadaAtual.status}</div>
+                    <div className="text-sm text-gray-600 capitalize">
+                      {rodadaAtual.status}
+                      {isConnected && (
+                        <span className="ml-2 text-green-600">● Sincronizado</span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     {rodadaAtual.status === 'ativa' ? (
-                      <div className="text-3xl font-mono text-red-600">
-                        ⏱️ {formatarTempo(tempoRestante)}
+                      <div className={`text-3xl font-mono ${timeColor}`}>
+                        ⏱️ {formattedTime}
                       </div>
                     ) : (
                       <div className="text-lg text-gray-600">
@@ -140,8 +178,18 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
                   </div>
                 </div>
               ) : (
-                <div className="text-lg text-gray-600 text-center">Nenhuma rodada ativa</div>
+                <div className="text-lg text-gray-600 text-center">
+                  Nenhuma rodada ativa
+                  {isConnected && (
+                    <span className="block text-sm text-green-600 mt-1">● Conectado e aguardando</span>
+                  )}
+                </div>
               )}
+              
+              {/* Mostrar última atualização */}
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                Última sincronização: {lastUpdate.toLocaleTimeString('pt-BR')}
+              </div>
             </CardContent>
           </Card>
         </div>

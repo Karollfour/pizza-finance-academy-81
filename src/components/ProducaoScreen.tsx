@@ -5,51 +5,68 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRodadas } from '@/hooks/useRodadas';
+import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
+import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
+import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
+import RealtimeConnectionIndicator from '@/components/RealtimeConnectionIndicator';
 import { toast } from 'sonner';
+
 interface SaborRodada {
   sabor: string;
   iniciadoEm: string;
   pizzasEnviadas: number;
   equipesQueEnviaram: string[];
 }
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
     iniciarRodada,
     finalizarRodada,
     criarNovaRodada,
-    refetch: refetchRodadas
-  } = useRodadas();
+    lastUpdate
+  } = useOptimizedRodadas();
+  
+  const { proximoNumero, refetch: refetchCounter } = useRodadaCounter();
+  const { pizzas, refetch: refetchPizzas } = usePizzas(undefined, rodadaAtual?.id);
+  const { equipes } = useEquipes();
+  const { atualizarConfiguracao } = useConfiguracoes();
+  const { sabores } = useSabores();
+  const { resetarJogo, loading: resetLoading } = useResetJogo();
+  
+  // Usar sistema centralizado de realtime
+  const { isConnected, connectionQuality } = useGlobalRealtime({
+    enableHeartbeat: true,
+    silent: false
+  });
+
+  // Timer sincronizado
   const {
-    proximoNumero,
-    refetch: refetchCounter
-  } = useRodadaCounter();
-  const {
-    pizzas,
-    refetch: refetchPizzas
-  } = usePizzas(undefined, rodadaAtual?.id);
-  const {
-    equipes,
-    refetch: refetchEquipes
-  } = useEquipes();
-  const {
-    atualizarConfiguracao
-  } = useConfiguracoes();
-  const {
-    sabores
-  } = useSabores();
-  const {
-    resetarJogo,
-    loading: resetLoading
-  } = useResetJogo();
-  const [timeRemaining, setTimeRemaining] = useState(0);
+    timeRemaining,
+    formattedTime,
+    timeColor,
+    progressPercentage
+  } = useSynchronizedTimer(rodadaAtual, {
+    onTimeUp: () => {
+      console.log('⏰ Timer acabou - finalizando rodada automaticamente');
+      if (rodadaAtual) {
+        handleFinalizarRodada();
+      }
+    },
+    onWarning: (secondsLeft) => {
+      toast.warning(`⚠️ Atenção: ${secondsLeft} segundos restantes!`, {
+        duration: 3000,
+      });
+    },
+    warningThreshold: 30
+  });
+
   const [novoTempoLimite, setNovoTempoLimite] = useState(300);
   const [saborAtual, setSaborAtual] = useState<string>('');
   const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
@@ -161,7 +178,7 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       await iniciarRodada(rodadaAtual.id);
-      toast.success('Rodada iniciada!');
+      // A notificação já é enviada pelo hook otimizado
     } catch (error) {
       toast.error('Erro ao iniciar rodada');
     }
@@ -170,8 +187,7 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       await finalizarRodada(rodadaAtual.id);
-      toast.success('Rodada finalizada!');
-      // Atualizar contador após finalizar rodada
+      // A notificação já é enviada pelo hook otimizado
       await refetchCounter();
     } catch (error) {
       toast.error('Erro ao finalizar rodada');
@@ -180,8 +196,7 @@ const ProducaoScreen = () => {
   const handleCriarNovaRodada = async () => {
     try {
       await criarNovaRodada(proximoNumero, novoTempoLimite);
-      toast.success(`Rodada ${proximoNumero} criada!`);
-      // Atualizar contador após criar nova rodada
+      // A notificação já é enviada pelo hook otimizado
       await refetchCounter();
     } catch (error) {
       toast.error('Erro ao criar nova rodada');
@@ -236,13 +251,25 @@ const ProducaoScreen = () => {
 
   // Obter número da rodada para exibição
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
-  return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
+  return (
+    <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
+      {/* Indicador de conexão realtime */}
+      <div className="fixed top-4 right-4 z-50">
+        <RealtimeConnectionIndicator showDetails={true} />
+      </div>
+
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-red-600 mb-2">
             🍽️ Central de Produção
           </h1>
           <p className="text-gray-600">Acompanhe o status das pizzas em tempo real</p>
+          <div className="mt-2 text-sm text-gray-500">
+            Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')} • 
+            Conexão: <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
+              {isConnected ? 'Online' : 'Offline'}
+            </span>
+          </div>
         </div>
 
         {/* Controles da Rodada */}
@@ -254,22 +281,54 @@ const ProducaoScreen = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-                <Input id="tempoLimite" type="number" value={novoTempoLimite} onChange={e => setNovoTempoLimite(Number(e.target.value))} />
-                <Button onClick={handleAtualizarTempoLimite} size="sm" className="mt-2 w-full" variant="outline">
+                <Input 
+                  id="tempoLimite" 
+                  type="number" 
+                  value={novoTempoLimite} 
+                  onChange={e => setNovoTempoLimite(Number(e.target.value))} 
+                />
+                <Button 
+                  onClick={async () => {
+                    try {
+                      await atualizarConfiguracao('tempo_rodada_padrao', novoTempoLimite.toString());
+                      toast.success('Tempo padrão atualizado!');
+                    } catch (error) {
+                      toast.error('Erro ao atualizar tempo padrão');
+                    }
+                  }} 
+                  size="sm" 
+                  className="mt-2 w-full" 
+                  variant="outline"
+                >
                   Atualizar Tempo Padrão
                 </Button>
               </div>
               <div className="flex items-end">
-                <Button onClick={handleCriarNovaRodada} className="w-full bg-blue-500 hover:bg-blue-600" disabled={rodadaAtual?.status === 'ativa'}>
+                <Button 
+                  onClick={handleCriarNovaRodada} 
+                  className="w-full bg-blue-500 hover:bg-blue-600" 
+                  disabled={rodadaAtual?.status === 'ativa'}
+                >
                   Criar Rodada {proximoNumero}
                 </Button>
               </div>
               <div className="flex items-end">
-                {rodadaAtual?.status === 'aguardando' ? <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600">
+                {rodadaAtual?.status === 'aguardando' ? (
+                  <Button 
+                    onClick={handleIniciarRodada} 
+                    className="w-full bg-green-500 hover:bg-green-600"
+                  >
                     Iniciar Rodada
-                  </Button> : <Button onClick={handleFinalizarRodada} className="w-full bg-red-500 hover:bg-red-600" disabled={rodadaAtual?.status !== 'ativa'}>
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleFinalizarRodada} 
+                    className="w-full bg-red-500 hover:bg-red-600" 
+                    disabled={rodadaAtual?.status !== 'ativa'}
+                  >
                     Finalizar Rodada
-                  </Button>}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -280,16 +339,26 @@ const ProducaoScreen = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Rodada {numeroRodadaDisplay}</span>
-              <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}>
-                {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge 
+                  variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}
+                  className={
+                    rodadaAtual?.status === 'ativa' ? 'bg-green-500' :
+                    rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'
+                  }
+                >
+                  {rodadaAtual?.status === 'ativa' ? "Em Andamento" : 
+                   rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
+                </Badge>
+                <RealtimeConnectionIndicator showDetails={false} />
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-center">
-                <div className="text-4xl font-bold text-red-600 mb-2">
-                  {formatTime(timeRemaining)}
+                <div className={`text-4xl font-bold mb-2 ${timeColor}`}>
+                  {formattedTime}
                 </div>
                 <Progress value={progressPercentage} className="w-full mb-4" />
                 
@@ -426,6 +495,8 @@ const ProducaoScreen = () => {
           </Button>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default ProducaoScreen;
