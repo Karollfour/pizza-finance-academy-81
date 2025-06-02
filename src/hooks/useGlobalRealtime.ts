@@ -33,6 +33,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
   const baseReconnectDelay = 2000;
+  const isInitializedRef = useRef(false);
 
   const updateConnectionStatus = (connected: boolean, quality?: 'excellent' | 'good' | 'poor') => {
     setIsConnected(connected);
@@ -46,16 +47,26 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   };
 
   const setupConnection = () => {
+    // Prevent multiple initializations
+    if (isInitializedRef.current) {
+      return;
+    }
+
     // Cleanup existing connection
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `global-realtime-presence-${uniqueId}`;
+
     const channel = supabase
-      .channel('global-realtime-sync', {
+      .channel(channelName, {
         config: {
           presence: {
-            key: `user-${Math.random().toString(36).substr(2, 9)}`
+            key: `global-user-${uniqueId}`
           }
         }
       })
@@ -71,8 +82,10 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           updateConnectionStatus(true, 'excellent');
+          isInitializedRef.current = true;
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           updateConnectionStatus(false);
+          isInitializedRef.current = false;
           
           // Reconexão silenciosa
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
@@ -80,7 +93,9 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
             reconnectAttemptsRef.current++;
             
             setTimeout(() => {
-              setupConnection();
+              if (!isInitializedRef.current) {
+                setupConnection();
+              }
             }, delay);
           }
         }
@@ -91,6 +106,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   };
 
   const forceReconnect = () => {
+    isInitializedRef.current = false;
     reconnectAttemptsRef.current = 0;
     updateConnectionStatus(false);
     setupConnection();
@@ -99,20 +115,23 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   // Network state monitoring - completamente silencioso
   useEffect(() => {
     const handleOnline = () => {
-      if (!isConnected) {
+      if (!isConnected && !isInitializedRef.current) {
         forceReconnect();
       }
     };
 
     const handleOffline = () => {
       updateConnectionStatus(false);
+      isInitializedRef.current = false;
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         setTimeout(() => {
           if (!isConnected || channelRef.current?.state !== 'joined') {
-            forceReconnect();
+            if (!isInitializedRef.current) {
+              forceReconnect();
+            }
           }
         }, 1000);
       }
@@ -131,11 +150,13 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
 
   // Initialize connection
   useEffect(() => {
-    const channel = setupConnection();
+    setupConnection();
 
     return () => {
+      isInitializedRef.current = false;
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
   }, []);
