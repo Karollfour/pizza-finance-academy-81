@@ -30,10 +30,10 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'poor' | 'disconnected'>('disconnected');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const isSubscribedRef = useRef(false);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
   const baseReconnectDelay = 2000;
-  const isInitializedRef = useRef(false);
 
   const updateConnectionStatus = (connected: boolean, quality?: 'excellent' | 'good' | 'poor') => {
     setIsConnected(connected);
@@ -46,17 +46,17 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     }
   };
 
-  const setupConnection = () => {
-    // Prevent multiple initializations
-    if (isInitializedRef.current) {
-      return;
-    }
-
-    // Cleanup existing connection
-    if (channelRef.current) {
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
+  };
+
+  const setupConnection = () => {
+    // Cleanup existing connection first
+    cleanupChannel();
 
     // Create unique channel name with timestamp and random component
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -78,14 +78,17 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         // Silencioso - sem logs
-      })
-      .subscribe((status) => {
+      });
+
+    // Subscribe only if not already subscribed
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           updateConnectionStatus(true, 'excellent');
-          isInitializedRef.current = true;
+          isSubscribedRef.current = true;
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           updateConnectionStatus(false);
-          isInitializedRef.current = false;
+          isSubscribedRef.current = false;
           
           // Reconexão silenciosa
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
@@ -93,7 +96,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
             reconnectAttemptsRef.current++;
             
             setTimeout(() => {
-              if (!isInitializedRef.current) {
+              if (!isSubscribedRef.current) {
                 setupConnection();
               }
             }, delay);
@@ -101,12 +104,14 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
         }
       });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    }
+
     return channel;
   };
 
   const forceReconnect = () => {
-    isInitializedRef.current = false;
+    isSubscribedRef.current = false;
     reconnectAttemptsRef.current = 0;
     updateConnectionStatus(false);
     setupConnection();
@@ -115,21 +120,21 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   // Network state monitoring - completamente silencioso
   useEffect(() => {
     const handleOnline = () => {
-      if (!isConnected && !isInitializedRef.current) {
+      if (!isConnected && !isSubscribedRef.current) {
         forceReconnect();
       }
     };
 
     const handleOffline = () => {
       updateConnectionStatus(false);
-      isInitializedRef.current = false;
+      isSubscribedRef.current = false;
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         setTimeout(() => {
           if (!isConnected || channelRef.current?.state !== 'joined') {
-            if (!isInitializedRef.current) {
+            if (!isSubscribedRef.current) {
               forceReconnect();
             }
           }
@@ -153,11 +158,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     setupConnection();
 
     return () => {
-      isInitializedRef.current = false;
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
   }, []);
 
