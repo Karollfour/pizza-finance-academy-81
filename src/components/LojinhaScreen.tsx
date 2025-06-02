@@ -386,7 +386,7 @@ const LojinhaScreen = () => {
 
           <TabsContent value="gestao" className="space-y-6">
             <Card className="shadow-lg border-2 border-orange-200">
-              <CardHeader className="bg-orange-50">
+              <CardHeader className="bg-orange-50 my-[4px] mx-0">
                 <CardTitle className="text-orange-600">👥 Gestão de Equipes</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
