@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza } from '@/types/database';
-import { toast } from 'sonner';
 
 export const usePizzas = (equipeId?: string, rodadaId?: string) => {
   const [pizzas, setPizzas] = useState<Pizza[]>([]);
@@ -48,11 +47,6 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
       if (error) throw error;
       await fetchPizzas();
       
-      // Mostrar notificação para a equipe
-      toast.success('Pizza enviada para avaliação! Você pode continuar fazendo outras pizzas.', {
-        duration: 4000,
-      });
-      
       return data as Pizza;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao marcar pizza como pronta');
@@ -81,7 +75,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
     }
   };
 
-  // Escutar mudanças em tempo real para pizzas
+  // Escutar mudanças em tempo real para pizzas (silencioso)
   useEffect(() => {
     console.log('Configurando escuta em tempo real para pizzas', equipeId ? `da equipe ${equipeId}` : 'globais');
     
@@ -100,40 +94,14 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
           
           if (payload.eventType === 'INSERT') {
             const novaPizza = payload.new as Pizza;
-            
-            // Adicionar à lista local
             setPizzas(prev => [novaPizza, ...prev]);
-            
-            // Notificar sobre nova pizza apenas se não for da equipe atual
-            if (!equipeId || novaPizza.equipe_id !== equipeId) {
-              toast.info(`🍕 Nova pizza em produção!`, {
-                duration: 2000,
-              });
-            }
           } else if (payload.eventType === 'UPDATE') {
             const pizzaAtualizada = payload.new as Pizza;
-            
-            // Atualizar lista local
             setPizzas(prev => prev.map(pizza => 
               pizza.id === pizzaAtualizada.id ? pizzaAtualizada : pizza
             ));
-            
-            // Notificar sobre avaliações apenas para a equipe específica
-            if (equipeId && pizzaAtualizada.equipe_id === equipeId && pizzaAtualizada.status === 'avaliada') {
-              if (pizzaAtualizada.resultado === 'aprovada') {
-                toast.success('🎉 Pizza aprovada! Parabéns pela qualidade!', {
-                  duration: 5000,
-                });
-              } else if (pizzaAtualizada.resultado === 'reprovada') {
-                toast.error(`❌ Pizza reprovada: ${pizzaAtualizada.justificativa_reprovacao || 'Sem justificativa'}`, {
-                  duration: 6000,
-                });
-              }
-            }
           } else if (payload.eventType === 'DELETE') {
             const pizzaRemovida = payload.old as Pizza;
-            
-            // Remover da lista local
             setPizzas(prev => prev.filter(pizza => pizza.id !== pizzaRemovida.id));
           }
         }

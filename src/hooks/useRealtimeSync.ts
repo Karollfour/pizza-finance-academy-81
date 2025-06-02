@@ -2,11 +2,10 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { toast } from 'sonner';
 
 interface RealtimeSyncOptions {
   onConnectionChange?: (connected: boolean) => void;
-  enableNotifications?: boolean;
+  silent?: boolean;
 }
 
 export const useRealtimeSync = (options: RealtimeSyncOptions = {}) => {
@@ -39,16 +38,10 @@ export const useRealtimeSync = (options: RealtimeSyncOptions = {}) => {
         if (status === 'SUBSCRIBED') {
           options.onConnectionChange?.(true);
           reconnectAttemptsRef.current = 0;
-          
-          if (options.enableNotifications) {
-            toast.success('Conectado ao sistema em tempo real', {
-              duration: 2000,
-            });
-          }
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           options.onConnectionChange?.(false);
           
-          // Tentar reconectar automaticamente
+          // Tentar reconectar automaticamente silenciosamente
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
             reconnectAttemptsRef.current++;
             
@@ -56,12 +49,6 @@ export const useRealtimeSync = (options: RealtimeSyncOptions = {}) => {
               console.log(`Tentativa de reconexão ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
               setupConnection();
             }, Math.pow(2, reconnectAttemptsRef.current) * 1000);
-          } else {
-            if (options.enableNotifications) {
-              toast.error('Falha na conexão em tempo real. Recarregue a página.', {
-                duration: 0,
-              });
-            }
           }
         }
       });

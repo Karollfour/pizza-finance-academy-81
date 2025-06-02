@@ -5,15 +5,21 @@ import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 interface ConnectionStatusProps {
   showDetails?: boolean;
+  silent?: boolean;
 }
 
-const ConnectionStatus = ({ showDetails = false }: ConnectionStatusProps) => {
+const ConnectionStatus = ({ showDetails = false, silent = false }: ConnectionStatusProps) => {
   const [isConnected, setIsConnected] = useState(false);
   
   useRealtimeSync({
     onConnectionChange: setIsConnected,
-    enableNotifications: showDetails
+    silent
   });
+
+  // Se estiver em modo silencioso, não renderiza nada
+  if (silent) {
+    return null;
+  }
 
   if (!showDetails) {
     return (

@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useRodadas } from '@/hooks/useRodadas';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
+import { useHistoricoRodadas } from '@/hooks/useHistoricoRodadas';
 import FilaProducao from './FilaProducao';
 import ConnectionStatus from './ConnectionStatus';
 
@@ -20,6 +21,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const [equipeAtual, setEquipeAtual] = useState<any>(null);
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
   const { compras } = useCompras(equipeAtual?.id);
+  const { rodadas: historicoRodadas } = useHistoricoRodadas(equipeAtual?.id);
   const [tempoRestante, setTempoRestante] = useState(0);
 
   // Encontrar a equipe pelo nome
@@ -92,8 +94,8 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4">
-      {/* Status de Conexão */}
-      <ConnectionStatus showDetails={true} />
+      {/* Conexão silenciosa em segundo plano */}
+      <ConnectionStatus silent={true} />
       
       <div className="max-w-7xl mx-auto">
         {/* Header da Equipe */}
@@ -144,7 +146,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal - Apenas Produção */}
+        {/* Conteúdo Principal - Produção */}
         <div className="space-y-6">
           <FilaProducao 
             equipeId={equipeAtual.id} 
@@ -152,6 +154,69 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
             onPizzaEnviada={handlePizzaEnviada}
           />
         </div>
+
+        {/* Histórico de Rodadas */}
+        {historicoRodadas.length > 0 && (
+          <div className="mt-8">
+            <Card className="shadow-lg border-2 border-gray-200">
+              <CardHeader className="bg-gray-50">
+                <CardTitle className="text-gray-600">📈 Histórico de Rodadas</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {historicoRodadas
+                    .filter(rodada => rodada.pizzas.length > 0)
+                    .map((rodada) => (
+                      <Card key={rodada.id} className="border border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-bold text-lg">Rodada {rodada.numero}</h3>
+                            <Badge 
+                              variant={rodada.status === 'ativa' ? 'default' : 'secondary'}
+                              className={
+                                rodada.status === 'ativa' ? 'bg-green-500' :
+                                rodada.status === 'finalizada' ? 'bg-gray-500' : 'bg-yellow-500'
+                              }
+                            >
+                              {rodada.status === 'ativa' ? 'Ativa' :
+                               rodada.status === 'finalizada' ? 'Finalizada' : 'Aguardando'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                              <div className="text-xl font-bold text-green-600">
+                                {rodada.pizzas_aprovadas}
+                              </div>
+                              <div className="text-xs text-gray-600">Aprovadas</div>
+                            </div>
+                            <div>
+                              <div className="text-xl font-bold text-red-600">
+                                {rodada.pizzas_reprovadas}
+                              </div>
+                              <div className="text-xs text-gray-600">Reprovadas</div>
+                            </div>
+                            <div>
+                              <div className="text-xl font-bold text-blue-600">
+                                {rodada.pizzas.length}
+                              </div>
+                              <div className="text-xs text-gray-600">Total</div>
+                            </div>
+                          </div>
+
+                          {rodada.status === 'finalizada' && rodada.finalizou_em && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              Finalizada: {new Date(rodada.finalizou_em).toLocaleString('pt-BR')}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Estatísticas Rápidas */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">

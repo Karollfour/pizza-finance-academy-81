@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
-import { toast } from 'sonner';
 
 export const useRodadas = () => {
   const [rodadaAtual, setRodadaAtual] = useState<Rodada | null>(null);
@@ -90,7 +89,7 @@ export const useRodadas = () => {
     }
   };
 
-  // Escutar mudanças em tempo real para rodadas
+  // Escutar mudanças em tempo real para rodadas (silencioso)
   useEffect(() => {
     console.log('Configurando escuta em tempo real para rodadas');
     
@@ -108,17 +107,6 @@ export const useRodadas = () => {
           const rodadaAtualizada = payload.new as Rodada;
           
           if (payload.eventType === 'UPDATE') {
-            // Notificar sobre mudanças de status da rodada
-            if (rodadaAtualizada.status === 'ativa' && payload.old?.status === 'aguardando') {
-              toast.success(`🚀 Rodada ${rodadaAtualizada.numero} iniciada!`, {
-                duration: 4000,
-              });
-            } else if (rodadaAtualizada.status === 'finalizada' && payload.old?.status === 'ativa') {
-              toast.info(`⏱️ Rodada ${rodadaAtualizada.numero} finalizada!`, {
-                duration: 5000,
-              });
-            }
-            
             // Atualizar rodada local se for a atual
             setRodadaAtual(prev => {
               if (prev?.id === rodadaAtualizada.id) {
@@ -129,9 +117,6 @@ export const useRodadas = () => {
           } else if (payload.eventType === 'INSERT') {
             // Nova rodada criada
             if (rodadaAtualizada.status === 'aguardando') {
-              toast.info(`📋 Nova rodada ${rodadaAtualizada.numero} criada!`, {
-                duration: 3000,
-              });
               setRodadaAtual(rodadaAtualizada);
             }
           }
