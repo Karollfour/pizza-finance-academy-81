@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipe } from '@/types/database';
@@ -16,6 +17,7 @@ export const useEquipes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchEquipes = async () => {
     try {
@@ -147,18 +149,20 @@ export const useEquipes = () => {
   useEffect(() => {
     fetchEquipes();
 
-    // Create unique channel name
-    const channelName = `equipes-updates-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
+    // Cleanup any existing subscription
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
+
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `equipes-updates-${uniqueId}`;
 
     console.log('Configurando escuta em tempo real para equipes');
     
-    channelRef.current = supabase
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -206,14 +210,24 @@ export const useEquipes = () => {
             setEquipes(prev => prev.filter(equipe => equipe.id !== equipeRemovida.id));
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
       console.log('Removendo escuta em tempo real para equipes');
-      if (channelRef.current) {
+      if (channelRef.current && isSubscribedRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, []);

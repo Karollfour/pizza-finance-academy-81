@@ -9,6 +9,7 @@ export const useCompras = (equipeId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchCompras = async () => {
     try {
@@ -72,18 +73,20 @@ export const useCompras = (equipeId?: string) => {
   useEffect(() => {
     fetchCompras();
 
-    // Create unique channel name
-    const channelName = `compras-updates-${equipeId || 'global'}-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
+    // Cleanup any existing subscription
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `compras-updates-${equipeId || 'global'}-${uniqueId}`;
+    
     console.log('Configurando escuta em tempo real para compras', equipeId ? `da equipe ${equipeId}` : 'globais');
     
-    channelRef.current = supabase
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -122,14 +125,24 @@ export const useCompras = (equipeId?: string) => {
             setCompras(prev => prev.filter(compra => compra.id !== compraRemovida.id));
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
       console.log('Removendo escuta em tempo real para compras');
-      if (channelRef.current) {
+      if (channelRef.current && isSubscribedRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [equipeId]);

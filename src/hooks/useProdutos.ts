@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProdutoLoja } from '@/types/database';
@@ -7,6 +8,7 @@ export const useProdutos = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchProdutos = async () => {
     try {
@@ -111,16 +113,18 @@ export const useProdutos = () => {
   useEffect(() => {
     fetchProdutos();
 
-    // Create unique channel name
-    const channelName = `produtos-updates-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
+    // Cleanup any existing subscription
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
 
-    channelRef.current = supabase
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `produtos-updates-${uniqueId}`;
+    
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -133,13 +137,23 @@ export const useProdutos = () => {
           console.log('Produto atualizado, recarregando...');
           fetchProdutos();
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
-      if (channelRef.current) {
+      if (channelRef.current && isSubscribedRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, []);
