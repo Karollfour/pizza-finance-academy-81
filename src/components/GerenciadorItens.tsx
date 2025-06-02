@@ -17,6 +17,7 @@ const GerenciadorItens = () => {
     durabilidade: 1,
     descricao: ''
   });
+  const [novaImagem, setNovaImagem] = useState<File | null>(null);
   const [editandoProduto, setEditandoProduto] = useState<string | null>(null);
 
   const handleCriarProduto = async () => {
@@ -31,7 +32,8 @@ const GerenciadorItens = () => {
         novoProduto.unidade,
         novoProduto.valorUnitario,
         novoProduto.durabilidade,
-        novoProduto.descricao
+        novoProduto.descricao,
+        novaImagem || undefined
       );
       
       setNovoProduto({
@@ -41,6 +43,7 @@ const GerenciadorItens = () => {
         durabilidade: 1,
         descricao: ''
       });
+      setNovaImagem(null);
       
       toast.success('Produto criado com sucesso!');
     } catch (error) {
@@ -48,9 +51,9 @@ const GerenciadorItens = () => {
     }
   };
 
-  const handleAtualizarProduto = async (produtoId: string, dados: any) => {
+  const handleAtualizarProduto = async (produtoId: string, dados: any, imagemFile?: File) => {
     try {
-      await atualizarProduto(produtoId, dados);
+      await atualizarProduto(produtoId, dados, imagemFile);
       toast.success('Produto atualizado com sucesso!');
       setEditandoProduto(null);
     } catch (error) {
@@ -105,6 +108,15 @@ const GerenciadorItens = () => {
             value={novoProduto.descricao}
             onChange={(e) => setNovoProduto(prev => ({ ...prev, descricao: e.target.value }))}
           />
+          <div>
+            <label className="block text-sm font-medium mb-2">Imagem do produto (opcional)</label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setNovaImagem(e.target.files?.[0] || null)}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </div>
           <Button onClick={handleCriarProduto} className="w-full">
             Criar Produto
           </Button>
@@ -127,6 +139,16 @@ const GerenciadorItens = () => {
               produtos.map((produto) => (
                 <Card key={produto.id} className={`${produto.disponivel ? 'border-green-200' : 'border-red-200'}`}>
                   <CardContent className="p-4">
+                    {produto.imagem && (
+                      <div className="mb-3">
+                        <img 
+                          src={produto.imagem} 
+                          alt={produto.nome}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-lg">{produto.nome}</h3>
                       <Badge variant={produto.disponivel ? 'default' : 'secondary'}>
@@ -174,12 +196,26 @@ const GerenciadorItens = () => {
                             }
                           }}
                         />
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleAtualizarProduto(produto.id, {}, file);
+                            }
+                          }}
+                          className="file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700"
+                        />
                         <Button
                           size="sm"
                           className="w-full"
                           onClick={(e) => {
-                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                            handleAtualizarProduto(produto.id, { valor_unitario: Number(input.value) });
+                            const inputs = e.currentTarget.parentElement?.querySelectorAll('input');
+                            const priceInput = inputs?.[0] as HTMLInputElement;
+                            if (priceInput) {
+                              handleAtualizarProduto(produto.id, { valor_unitario: Number(priceInput.value) });
+                            }
                           }}
                         >
                           Atualizar Preço

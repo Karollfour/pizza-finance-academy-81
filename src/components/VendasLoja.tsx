@@ -5,11 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { useCompras } from '@/hooks/useCompras';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { toast } from 'sonner';
+import { Trash2, Plus, Minus } from 'lucide-react';
+
+interface ItemCarrinho {
+  produtoId: string;
+  quantidade: number;
+  produto: any;
+}
 
 const VendasLoja = () => {
   const { compras, registrarCompra } = useCompras();
@@ -17,61 +26,103 @@ const VendasLoja = () => {
   const { produtos } = useProdutos();
   const { rodadaAtual } = useOptimizedRodadas();
   
-  const [novaVenda, setNovaVenda] = useState({
-    equipeId: '',
-    produtoId: '',
-    quantidade: 1,
-    tipo: 'material' as 'material' | 'viagem',
-    descricao: ''
-  });
+  const [equipeId, setEquipeId] = useState('');
+  const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
+  const [cobrancaViagem, setCobrancaViagem] = useState(true);
+  const [descricaoVenda, setDescricaoVenda] = useState('');
 
-  const handleRegistrarVenda = async () => {
-    if (!novaVenda.equipeId) {
+  const adicionarAoCarrinho = (produtoId: string) => {
+    const produto = produtos.find(p => p.id === produtoId);
+    if (!produto) return;
+
+    const itemExistente = carrinho.find(item => item.produtoId === produtoId);
+    
+    if (itemExistente) {
+      setCarrinho(prev => prev.map(item => 
+        item.produtoId === produtoId 
+          ? { ...item, quantidade: item.quantidade + 1 }
+          : item
+      ));
+    } else {
+      setCarrinho(prev => [...prev, { produtoId, quantidade: 1, produto }]);
+    }
+  };
+
+  const removerDoCarrinho = (produtoId: string) => {
+    setCarrinho(prev => prev.filter(item => item.produtoId !== produtoId));
+  };
+
+  const alterarQuantidade = (produtoId: string, novaQuantidade: number) => {
+    if (novaQuantidade <= 0) {
+      removerDoCarrinho(produtoId);
+      return;
+    }
+
+    setCarrinho(prev => prev.map(item => 
+      item.produtoId === produtoId 
+        ? { ...item, quantidade: novaQuantidade }
+        : item
+    ));
+  };
+
+  const calcularTotalCarrinho = () => {
+    const totalProdutos = carrinho.reduce((total, item) => 
+      total + (item.produto.valor_unitario * item.quantidade), 0
+    );
+    const valorViagem = cobrancaViagem ? 10 : 0;
+    return totalProdutos + valorViagem;
+  };
+
+  const limparCarrinho = () => {
+    setCarrinho([]);
+    setEquipeId('');
+    setCobrancaViagem(true);
+    setDescricaoVenda('');
+  };
+
+  const finalizarVenda = async () => {
+    if (!equipeId) {
       toast.error('Selecione uma equipe!');
       return;
     }
 
-    if (novaVenda.tipo === 'material' && !novaVenda.produtoId) {
-      toast.error('Selecione um produto para venda de material!');
+    if (carrinho.length === 0 && !cobrancaViagem) {
+      toast.error('Adicione pelo menos um produto ou marque a cobrança de viagem!');
       return;
     }
 
     try {
-      const produto = produtos.find(p => p.id === novaVenda.produtoId);
-      const valorTotal = novaVenda.tipo === 'viagem' 
-        ? 10 // Valor fixo para viagem
-        : produto 
-          ? produto.valor_unitario * novaVenda.quantidade
-          : 0;
+      // Registrar compra para cada produto no carrinho
+      for (const item of carrinho) {
+        await registrarCompra(
+          equipeId,
+          item.produtoId,
+          rodadaAtual?.id || null,
+          item.quantidade,
+          item.produto.valor_unitario * item.quantidade,
+          'material',
+          descricaoVenda || `Compra: ${item.produto.nome} (${item.quantidade} ${item.produto.unidade})`
+        );
+      }
 
-      await registrarCompra(
-        novaVenda.equipeId,
-        novaVenda.tipo === 'material' ? novaVenda.produtoId : null,
-        rodadaAtual?.id || null,
-        novaVenda.quantidade,
-        valorTotal,
-        novaVenda.tipo,
-        novaVenda.descricao
-      );
+      // Registrar cobrança de viagem se marcada
+      if (cobrancaViagem) {
+        await registrarCompra(
+          equipeId,
+          null,
+          rodadaAtual?.id || null,
+          1,
+          10,
+          'viagem',
+          descricaoVenda || 'Taxa de viagem à loja'
+        );
+      }
 
-      setNovaVenda({
-        equipeId: '',
-        produtoId: '',
-        quantidade: 1,
-        tipo: 'material',
-        descricao: ''
-      });
-
-      toast.success('Venda registrada com sucesso!');
+      limparCarrinho();
+      toast.success('Venda finalizada com sucesso!');
     } catch (error) {
-      toast.error('Erro ao registrar venda');
+      toast.error('Erro ao finalizar venda');
     }
-  };
-
-  const getProdutoNome = (produtoId: string | null) => {
-    if (!produtoId) return 'Viagem';
-    const produto = produtos.find(p => p.id === produtoId);
-    return produto ? produto.nome : 'Produto não encontrado';
   };
 
   const getEquipeNome = (equipeId: string) => {
@@ -93,106 +144,178 @@ const VendasLoja = () => {
 
   return (
     <div className="space-y-6">
-      {/* Registrar Nova Venda */}
+      {/* Carrinho de Compras */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-blue-600">💰 Registrar Nova Venda</CardTitle>
+          <CardTitle className="text-blue-600">🛒 Carrinho de Compras</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Seleção de Equipe */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Equipe</label>
+            <Select value={equipeId} onValueChange={setEquipeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma equipe" />
+              </SelectTrigger>
+              <SelectContent>
+                {equipes.map((equipe) => (
+                  <SelectItem key={equipe.id} value={equipe.id}>
+                    {equipe.nome} - R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)} disponível
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Seleção de Produtos */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Adicionar Produtos</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {produtos
+                .filter(p => p.disponivel)
+                .map((produto) => (
+                  <Card key={produto.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-3">
+                      {produto.imagem && (
+                        <img 
+                          src={produto.imagem} 
+                          alt={produto.nome}
+                          className="w-full h-20 object-cover rounded mb-2"
+                        />
+                      )}
+                      <h4 className="font-medium text-sm">{produto.nome}</h4>
+                      <p className="text-xs text-gray-600">{produto.unidade}</p>
+                      <p className="text-sm font-semibold text-green-600">
+                        R$ {produto.valor_unitario.toFixed(2)}
+                      </p>
+                      <Button 
+                        size="sm" 
+                        className="w-full mt-2"
+                        onClick={() => adicionarAoCarrinho(produto.id)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Adicionar
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
+
+          {/* Itens no Carrinho */}
+          {carrinho.length > 0 && (
             <div>
-              <label className="block text-sm font-medium mb-1">Equipe</label>
-              <Select value={novaVenda.equipeId} onValueChange={(value) => setNovaVenda(prev => ({ ...prev, equipeId: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma equipe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipes.map((equipe) => (
-                    <SelectItem key={equipe.id} value={equipe.id}>
-                      {equipe.nome} - R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)} disponível
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Separator className="my-4" />
+              <h3 className="font-medium mb-3">Itens no Carrinho</h3>
+              <div className="space-y-2">
+                {carrinho.map((item) => (
+                  <div key={item.produtoId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      {item.produto.imagem && (
+                        <img 
+                          src={item.produto.imagem} 
+                          alt={item.produto.nome}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium">{item.produto.nome}</p>
+                        <p className="text-sm text-gray-600">
+                          R$ {item.produto.valor_unitario.toFixed(2)} por {item.produto.unidade}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => alterarQuantidade(item.produtoId, item.quantidade - 1)}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="w-8 text-center">{item.quantidade}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => alterarQuantidade(item.produtoId, item.quantidade + 1)}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removerDoCarrinho(item.produtoId)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                      <span className="font-semibold text-green-600 ml-2">
+                        R$ {(item.produto.valor_unitario * item.quantidade).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Opções Adicionais */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="cobrancaViagem" 
+                checked={cobrancaViagem}
+                onCheckedChange={setCobrancaViagem}
+              />
+              <label htmlFor="cobrancaViagem" className="text-sm">
+                Cobrar taxa de viagem à loja (R$ 10,00)
+              </label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Tipo de Venda</label>
-              <Select value={novaVenda.tipo} onValueChange={(value: 'material' | 'viagem') => setNovaVenda(prev => ({ ...prev, tipo: value, produtoId: value === 'viagem' ? '' : prev.produtoId }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="material">🛒 Material</SelectItem>
-                  <SelectItem value="viagem">🚗 Viagem</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {novaVenda.tipo === 'material' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Produto</label>
-                  <Select value={novaVenda.produtoId} onValueChange={(value) => setNovaVenda(prev => ({ ...prev, produtoId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um produto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {produtos.filter(p => p.disponivel).map((produto) => (
-                        <SelectItem key={produto.id} value={produto.id}>
-                          {produto.nome} - R$ {produto.valor_unitario.toFixed(2)} por {produto.unidade}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">Quantidade</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={novaVenda.quantidade}
-                    onChange={(e) => setNovaVenda(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1">Descrição (opcional)</label>
+              <label className="block text-sm font-medium mb-1">Observações (opcional)</label>
               <Input
                 placeholder="Detalhes da venda..."
-                value={novaVenda.descricao}
-                onChange={(e) => setNovaVenda(prev => ({ ...prev, descricao: e.target.value }))}
+                value={descricaoVenda}
+                onChange={(e) => setDescricaoVenda(e.target.value)}
               />
             </div>
           </div>
 
-          {novaVenda.tipo === 'material' && novaVenda.produtoId && (
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Total:</strong> R$ {
-                  (() => {
-                    const produto = produtos.find(p => p.id === novaVenda.produtoId);
-                    return produto ? (produto.valor_unitario * novaVenda.quantidade).toFixed(2) : '0.00';
-                  })()
-                }
-              </p>
+          {/* Total e Finalização */}
+          {(carrinho.length > 0 || cobrancaViagem) && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm">Subtotal produtos:</span>
+                <span className="font-semibold">
+                  R$ {carrinho.reduce((total, item) => 
+                    total + (item.produto.valor_unitario * item.quantidade), 0
+                  ).toFixed(2)}
+                </span>
+              </div>
+              {cobrancaViagem && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm">Taxa de viagem:</span>
+                  <span className="font-semibold">R$ 10,00</span>
+                </div>
+              )}
+              <Separator className="my-2" />
+              <div className="flex justify-between items-center text-lg">
+                <span className="font-bold">Total:</span>
+                <span className="font-bold text-green-600">
+                  R$ {calcularTotalCarrinho().toFixed(2)}
+                </span>
+              </div>
             </div>
           )}
 
-          {novaVenda.tipo === 'viagem' && (
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <p className="text-sm text-orange-700">
-                <strong>Total:</strong> R$ 10.00 (valor fixo para viagem)
-              </p>
-            </div>
-          )}
-
-          <Button onClick={handleRegistrarVenda} className="w-full">
-            Registrar Venda
-          </Button>
+          <div className="flex space-x-2">
+            <Button onClick={finalizarVenda} className="flex-1" disabled={!equipeId}>
+              Finalizar Venda
+            </Button>
+            <Button onClick={limparCarrinho} variant="outline">
+              Limpar Carrinho
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -243,7 +366,10 @@ const VendasLoja = () => {
                     <div>
                       <div className="font-medium">{getEquipeNome(venda.equipe_id)}</div>
                       <div className="text-sm text-gray-600">
-                        {getProdutoNome(venda.produto_id)} • {new Date(venda.created_at).toLocaleString('pt-BR')}
+                        {venda.produto_id ? 
+                          produtos.find(p => p.id === venda.produto_id)?.nome || 'Produto não encontrado' : 
+                          'Viagem'
+                        } • {new Date(venda.created_at).toLocaleString('pt-BR')}
                       </div>
                     </div>
                     <div className="text-right">
