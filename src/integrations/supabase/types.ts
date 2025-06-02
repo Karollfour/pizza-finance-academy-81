@@ -151,6 +151,7 @@ export type Database = {
           justificativa_reprovacao: string | null
           resultado: string | null
           rodada_id: string
+          sabor_id: string | null
           status: string
           tempo_producao_segundos: number | null
           updated_at: string
@@ -163,6 +164,7 @@ export type Database = {
           justificativa_reprovacao?: string | null
           resultado?: string | null
           rodada_id: string
+          sabor_id?: string | null
           status?: string
           tempo_producao_segundos?: number | null
           updated_at?: string
@@ -175,6 +177,7 @@ export type Database = {
           justificativa_reprovacao?: string | null
           resultado?: string | null
           rodada_id?: string
+          sabor_id?: string | null
           status?: string
           tempo_producao_segundos?: number | null
           updated_at?: string
@@ -192,6 +195,13 @@ export type Database = {
             columns: ["rodada_id"]
             isOneToOne: false
             referencedRelation: "rodadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pizzas_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores_pizza"
             referencedColumns: ["id"]
           },
         ]
