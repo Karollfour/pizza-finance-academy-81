@@ -15,6 +15,7 @@ export const useHistoricoRodadas = (equipeId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchHistoricoRodadas = async () => {
     try {
@@ -71,22 +72,28 @@ export const useHistoricoRodadas = (equipeId?: string) => {
     }
   };
 
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+  };
+
   useEffect(() => {
     fetchHistoricoRodadas();
   }, [equipeId]);
 
   // Escutar mudanças em tempo real
   useEffect(() => {
-    // Create unique channel name
-    const channelName = `historico-rodadas-${equipeId || 'global'}-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    // Cleanup any existing subscription
+    cleanupChannel();
 
-    channelRef.current = supabase
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `historico-rodadas-${equipeId || 'global'}-${uniqueId}`;
+    
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -110,14 +117,20 @@ export const useHistoricoRodadas = (equipeId?: string) => {
         () => {
           fetchHistoricoRodadas();
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
   }, [equipeId]);
 

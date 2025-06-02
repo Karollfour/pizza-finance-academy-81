@@ -8,6 +8,7 @@ export const useRodadas = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchRodadaAtual = async () => {
     try {
@@ -90,20 +91,26 @@ export const useRodadas = () => {
     }
   };
 
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+  };
+
   // Escutar mudanças em tempo real para rodadas (silencioso)
   useEffect(() => {
     console.log('Configurando escuta em tempo real para rodadas');
     
-    // Create unique channel name
-    const channelName = `rodadas-updates-${Date.now()}`;
+    // Cleanup any existing subscription
+    cleanupChannel();
+
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `rodadas-updates-${uniqueId}`;
     
-    // Cleanup previous channel
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-    
-    channelRef.current = supabase
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -131,15 +138,21 @@ export const useRodadas = () => {
             }
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
       console.log('Removendo escuta em tempo real para rodadas');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
   }, []);
 

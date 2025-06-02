@@ -13,6 +13,7 @@ export const useSabores = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchSabores = async () => {
     try {
@@ -247,18 +248,24 @@ export const useSabores = () => {
     }
   };
 
-  // Escutar mudanças em tempo real
-  useEffect(() => {
-    // Create unique channel name
-    const channelName = `sabores-realtime-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
+  };
 
-    channelRef.current = supabase
+  // Escutar mudanças em tempo real
+  useEffect(() => {
+    // Cleanup any existing subscription
+    cleanupChannel();
+
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `sabores-realtime-${uniqueId}`;
+    
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -296,14 +303,20 @@ export const useSabores = () => {
             setSabores(prev => prev.filter(sabor => sabor.id !== saborRemovido.id));
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
   }, []);
 
