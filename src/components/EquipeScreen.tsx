@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -8,9 +9,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import { useHistoricoRodadas } from '@/hooks/useHistoricoRodadas';
-import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
 import FilaProducao from './FilaProducao';
-import RealtimeConnectionIndicator from './RealtimeConnectionIndicator';
 import { toast } from 'sonner';
 
 interface EquipeScreenProps {
@@ -24,12 +23,6 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
   const { compras } = useCompras(equipeAtual?.id);
   const { rodadas: historicoRodadas } = useHistoricoRodadas(equipeAtual?.id);
-
-  // Sistema realtime centralizado - silencioso
-  const { isConnected } = useGlobalRealtime({
-    enableHeartbeat: true,
-    silent: true
-  });
 
   // Timer sincronizado
   const {
@@ -124,11 +117,6 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4">
-      {/* Indicador de conexão no canto superior direito */}
-      <div className="fixed top-4 right-20 z-50">
-        <RealtimeConnectionIndicator showDetails={false} />
-      </div>
-      
       <div className="max-w-7xl mx-auto">
         {/* Header da Equipe */}
         <div className="text-center mb-6">

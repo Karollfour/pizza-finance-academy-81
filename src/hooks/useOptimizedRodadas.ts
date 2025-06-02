@@ -37,7 +37,7 @@ export const useOptimizedRodadas = () => {
         setRodadaAtual(novaRodada);
         setLastUpdate(new Date());
         
-        // Broadcast do evento para outros hooks
+        // Broadcast silencioso do evento para outros hooks
         if (novaRodada && typeof window !== 'undefined') {
           const event: RodadaEvent = {
             type: novaRodada.status === 'ativa' ? 'STARTED' : 'UPDATED',
@@ -83,8 +83,8 @@ export const useOptimizedRodadas = () => {
         }));
       }
       
-      toast.success('🚀 Rodada iniciada! Sincronizando todas as telas...', {
-        duration: 3000,
+      toast.success('🚀 Rodada iniciada!', {
+        duration: 2000,
       });
       
     } catch (err) {
@@ -118,8 +118,8 @@ export const useOptimizedRodadas = () => {
         }));
       }
       
-      toast.success('🏁 Rodada finalizada! Sincronizando todas as telas...', {
-        duration: 3000,
+      toast.success('🏁 Rodada finalizada!', {
+        duration: 2000,
       });
       
     } catch (err) {
@@ -158,8 +158,8 @@ export const useOptimizedRodadas = () => {
         }));
       }
       
-      toast.success(`🎯 Rodada ${numero} criada! Sincronizando todas as telas...`, {
-        duration: 3000,
+      toast.success(`🎯 Rodada ${numero} criada!`, {
+        duration: 2000,
       });
       
       return data as Rodada;
@@ -171,8 +171,6 @@ export const useOptimizedRodadas = () => {
 
   // Escutar mudanças em tempo real otimizado
   useEffect(() => {
-    console.log('🎯 Configurando escuta otimizada para rodadas');
-    
     const channel = supabase
       .channel('rodadas-optimized')
       .on(
@@ -183,8 +181,6 @@ export const useOptimizedRodadas = () => {
           table: 'rodadas'
         },
         async (payload) => {
-          console.log('🔄 Rodada atualizada via realtime:', payload);
-          
           const rodadaAtualizada = payload.new as Rodada;
           
           if (payload.eventType === 'UPDATE') {
@@ -193,7 +189,7 @@ export const useOptimizedRodadas = () => {
               setRodadaAtual(rodadaAtualizada);
               setLastUpdate(new Date());
               
-              // Notificar sobre mudanças importantes
+              // Notificar sobre mudanças importantes silenciosamente
               if (rodadaAtual.status !== rodadaAtualizada.status) {
                 const evento = rodadaAtualizada.status === 'ativa' ? 'STARTED' : 
                               rodadaAtualizada.status === 'finalizada' ? 'FINISHED' : 'UPDATED';
@@ -210,12 +206,12 @@ export const useOptimizedRodadas = () => {
                 
                 // Notificações específicas para mudanças de status
                 if (rodadaAtualizada.status === 'ativa') {
-                  toast.success('🚀 Rodada iniciada automaticamente!', {
-                    duration: 4000,
+                  toast.success('🚀 Rodada iniciada!', {
+                    duration: 3000,
                   });
                 } else if (rodadaAtualizada.status === 'finalizada') {
                   toast.info('🏁 Rodada finalizada!', {
-                    duration: 4000,
+                    duration: 3000,
                   });
                 }
               }
@@ -227,7 +223,7 @@ export const useOptimizedRodadas = () => {
               setLastUpdate(new Date());
               
               toast.success(`🎯 Nova rodada ${rodadaAtualizada.numero} criada!`, {
-                duration: 4000,
+                duration: 3000,
               });
             }
           }
@@ -236,7 +232,6 @@ export const useOptimizedRodadas = () => {
       .subscribe();
 
     return () => {
-      console.log('🎯 Removendo escuta otimizada para rodadas');
       supabase.removeChannel(channel);
     };
   }, [rodadaAtual]);
@@ -244,7 +239,6 @@ export const useOptimizedRodadas = () => {
   // Escutar eventos customizados globais
   useEffect(() => {
     const handleRodadaEvent = (event: CustomEvent) => {
-      console.log('📡 Evento de rodada recebido:', event.detail);
       // Refetch silencioso para garantir sincronização
       fetchRodadaAtual(true);
     };

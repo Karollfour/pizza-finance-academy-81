@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +13,6 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
-import { useGlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
-import RealtimeConnectionIndicator from '@/components/RealtimeConnectionIndicator';
 import { toast } from 'sonner';
 
 interface SaborRodada {
@@ -40,9 +37,6 @@ const ProducaoScreen = () => {
   const { atualizarConfiguracao } = useConfiguracoes();
   const { sabores } = useSabores();
   const { resetarJogo, loading: resetLoading } = useResetJogo();
-  
-  // Usar sistema centralizado de realtime
-  const { isConnected, connectionQuality } = useGlobalRealtimeContext();
 
   // Timer sincronizado
   const {
@@ -52,7 +46,6 @@ const ProducaoScreen = () => {
     progressPercentage
   } = useSynchronizedTimer(rodadaAtual, {
     onTimeUp: () => {
-      console.log('⏰ Timer acabou - finalizando rodada automaticamente');
       if (rodadaAtual) {
         handleFinalizarRodada();
       }
@@ -152,7 +145,6 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       await iniciarRodada(rodadaAtual.id);
-      // A notificação já é enviada pelo hook otimizado
     } catch (error) {
       toast.error('Erro ao iniciar rodada');
     }
@@ -162,7 +154,6 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       await finalizarRodada(rodadaAtual.id);
-      // A notificação já é enviada pelo hook otimizado
       await refetchCounter();
     } catch (error) {
       toast.error('Erro ao finalizar rodada');
@@ -172,7 +163,6 @@ const ProducaoScreen = () => {
   const handleCriarNovaRodada = async () => {
     try {
       await criarNovaRodada(proximoNumero, novoTempoLimite);
-      // A notificação já é enviada pelo hook otimizado
       await refetchCounter();
     } catch (error) {
       toast.error('Erro ao criar nova rodada');
@@ -223,11 +213,6 @@ const ProducaoScreen = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
-      {/* Indicador de conexão realtime */}
-      <div className="fixed top-4 right-4 z-50">
-        <RealtimeConnectionIndicator showDetails={true} />
-      </div>
-
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-red-600 mb-2">
@@ -235,10 +220,7 @@ const ProducaoScreen = () => {
           </h1>
           <p className="text-gray-600">Acompanhe o status das pizzas em tempo real</p>
           <div className="mt-2 text-sm text-gray-500">
-            Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')} • 
-            Conexão: <span className={isConnected ? 'text-green-600' : 'text-red-600'}>
-              {isConnected ? 'Online' : 'Offline'}
-            </span>
+            Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
           </div>
         </div>
 
@@ -309,19 +291,16 @@ const ProducaoScreen = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Rodada {numeroRodadaDisplay}</span>
-              <div className="flex items-center space-x-2">
-                <Badge 
-                  variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}
-                  className={
-                    rodadaAtual?.status === 'ativa' ? 'bg-green-500' :
-                    rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'
-                  }
-                >
-                  {rodadaAtual?.status === 'ativa' ? "Em Andamento" : 
-                   rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
-                </Badge>
-                <RealtimeConnectionIndicator showDetails={false} />
-              </div>
+              <Badge 
+                variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}
+                className={
+                  rodadaAtual?.status === 'ativa' ? 'bg-green-500' :
+                  rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'
+                }
+              >
+                {rodadaAtual?.status === 'ativa' ? "Em Andamento" : 
+                 rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
