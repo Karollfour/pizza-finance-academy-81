@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza } from '@/types/database';
@@ -113,7 +114,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
     }
   };
 
-  // Escutar mudanças em tempo real para pizzas (silencioso)
+  // Escutar mudanças em tempo real para pizzas
   useEffect(() => {
     console.log('Configurando escuta em tempo real para pizzas', equipeId ? `da equipe ${equipeId}` : 'globais');
     
@@ -127,17 +128,53 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
           table: 'pizzas',
           ...(equipeId && { filter: `equipe_id=eq.${equipeId}` })
         },
-        (payload) => {
+        async (payload) => {
           console.log('Pizza atualizada:', payload);
           
           if (payload.eventType === 'INSERT') {
             const novaPizza = payload.new as Pizza;
-            setPizzas(prev => [novaPizza, ...prev]);
+            
+            // Buscar dados completos da pizza com sabor
+            const { data: pizzaCompleta } = await supabase
+              .from('pizzas')
+              .select(`
+                *,
+                sabor:sabores_pizza(*)
+              `)
+              .eq('id', novaPizza.id)
+              .single();
+            
+            if (pizzaCompleta) {
+              setPizzas(prev => [pizzaCompleta as unknown as Pizza, ...prev]);
+              
+              // Disparar evento para notificar outras telas
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('nova-pizza-disponivel', { 
+                  detail: { 
+                    pizza: pizzaCompleta,
+                    timestamp: new Date().toISOString() 
+                  } 
+                }));
+              }
+            }
           } else if (payload.eventType === 'UPDATE') {
             const pizzaAtualizada = payload.new as Pizza;
-            setPizzas(prev => prev.map(pizza => 
-              pizza.id === pizzaAtualizada.id ? pizzaAtualizada : pizza
-            ));
+            
+            // Buscar dados completos da pizza com sabor
+            const { data: pizzaCompleta } = await supabase
+              .from('pizzas')
+              .select(`
+                *,
+                sabor:sabores_pizza(*)
+              `)
+              .eq('id', pizzaAtualizada.id)
+              .single();
+            
+            if (pizzaCompleta) {
+              setPizzas(prev => prev.map(pizza => 
+                pizza.id === pizzaAtualizada.id ? pizzaCompleta as unknown as Pizza : pizza
+              ));
+            }
           } else if (payload.eventType === 'DELETE') {
             const pizzaRemovida = payload.old as Pizza;
             setPizzas(prev => prev.filter(pizza => pizza.id !== pizzaRemovida.id));

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SaborPizza } from '@/types/database';
@@ -23,14 +24,21 @@ export const useSabores = () => {
 
       if (error) throw error;
       
-      // Converter para o formato esperado
-      const saboresFormatados: Sabor[] = (data || []).map(sabor => ({
-        ...sabor,
-        ingredientes: [], // Por enquanto vazio, pode ser implementado depois
-        imagem: sabor.imagem
-      }));
+      // Converter para o formato esperado - apenas Pepperoni e Mussarela
+      const saboresFormatados: Sabor[] = (data || [])
+        .filter(sabor => ['Pepperoni', 'Mussarela'].includes(sabor.nome))
+        .map(sabor => ({
+          ...sabor,
+          ingredientes: [],
+          imagem: sabor.imagem
+        }));
       
       setSabores(saboresFormatados);
+      
+      // Se não houver sabores no banco, criar os padrão
+      if (saboresFormatados.length === 0) {
+        await inicializarSaboresDefault();
+      }
     } catch (err) {
       console.error('Erro ao carregar sabores:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar sabores');
@@ -48,6 +56,11 @@ export const useSabores = () => {
     imagemFile?: File
   ) => {
     try {
+      // Apenas permitir Pepperoni e Mussarela
+      if (!['Pepperoni', 'Mussarela'].includes(nome)) {
+        throw new Error('Apenas sabores Pepperoni e Mussarela são permitidos');
+      }
+
       let imagemUrl = null;
       if (imagemFile) {
         imagemUrl = await uploadImagem(imagemFile);
@@ -175,29 +188,62 @@ export const useSabores = () => {
     }
   };
 
-  const inicializarSaboresDefault = () => {
-    const saboresDefault: Sabor[] = [
-      { 
-        id: '1',
-        nome: 'Pepperoni', 
-        descricao: 'Pizza de pepperoni com queijo mussarela',
-        disponivel: true,
-        created_at: new Date().toISOString(),
-        ingredientes: [],
-        imagem: null
-      },
-      { 
-        id: '2',
-        nome: 'Mussarela', 
-        descricao: 'Pizza de queijo mussarela',
-        disponivel: true,
-        created_at: new Date().toISOString(),
-        ingredientes: [],
-        imagem: null
-      }
-    ];
+  const inicializarSaboresDefault = async () => {
+    try {
+      // Criar sabores padrão no banco se não existirem
+      const saboresDefault = [
+        { nome: 'Pepperoni', descricao: 'Pizza de pepperoni com queijo mussarela' },
+        { nome: 'Mussarela', descricao: 'Pizza de queijo mussarela' }
+      ];
 
-    setSabores(saboresDefault);
+      for (const sabor of saboresDefault) {
+        // Verificar se já existe
+        const { data: existente } = await supabase
+          .from('sabores_pizza')
+          .select('id')
+          .eq('nome', sabor.nome)
+          .single();
+
+        if (!existente) {
+          await supabase
+            .from('sabores_pizza')
+            .insert({
+              nome: sabor.nome,
+              descricao: sabor.descricao,
+              disponivel: true
+            });
+        }
+      }
+
+      // Recarregar sabores após criação
+      await fetchSabores();
+    } catch (err) {
+      console.error('Erro ao inicializar sabores default:', err);
+      
+      // Fallback local se o banco falhar
+      const saboresLocal: Sabor[] = [
+        { 
+          id: '1',
+          nome: 'Pepperoni', 
+          descricao: 'Pizza de pepperoni com queijo mussarela',
+          disponivel: true,
+          created_at: new Date().toISOString(),
+          ingredientes: [],
+          imagem: null
+        },
+        { 
+          id: '2',
+          nome: 'Mussarela', 
+          descricao: 'Pizza de queijo mussarela',
+          disponivel: true,
+          created_at: new Date().toISOString(),
+          ingredientes: [],
+          imagem: null
+        }
+      ];
+
+      setSabores(saboresLocal);
+    }
   };
 
   // Escutar mudanças em tempo real
@@ -215,17 +261,28 @@ export const useSabores = () => {
           console.log('Sabor atualizado em tempo real:', payload);
           
           if (payload.eventType === 'INSERT') {
-            const novoSabor = payload.new as Sabor;
-            novoSabor.ingredientes = [];
-            setSabores(prev => [...prev, novoSabor]);
+            const novoSabor = payload.new as SaborPizza;
+            // Apenas adicionar se for Pepperoni ou Mussarela
+            if (['Pepperoni', 'Mussarela'].includes(novoSabor.nome)) {
+              const saborFormatado: Sabor = {
+                ...novoSabor,
+                ingredientes: []
+              };
+              setSabores(prev => [...prev, saborFormatado]);
+            }
           } else if (payload.eventType === 'UPDATE') {
-            const saborAtualizado = payload.new as Sabor;
-            saborAtualizado.ingredientes = [];
-            setSabores(prev => prev.map(sabor => 
-              sabor.id === saborAtualizado.id ? saborAtualizado : sabor
-            ));
+            const saborAtualizado = payload.new as SaborPizza;
+            if (['Pepperoni', 'Mussarela'].includes(saborAtualizado.nome)) {
+              const saborFormatado: Sabor = {
+                ...saborAtualizado,
+                ingredientes: []
+              };
+              setSabores(prev => prev.map(sabor => 
+                sabor.id === saborFormatado.id ? saborFormatado : sabor
+              ));
+            }
           } else if (payload.eventType === 'DELETE') {
-            const saborRemovido = payload.old as Sabor;
+            const saborRemovido = payload.old as SaborPizza;
             setSabores(prev => prev.filter(sabor => sabor.id !== saborRemovido.id));
           }
         }

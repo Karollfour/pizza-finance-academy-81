@@ -9,6 +9,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import { useHistoricoRodadas } from '@/hooks/useHistoricoRodadas';
+import { useAppState } from '@/hooks/useAppState';
 import FilaProducao from './FilaProducao';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ interface EquipeScreenProps {
 const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
   const { rodadaAtual, lastUpdate } = useOptimizedRodadas();
   const { equipes, loading: equipesLoading } = useEquipes();
+  const { appState, updateSelectedTeam } = useAppState();
   const [equipeAtual, setEquipeAtual] = useState<any>(null);
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
   const { compras } = useCompras(equipeAtual?.id);
@@ -64,8 +66,10 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
     
     if (equipe) {
       setEquipeAtual(equipe);
+      // Atualizar estado persistente
+      updateSelectedTeam(equipe.nome, equipe.id);
     }
-  }, [equipes, teamName, teamId]);
+  }, [equipes, teamName, teamId, updateSelectedTeam]);
 
   // Escutar eventos globais de rodada para feedback instantâneo
   useEffect(() => {
@@ -88,16 +92,27 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
       });
     };
 
+    const handlePizzaAvaliada = (event: CustomEvent) => {
+      const { resultado } = event.detail;
+      const emoji = resultado === 'aprovada' ? '✅' : '❌';
+      toast.info(`${emoji} Sua pizza foi ${resultado}!`, {
+        duration: 4000,
+      });
+      refetchPizzas(); // Atualizar lista de pizzas imediatamente
+    };
+
     window.addEventListener('rodada-iniciada', handleRodadaIniciada);
     window.addEventListener('rodada-finalizada', handleRodadaFinalizada);
     window.addEventListener('rodada-criada', handleRodadaCriada as EventListener);
+    window.addEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
 
     return () => {
       window.removeEventListener('rodada-iniciada', handleRodadaIniciada);
       window.removeEventListener('rodada-finalizada', handleRodadaFinalizada);
       window.removeEventListener('rodada-criada', handleRodadaCriada as EventListener);
+      window.removeEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
     };
-  }, []);
+  }, [refetchPizzas]);
 
   const handlePizzaEnviada = () => {
     refetchPizzas();
@@ -152,7 +167,7 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
             </div>
           </div>
           
-          {/* Status da Rodada sem indicadores de conexão */}
+          {/* Status da Rodada com sincronização em tempo real */}
           <Card className="shadow-lg border-2 border-yellow-200">
             <CardContent className="p-4">
               {rodadaAtual ? (
@@ -189,7 +204,7 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
                 </div>
               )}
               
-              {/* Mostrar última atualização */}
+              {/* Mostrar última sincronização */}
               <div className="mt-2 text-xs text-gray-500 text-center">
                 Última sincronização: {lastUpdate.toLocaleTimeString('pt-BR')}
               </div>
@@ -197,7 +212,7 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal - Produção */}
+        {/* Conteúdo Principal - Produção com atualização automática */}
         <div className="space-y-6">
           <FilaProducao 
             equipeId={equipeAtual.id} 
@@ -206,7 +221,7 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
           />
         </div>
 
-        {/* Histórico de Rodadas */}
+        {/* Histórico de Rodadas com dados em tempo real */}
         {historicoRodadas.length > 0 && (
           <div className="mt-8">
             <Card className="shadow-lg border-2 border-gray-200">
@@ -269,7 +284,7 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
           </div>
         )}
 
-        {/* Estatísticas Rápidas */}
+        {/* Estatísticas Rápidas com dados atualizados */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="text-center p-4">
             <div className="text-2xl font-bold text-blue-600">{pizzas.length}</div>
