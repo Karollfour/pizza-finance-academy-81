@@ -88,58 +88,70 @@ const ProducaoScreen = () => {
     });
   };
 
-  // Verificar se deve trocar de sabor baseado nas pizzas enviadas
+  // Efeito principal para verificar mudança de sabor baseado nas pizzas
   useEffect(() => {
-    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || equipes.length === 0) return;
+    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || equipes.length === 0 || pizzas.length === 0) return;
+    
     const metadeEquipes = Math.ceil(equipes.length / 2);
-
-    // Contar pizzas únicas por equipe na rodada atual
+    
+    // Contar equipes únicas que enviaram pizzas
     const equipesQueEnviaram = new Set<string>();
     pizzas.forEach(pizza => {
       equipesQueEnviaram.add(pizza.equipe_id);
     });
     const numEquipesQueEnviaram = equipesQueEnviaram.size;
 
-    // Só trocar se:
-    // 1. Chegou na metade das equipes
-    // 2. Ainda não trocou para este número de equipes
-    // 3. Há mais equipes que enviaram do que a última troca
-    if (numEquipesQueEnviaram > 0 && numEquipesQueEnviaram % metadeEquipes === 0 && numEquipesQueEnviaram > ultimaTrocaEmEquipes) {
+    console.log(`Verificando troca de sabor: ${numEquipesQueEnviaram} equipes enviaram, metade necessária: ${metadeEquipes}, última troca em: ${ultimaTrocaEmEquipes}`);
+
+    // Verificar se deve trocar sabor
+    if (numEquipesQueEnviaram >= metadeEquipes && numEquipesQueEnviaram > ultimaTrocaEmEquipes) {
+      console.log('Iniciando troca de sabor...');
+      
       // Atualizar histórico do sabor anterior se existe
       if (historicoSabores.length > 0) {
-        setHistoricoSabores(prev => prev.map((item, index) => index === prev.length - 1 ? {
-          ...item,
-          pizzasEnviadas: pizzas.length,
-          equipesQueEnviaram: Array.from(equipesQueEnviaram) as string[]
-        } : item));
+        setHistoricoSabores(prev => prev.map((item, index) => 
+          index === prev.length - 1 ? {
+            ...item,
+            pizzasEnviadas: pizzas.length,
+            equipesQueEnviaram: Array.from(equipesQueEnviaram) as string[]
+          } : item
+        ));
       }
 
       // Marcar que já houve troca para este número de equipes
       setUltimaTrocaEmEquipes(numEquipesQueEnviaram);
 
-      // Iniciar novo sabor após um pequeno delay
+      // Iniciar novo sabor após pequeno delay
       setTimeout(() => {
         iniciarNovoSabor();
       }, 1000);
     }
-  }, [pizzas.length, equipes.length, rodadaAtual?.id, ultimaTrocaEmEquipes]);
+  }, [pizzas.length, equipes.length, rodadaAtual?.id, ultimaTrocaEmEquipes, historicoSabores.length]);
 
-  // Inicialização da rodada (sem timer manual)
+  // Resetar estado quando rodada muda ou é criada
   useEffect(() => {
-    if (!rodadaAtual || rodadaAtual.status !== 'ativa') {
+    if (!rodadaAtual) {
+      // Nenhuma rodada ativa, limpar tudo
       setSaborAtual('');
       setHistoricoSabores([]);
-      if (!rodadaAtual || rodadaAtual.status === 'aguardando') {
-        setUltimaTrocaEmEquipes(0);
-      }
+      setUltimaTrocaEmEquipes(0);
       return;
     }
 
-    // Iniciar primeiro sabor se não há histórico
-    if (historicoSabores.length === 0) {
+    if (rodadaAtual.status === 'aguardando') {
+      // Rodada aguardando, resetar para próxima
+      setSaborAtual('');
+      setHistoricoSabores([]);
+      setUltimaTrocaEmEquipes(0);
+      return;
+    }
+
+    if (rodadaAtual.status === 'ativa' && historicoSabores.length === 0 && sabores.length > 0) {
+      // Rodada ativa sem sabor definido, iniciar primeiro sabor
+      console.log('Iniciando primeiro sabor da rodada');
       iniciarNovoSabor();
     }
-  }, [rodadaAtual?.status, sabores]);
+  }, [rodadaAtual?.status, rodadaAtual?.id, sabores.length, historicoSabores.length]);
 
   const handleIniciarRodada = async () => {
     if (!rodadaAtual) return;
