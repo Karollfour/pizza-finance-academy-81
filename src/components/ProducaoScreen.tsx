@@ -237,20 +237,6 @@ const ProducaoScreen = () => {
   // Obter número da rodada para exibição
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
-      {/* Botão de Reset responsivo */}
-      <div className="fixed top-4 right-4 md:top-4 md:left-1/2 md:transform md:-translate-x-1/2 z-50">
-        <Button onClick={handleResetarJogo} disabled={resetLoading} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg text-xs md:text-sm md:px-4 md:py-2 py-0 px-[4px] mx-0 my-[40px]">
-          {resetLoading ? <>
-              <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white mr-1 md:mr-2"></div>
-              <span className="hidden sm:inline">Resetando...</span>
-              <span className="sm:hidden">Reset...</span>
-            </> : <>
-              <span className="hidden sm:inline">🔄 Resetar Jogo</span>
-              <span className="sm:hidden">🔄 Reset</span>
-            </>}
-        </Button>
-      </div>
-
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-red-600 mb-2">
@@ -384,7 +370,7 @@ const ProducaoScreen = () => {
         </Card>
 
         {/* Histórico de Pizzas */}
-        <Card className="shadow-lg border-2 border-green-200">
+        <Card className="shadow-lg border-2 border-green-200 mb-8">
           <CardHeader>
             <CardTitle className="text-green-600">
               📝 Histórico de Pizzas - Rodada {numeroRodadaDisplay}
@@ -420,6 +406,25 @@ const ProducaoScreen = () => {
               </div>}
           </CardContent>
         </Card>
+
+        {/* Botão de Reset no final da tela */}
+        <div className="flex justify-center mt-8 mb-4">
+          <Button 
+            onClick={handleResetarJogo} 
+            disabled={resetLoading} 
+            size="sm" 
+            className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg"
+          >
+            {resetLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Resetando Jogo...
+              </>
+            ) : (
+              <>🔄 Resetar Jogo</>
+            )}
+          </Button>
+        </div>
       </div>
     </div>;
 };
