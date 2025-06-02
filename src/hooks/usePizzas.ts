@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza } from '@/types/database';
@@ -29,7 +28,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPizzas((data || []) as Pizza[]);
+      setPizzas((data || []) as unknown as Pizza[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar pizzas');
     } finally {
@@ -55,7 +54,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
 
       if (error) throw error;
       
-      const novaPizza = data as Pizza;
+      const novaPizza = data as unknown as Pizza;
       
       // Disparar evento global com informação completa da pizza
       if (typeof window !== 'undefined') {
