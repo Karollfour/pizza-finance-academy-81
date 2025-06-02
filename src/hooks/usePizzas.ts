@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza } from '@/types/database';
 
@@ -7,6 +7,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
   const [pizzas, setPizzas] = useState<Pizza[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchPizzas = async () => {
     try {
@@ -118,8 +119,17 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
   useEffect(() => {
     console.log('Configurando escuta em tempo real para pizzas', equipeId ? `da equipe ${equipeId}` : 'globais');
     
-    const channel = supabase
-      .channel(`pizzas-updates${equipeId ? `-${equipeId}` : ''}`)
+    // Create unique channel name
+    const channelName = `pizzas-updates-${equipeId || 'global'}-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -185,7 +195,10 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
 
     return () => {
       console.log('Removendo escuta em tempo real para pizzas');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [equipeId]);
 

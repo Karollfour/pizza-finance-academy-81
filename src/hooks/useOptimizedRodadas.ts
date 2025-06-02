@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ export const useOptimizedRodadas = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const channelRef = useRef<any>(null);
 
   const fetchRodadaAtual = useCallback(async (silent = false) => {
     try {
@@ -171,8 +172,17 @@ export const useOptimizedRodadas = () => {
 
   // Escutar mudanças em tempo real otimizado
   useEffect(() => {
-    const channel = supabase
-      .channel('rodadas-optimized')
+    // Create unique channel name
+    const channelName = `rodadas-optimized-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -246,7 +256,10 @@ export const useOptimizedRodadas = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [rodadaAtual]);
 

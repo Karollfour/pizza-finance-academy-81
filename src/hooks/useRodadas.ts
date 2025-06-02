@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
 
@@ -7,6 +7,7 @@ export const useRodadas = () => {
   const [rodadaAtual, setRodadaAtual] = useState<Rodada | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchRodadaAtual = async () => {
     try {
@@ -93,8 +94,17 @@ export const useRodadas = () => {
   useEffect(() => {
     console.log('Configurando escuta em tempo real para rodadas');
     
-    const channel = supabase
-      .channel('rodadas-updates')
+    // Create unique channel name
+    const channelName = `rodadas-updates-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -126,7 +136,10 @@ export const useRodadas = () => {
 
     return () => {
       console.log('Removendo escuta em tempo real para rodadas');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

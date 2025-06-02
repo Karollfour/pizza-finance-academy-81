@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SaborPizza } from '@/types/database';
 
@@ -12,6 +12,7 @@ export const useSabores = () => {
   const [sabores, setSabores] = useState<Sabor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchSabores = async () => {
     try {
@@ -248,8 +249,17 @@ export const useSabores = () => {
 
   // Escutar mudanças em tempo real
   useEffect(() => {
-    const channel = supabase
-      .channel('sabores-realtime')
+    // Create unique channel name
+    const channelName = `sabores-realtime-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -290,7 +300,10 @@ export const useSabores = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

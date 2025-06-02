@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza, Rodada } from '@/types/database';
 
@@ -14,6 +14,7 @@ export const useHistoricoRodadas = (equipeId?: string) => {
   const [rodadas, setRodadas] = useState<RodadaComPizzas[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchHistoricoRodadas = async () => {
     try {
@@ -76,8 +77,17 @@ export const useHistoricoRodadas = (equipeId?: string) => {
 
   // Escutar mudanças em tempo real
   useEffect(() => {
-    const rodadasChannel = supabase
-      .channel('historico-rodadas')
+    // Create unique channel name
+    const channelName = `historico-rodadas-${equipeId || 'global'}-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -104,7 +114,10 @@ export const useHistoricoRodadas = (equipeId?: string) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(rodadasChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [equipeId]);
 
