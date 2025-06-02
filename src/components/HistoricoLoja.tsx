@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ const HistoricoLoja = () => {
   const { sabores } = useSabores();
   
   const [filtroTipo, setFiltroTipo] = useState<'all' | 'compras' | 'pizzas'>('all');
-  const [filtroEquipe, setFiltroEquipe] = useState<string>('');
+  const [filtroEquipe, setFiltroEquipe] = useState<string>('all');
   const [filtroData, setFiltroData] = useState<string>('');
 
   const getProdutoNome = (produtoId: string | null) => {
@@ -68,7 +67,7 @@ const HistoricoLoja = () => {
       (filtroTipo === 'compras' && item.tipo === 'compra') ||
       (filtroTipo === 'pizzas' && item.tipo === 'pizza');
     
-    const matchEquipe = !filtroEquipe || item.equipe_id === filtroEquipe;
+    const matchEquipe = filtroEquipe === 'all' || item.equipe_id === filtroEquipe;
     
     const matchData = !filtroData || 
       new Date(item.created_at).toDateString() === new Date(filtroData).toDateString();
@@ -149,7 +148,7 @@ const HistoricoLoja = () => {
                   <SelectValue placeholder="Todas as equipes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as equipes</SelectItem>
+                  <SelectItem value="all">Todas as equipes</SelectItem>
                   {equipes.map((equipe) => (
                     <SelectItem key={equipe.id} value={equipe.id}>{equipe.nome}</SelectItem>
                   ))}
@@ -172,7 +171,7 @@ const HistoricoLoja = () => {
                 variant="outline"
                 onClick={() => {
                   setFiltroTipo('all');
-                  setFiltroEquipe('');
+                  setFiltroEquipe('all');
                   setFiltroData('');
                 }}
                 className="w-full"
