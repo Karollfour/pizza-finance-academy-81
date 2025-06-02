@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
-import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
+import { useGlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
 import RealtimeConnectionIndicator from '@/components/RealtimeConnectionIndicator';
 import { toast } from 'sonner';
 
@@ -41,10 +42,7 @@ const ProducaoScreen = () => {
   const { resetarJogo, loading: resetLoading } = useResetJogo();
   
   // Usar sistema centralizado de realtime
-  const { isConnected, connectionQuality } = useGlobalRealtime({
-    enableHeartbeat: true,
-    silent: false
-  });
+  const { isConnected, connectionQuality } = useGlobalRealtimeContext();
 
   // Timer sincronizado
   const {
@@ -133,13 +131,11 @@ const ProducaoScreen = () => {
     }
   }, [pizzas.length, equipes.length, rodadaAtual?.id, ultimaTrocaEmEquipes]);
 
-  // Timer da rodada e inicialização
+  // Inicialização da rodada (sem timer manual)
   useEffect(() => {
-    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || !rodadaAtual.iniciou_em) {
-      setTimeRemaining(0);
+    if (!rodadaAtual || rodadaAtual.status !== 'ativa') {
       setSaborAtual('');
       setHistoricoSabores([]);
-      // Só resetar o contador se não há rodada ou se a rodada mudou
       if (!rodadaAtual || rodadaAtual.status === 'aguardando') {
         setUltimaTrocaEmEquipes(0);
       }
@@ -150,30 +146,8 @@ const ProducaoScreen = () => {
     if (historicoSabores.length === 0) {
       iniciarNovoSabor();
     }
-    const inicioRodada = new Date(rodadaAtual.iniciou_em).getTime();
-    const duracaoRodada = rodadaAtual.tempo_limite * 1000;
-    const interval = setInterval(() => {
-      const agora = Date.now();
-      const tempoDecorrido = agora - inicioRodada;
-      const resto = Math.max(0, duracaoRodada - tempoDecorrido);
-      setTimeRemaining(Math.ceil(resto / 1000));
-      if (resto <= 0) {
-        clearInterval(interval);
-        setSaborAtual('');
-        setHistoricoSabores([]);
-        setUltimaTrocaEmEquipes(0);
-        handleFinalizarRodada();
-      }
-    }, 1000);
-    return () => {
-      clearInterval(interval);
-    };
-  }, [rodadaAtual, sabores]);
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, [rodadaAtual?.status, sabores]);
+
   const handleIniciarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -183,6 +157,7 @@ const ProducaoScreen = () => {
       toast.error('Erro ao iniciar rodada');
     }
   };
+
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -193,6 +168,7 @@ const ProducaoScreen = () => {
       toast.error('Erro ao finalizar rodada');
     }
   };
+
   const handleCriarNovaRodada = async () => {
     try {
       await criarNovaRodada(proximoNumero, novoTempoLimite);
@@ -202,14 +178,7 @@ const ProducaoScreen = () => {
       toast.error('Erro ao criar nova rodada');
     }
   };
-  const handleAtualizarTempoLimite = async () => {
-    try {
-      await atualizarConfiguracao('tempo_rodada_padrao', novoTempoLimite.toString());
-      toast.success('Tempo padrão atualizado!');
-    } catch (error) {
-      toast.error('Erro ao atualizar tempo padrão');
-    }
-  };
+
   const handleResetarJogo = async () => {
     if (!confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?')) {
       return;
@@ -220,12 +189,11 @@ const ProducaoScreen = () => {
     try {
       await resetarJogo();
       // Atualizar todos os dados após o reset
-      await Promise.all([refetchRodadas(), refetchCounter(), refetchPizzas(), refetchEquipes()]);
+      await Promise.all([refetchCounter(), refetchPizzas()]);
     } catch (error) {
       console.error('Erro ao resetar jogo:', error);
     }
   };
-  const progressPercentage = rodadaAtual?.tempo_limite ? (rodadaAtual.tempo_limite - timeRemaining) / rodadaAtual.tempo_limite * 100 : 0;
 
   // Organizar pizzas por status
   const pizzasProntas = pizzas.filter(p => p.status === 'pronta');
@@ -244,6 +212,7 @@ const ProducaoScreen = () => {
       reprovadas: pizzasEquipe.filter(p => p.resultado === 'reprovada').length
     };
   });
+
   const getEquipeNome = (equipeId: string) => {
     const equipe = equipes.find(e => e.id === equipeId);
     return equipe ? equipe.nome : 'Equipe não encontrada';
@@ -251,6 +220,7 @@ const ProducaoScreen = () => {
 
   // Obter número da rodada para exibição
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       {/* Indicador de conexão realtime */}
@@ -363,7 +333,8 @@ const ProducaoScreen = () => {
                 <Progress value={progressPercentage} className="w-full mb-4" />
                 
                 {/* Sabor Atual da Rodada */}
-                {rodadaAtual?.status === 'ativa' && saborAtual && <div className="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-4 mb-4">
+                {rodadaAtual?.status === 'ativa' && saborAtual && (
+                  <div className="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-4 mb-4">
                     <h3 className="text-lg font-bold text-yellow-800 mb-2">
                       🍕 Sabor Atual da Rodada
                     </h3>
@@ -373,15 +344,18 @@ const ProducaoScreen = () => {
                     <p className="text-sm text-yellow-700 mt-1">
                       Sabor sendo produzido nesta rodada
                     </p>
-                  </div>}
+                  </div>
+                )}
 
                 {/* Histórico de Sabores da Rodada */}
-                {historicoSabores.length > 0 && <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                {historicoSabores.length > 0 && (
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
                     <h3 className="text-lg font-bold text-blue-800 mb-3">
                       📜 Histórico de Sabores da Rodada
                     </h3>
                     <div className="space-y-2">
-                      {historicoSabores.map((sabor, index) => <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
+                      {historicoSabores.map((sabor, index) => (
+                        <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
                           <div>
                             <span className="font-medium text-blue-600">{sabor.sabor}</span>
                             <span className="text-xs text-gray-500 ml-2">
@@ -391,9 +365,11 @@ const ProducaoScreen = () => {
                           <Badge variant="outline" className="bg-blue-100">
                             {sabor.equipesQueEnviaram.length} equipes
                           </Badge>
-                        </div>)}
+                        </div>
+                      ))}
                     </div>
-                  </div>}
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-4 gap-4 text-center">
@@ -425,7 +401,8 @@ const ProducaoScreen = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {estatisticasPorEquipe.map(stats => <div key={stats.equipe.id} className="p-4 bg-white rounded-lg border border-purple-200">
+              {estatisticasPorEquipe.map(stats => (
+                <div key={stats.equipe.id} className="p-4 bg-white rounded-lg border border-purple-200">
                   <h3 className="font-bold text-purple-600 mb-2">{stats.equipe.nome}</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="text-gray-600">Total: <span className="font-medium">{stats.total}</span></div>
@@ -433,7 +410,8 @@ const ProducaoScreen = () => {
                     <div className="text-green-600">Aprovadas: <span className="font-medium">{stats.aprovadas}</span></div>
                     <div className="text-red-600">Reprovadas: <span className="font-medium">{stats.reprovadas}</span></div>
                   </div>
-                </div>)}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -446,33 +424,52 @@ const ProducaoScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {pizzas.length > 0 ? <div className="space-y-3 max-h-96 overflow-y-auto">
-                {pizzas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((pizza, index) => <div key={pizza.id} className="p-4 bg-white rounded-lg border border-green-200 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-green-600">
-                          {getEquipeNome(pizza.equipe_id)} - Pizza #{pizzas.length - index}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {new Date(pizza.created_at).toLocaleString('pt-BR')}
-                        </div>
+            {pizzas.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {pizzas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((pizza, index) => (
+                  <div key={pizza.id} className="p-4 bg-white rounded-lg border border-green-200 flex justify-between items-center">
+                    <div>
+                      <div className="font-medium text-green-600">
+                        {getEquipeNome(pizza.equipe_id)} - Pizza #{pizzas.length - index}
                       </div>
-                      <div className="text-right">
-                        <Badge variant={pizza.status === 'pronta' ? 'secondary' : pizza.resultado === 'aprovada' ? 'default' : pizza.resultado === 'reprovada' ? 'destructive' : 'outline'} className={pizza.status === 'pronta' ? 'bg-yellow-500' : pizza.resultado === 'aprovada' ? 'bg-green-500' : pizza.resultado === 'reprovada' ? 'bg-red-500' : ''}>
-                          {pizza.status === 'pronta' && '🟡 Aguardando Avaliação'}
-                          {pizza.resultado === 'aprovada' && '✅ Aprovada'}
-                          {pizza.resultado === 'reprovada' && '❌ Reprovada'}
-                          {pizza.status === 'em_producao' && '🔄 Em Produção'}
-                        </Badge>
-                        {pizza.resultado === 'reprovada' && pizza.justificativa_reprovacao && <div className="text-xs text-red-500 mt-1 max-w-xs">
-                            {pizza.justificativa_reprovacao}
-                          </div>}
+                      <div className="text-sm text-gray-600">
+                        {new Date(pizza.created_at).toLocaleString('pt-BR')}
                       </div>
-                    </div>)}
-              </div> : <div className="text-center text-gray-500 py-12">
+                    </div>
+                    <div className="text-right">
+                      <Badge 
+                        variant={
+                          pizza.status === 'pronta' ? 'secondary' : 
+                          pizza.resultado === 'aprovada' ? 'default' : 
+                          pizza.resultado === 'reprovada' ? 'destructive' : 'outline'
+                        } 
+                        className={
+                          pizza.status === 'pronta' ? 'bg-yellow-500' : 
+                          pizza.resultado === 'aprovada' ? 'bg-green-500' : 
+                          pizza.resultado === 'reprovada' ? 'bg-red-500' : ''
+                        }
+                      >
+                        {pizza.status === 'pronta' && '🟡 Aguardando Avaliação'}
+                        {pizza.resultado === 'aprovada' && '✅ Aprovada'}
+                        {pizza.resultado === 'reprovada' && '❌ Reprovada'}
+                        {pizza.status === 'em_producao' && '🔄 Em Produção'}
+                      </Badge>
+                      {pizza.resultado === 'reprovada' && pizza.justificativa_reprovacao && (
+                        <div className="text-xs text-red-500 mt-1 max-w-xs">
+                          {pizza.justificativa_reprovacao}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-12">
                 <div className="text-6xl mb-4">🍕</div>
                 <p className="text-xl">Nenhuma pizza produzida ainda</p>
                 <p className="text-gray-400">As pizzas produzidas aparecerão aqui</p>
-              </div>}
+              </div>
+            )}
           </CardContent>
         </Card>
 

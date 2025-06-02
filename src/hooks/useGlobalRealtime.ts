@@ -11,7 +11,7 @@ interface GlobalRealtimeContextType {
   forceReconnect: () => void;
 }
 
-const GlobalRealtimeContext = createContext<GlobalRealtimeContextType>({
+export const GlobalRealtimeContext = createContext<GlobalRealtimeContextType>({
   isConnected: false,
   connectionQuality: 'disconnected',
   lastHeartbeat: null,
