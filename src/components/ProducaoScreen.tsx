@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +11,9 @@ import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
-import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface SaborRodada {
@@ -34,7 +35,6 @@ const ProducaoScreen = () => {
   const { proximoNumero, refetch: refetchCounter } = useRodadaCounter();
   const { pizzas, refetch: refetchPizzas } = usePizzas(undefined, rodadaAtual?.id);
   const { equipes } = useEquipes();
-  const { atualizarConfiguracao } = useConfiguracoes();
   const { sabores } = useSabores();
   const { resetarJogo, loading: resetLoading } = useResetJogo();
 
@@ -58,7 +58,7 @@ const ProducaoScreen = () => {
     warningThreshold: 30
   });
 
-  const [novoTempoLimite, setNovoTempoLimite] = useState(300);
+  const [tempoLimite, setTempoLimite] = useState(300);
   const [saborAtual, setSaborAtual] = useState<string>('');
   const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
   const [ultimaTrocaEmEquipes, setUltimaTrocaEmEquipes] = useState(0);
@@ -154,11 +154,23 @@ const ProducaoScreen = () => {
   }, [rodadaAtual?.status, rodadaAtual?.id, sabores.length, historicoSabores.length]);
 
   const handleIniciarRodada = async () => {
-    if (!rodadaAtual) return;
-    try {
-      await iniciarRodada(rodadaAtual.id);
-    } catch (error) {
-      toast.error('Erro ao iniciar rodada');
+    if (!rodadaAtual) {
+      // Criar nova rodada se não existe uma aguardando
+      try {
+        await criarNovaRodada(proximoNumero, tempoLimite);
+        await refetchCounter();
+      } catch (error) {
+        toast.error('Erro ao criar nova rodada');
+      }
+      return;
+    }
+    
+    if (rodadaAtual.status === 'aguardando') {
+      try {
+        await iniciarRodada(rodadaAtual.id);
+      } catch (error) {
+        toast.error('Erro ao iniciar rodada');
+      }
     }
   };
 
@@ -172,12 +184,24 @@ const ProducaoScreen = () => {
     }
   };
 
-  const handleCriarNovaRodada = async () => {
+  const adicionarMinutos = async (minutos: number) => {
+    if (!rodadaAtual) return;
+    
     try {
-      await criarNovaRodada(proximoNumero, novoTempoLimite);
-      await refetchCounter();
+      const novoTempoLimite = rodadaAtual.tempo_limite + (minutos * 60);
+      
+      const { error } = await supabase
+        .from('rodadas')
+        .update({ tempo_limite: novoTempoLimite })
+        .eq('id', rodadaAtual.id);
+
+      if (error) throw error;
+      
+      toast.success(`${minutos > 0 ? 'Adicionados' : 'Removidos'} ${Math.abs(minutos)} minuto(s)`, {
+        duration: 2000,
+      });
     } catch (error) {
-      toast.error('Erro ao criar nova rodada');
+      toast.error('Erro ao ajustar tempo da rodada');
     }
   };
 
@@ -236,63 +260,86 @@ const ProducaoScreen = () => {
           </div>
         </div>
 
-        {/* Controles da Rodada */}
+        {/* Controles da Rodada Simplificados */}
         <Card className="shadow-lg border-2 border-red-200 mb-8">
           <CardHeader className="bg-red-50">
-            <CardTitle>⚙️ Controles da Rodada</CardTitle>
+            <CardTitle>⚙️ Controle da Rodada</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              {/* Tempo Limite */}
               <div>
                 <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
                 <Input 
                   id="tempoLimite" 
                   type="number" 
-                  value={novoTempoLimite} 
-                  onChange={e => setNovoTempoLimite(Number(e.target.value))} 
-                />
-                <Button 
-                  onClick={async () => {
-                    try {
-                      await atualizarConfiguracao('tempo_rodada_padrao', novoTempoLimite.toString());
-                      toast.success('Tempo padrão atualizado!');
-                    } catch (error) {
-                      toast.error('Erro ao atualizar tempo padrão');
-                    }
-                  }} 
-                  size="sm" 
-                  className="mt-2 w-full" 
-                  variant="outline"
-                >
-                  Atualizar Tempo Padrão
-                </Button>
-              </div>
-              <div className="flex items-end">
-                <Button 
-                  onClick={handleCriarNovaRodada} 
-                  className="w-full bg-blue-500 hover:bg-blue-600" 
+                  value={tempoLimite} 
+                  onChange={e => setTempoLimite(Number(e.target.value))} 
                   disabled={rodadaAtual?.status === 'ativa'}
-                >
-                  Criar Rodada {proximoNumero}
-                </Button>
+                />
               </div>
-              <div className="flex items-end">
-                {rodadaAtual?.status === 'aguardando' ? (
+
+              {/* Botão Principal da Rodada */}
+              <div>
+                {rodadaAtual?.status === 'ativa' ? (
+                  <Button 
+                    onClick={handleFinalizarRodada} 
+                    className="w-full bg-red-500 hover:bg-red-600"
+                  >
+                    Encerrar Rodada
+                  </Button>
+                ) : (
                   <Button 
                     onClick={handleIniciarRodada} 
                     className="w-full bg-green-500 hover:bg-green-600"
                   >
-                    Iniciar Rodada
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleFinalizarRodada} 
-                    className="w-full bg-red-500 hover:bg-red-600" 
-                    disabled={rodadaAtual?.status !== 'ativa'}
-                  >
-                    Finalizar Rodada
+                    Iniciar Rodada {numeroRodadaDisplay}
                   </Button>
                 )}
+              </div>
+
+              {/* Controles de Tempo */}
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => adicionarMinutos(-1)} 
+                  disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  -1 min
+                </Button>
+                <Button 
+                  onClick={() => adicionarMinutos(1)} 
+                  disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  +1 min
+                </Button>
+              </div>
+
+              {/* Controles Extras */}
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => adicionarMinutos(-5)} 
+                  disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  -5 min
+                </Button>
+                <Button 
+                  onClick={() => adicionarMinutos(5)} 
+                  disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  +5 min
+                </Button>
               </div>
             </div>
           </CardContent>
