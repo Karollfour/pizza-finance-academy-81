@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSabores, Sabor } from '@/hooks/useSabores';
@@ -88,20 +89,18 @@ const GerenciadorSabores = () => {
   };
 
   const handleDelete = async (sabor: Sabor) => {
-    if (confirm(`Tem certeza que deseja excluir o sabor "${sabor.nome}"?`)) {
-      try {
-        await removerSabor(sabor.id);
-        toast({
-          title: "Sabor removido",
-          description: `O sabor ${sabor.nome} foi removido com sucesso.`
-        });
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível remover o sabor.",
-          variant: "destructive"
-        });
-      }
+    try {
+      await removerSabor(sabor.id);
+      toast({
+        title: "Sabor removido",
+        description: `O sabor ${sabor.nome} foi removido com sucesso.`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o sabor.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -237,14 +236,37 @@ const GerenciadorSabores = () => {
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDelete(sabor)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>⚠️ Confirmar Exclusão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir o sabor <strong>"{sabor.nome}"</strong>?
+                          <br /><br />
+                          Esta ação é <strong>irreversível</strong> e o sabor será removido permanentemente do sistema.
+                          As equipes não poderão mais selecionar este sabor para suas pizzas.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(sabor)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Excluir Sabor
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardHeader>
