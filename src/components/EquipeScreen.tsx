@@ -14,11 +14,12 @@ import { toast } from 'sonner';
 
 interface EquipeScreenProps {
   teamName: string;
+  teamId?: string;
 }
 
-const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
+const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
   const { rodadaAtual, lastUpdate } = useOptimizedRodadas();
-  const { equipes } = useEquipes();
+  const { equipes, loading: equipesLoading } = useEquipes();
   const [equipeAtual, setEquipeAtual] = useState<any>(null);
   const { pizzas, refetch: refetchPizzas } = usePizzas(equipeAtual?.id, rodadaAtual?.id);
   const { compras } = useCompras(equipeAtual?.id);
@@ -50,11 +51,21 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
     warningThreshold: 30
   });
 
-  // Encontrar a equipe pelo nome
+  // Encontrar a equipe pelo ID (prioritário) ou nome
   useEffect(() => {
-    const equipe = equipes.find(e => e.nome === teamName);
-    setEquipeAtual(equipe);
-  }, [equipes, teamName]);
+    if (!equipes.length) return;
+    
+    let equipe;
+    if (teamId) {
+      equipe = equipes.find(e => e.id === teamId);
+    } else {
+      equipe = equipes.find(e => e.nome === teamName);
+    }
+    
+    if (equipe) {
+      setEquipeAtual(equipe);
+    }
+  }, [equipes, teamName, teamId]);
 
   // Escutar eventos globais de rodada para feedback instantâneo
   useEffect(() => {
@@ -99,15 +110,26 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const corEquipe = equipeAtual?.cor_tema || '#3b82f6';
   const emblemaEquipe = equipeAtual?.emblema || '🍕';
 
-  if (!equipeAtual) {
+  // Mostrar loading se ainda estiver carregando equipes ou se a equipe não foi encontrada
+  if (equipesLoading || !equipeAtual) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
         <Card className="p-8">
           <CardContent>
             <div className="text-center">
-              <div className="text-4xl mb-4">⚠️</div>
-              <h2 className="text-2xl font-bold text-red-600 mb-2">Equipe não encontrada</h2>
-              <p className="text-gray-600">A equipe "{teamName}" não foi encontrada no sistema.</p>
+              {equipesLoading ? (
+                <>
+                  <div className="text-4xl mb-4">⏳</div>
+                  <h2 className="text-2xl font-bold text-blue-600 mb-2">Carregando...</h2>
+                  <p className="text-gray-600">Buscando dados da equipe "{teamName}"</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-4xl mb-4">⚠️</div>
+                  <h2 className="text-2xl font-bold text-red-600 mb-2">Equipe não encontrada</h2>
+                  <p className="text-gray-600">A equipe "{teamName}" não foi encontrada no sistema.</p>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

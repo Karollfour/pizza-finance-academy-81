@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import LoginScreen from '@/components/LoginScreen';
 import LojinhaScreen from '@/components/LojinhaScreen';
 import ProducaoScreen from '@/components/ProducaoScreen';
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('producao');
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedTeam, setSelectedTeam] = useState<{ nome: string; id: string } | null>(null);
 
   // Inicializar sistema global de realtime - completamente silencioso
   const { contextValue } = useGlobalRealtime({
@@ -28,14 +28,20 @@ const Index = () => {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setSelectedTeam('');
+    setSelectedTeam(null);
     setActiveTab('producao');
   };
 
-  const handleEquipeSelecionada = (equipeNome: string) => {
-    setSelectedTeam(equipeNome);
-    setActiveTab('equipe');
-  };
+  const handleEquipeSelecionada = useCallback((equipeNome: string, equipeId: string) => {
+    // Atualizar estado atomicamente para evitar condições de corrida
+    setSelectedTeam({ nome: equipeNome, id: equipeId });
+    setActiveTab('equipes');
+  }, []);
+
+  const handleVoltarSeletor = useCallback(() => {
+    setSelectedTeam(null);
+    // Manter na aba equipes para melhor UX
+  }, []);
 
   // Se não estiver logado, mostrar tela de login
   if (!isLoggedIn) {
@@ -97,14 +103,14 @@ const Index = () => {
                 <div>
                   <div className="flex justify-center mb-4">
                     <Button 
-                      onClick={() => setSelectedTeam('')}
+                      onClick={handleVoltarSeletor}
                       variant="outline"
                       className="bg-white/90 backdrop-blur-sm"
                     >
                       ← Voltar para Seleção de Equipes
                     </Button>
                   </div>
-                  <EquipeScreen teamName={selectedTeam} />
+                  <EquipeScreen teamName={selectedTeam.nome} teamId={selectedTeam.id} />
                 </div>
               ) : (
                 <SeletorEquipes onEquipeSelecionada={handleEquipeSelecionada} />

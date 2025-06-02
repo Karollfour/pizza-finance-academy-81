@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePizzas } from '@/hooks/usePizzas';
-import { useRodadas } from '@/hooks/useRodadas';
+import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 
 interface FilaProducaoProps {
   equipeId: string;
@@ -12,7 +12,7 @@ interface FilaProducaoProps {
 }
 
 const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProps) => {
-  const { rodadaAtual } = useRodadas();
+  const { rodadaAtual } = useOptimizedRodadas();
   const { pizzas, marcarPizzaPronta } = usePizzas(equipeId, rodadaAtual?.id);
 
   const handleEnviarPizza = async () => {

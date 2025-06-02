@@ -1,25 +1,24 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
+
 interface SeletorEquipesProps {
-  onEquipeSelecionada: (equipeNome: string) => void;
+  onEquipeSelecionada: (equipeNome: string, equipeId: string) => void;
 }
-const SeletorEquipes = ({
-  onEquipeSelecionada
-}: SeletorEquipesProps) => {
-  const {
-    equipes
-  } = useEquipes();
-  const {
-    compras
-  } = useCompras();
+
+const SeletorEquipes = ({ onEquipeSelecionada }: SeletorEquipesProps) => {
+  const { equipes } = useEquipes();
+  const { compras } = useCompras();
 
   // Calcular gastos atualizados por equipe
   const calcularGastosEquipe = (equipeId: string) => {
     return compras.filter(c => c.equipe_id === equipeId).reduce((sum, c) => sum + c.valor_total, 0);
   };
-  return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-6 my-[6px]">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 p-6 my-[6px]">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-orange-600 mb-2">
@@ -35,7 +34,8 @@ const SeletorEquipes = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8">
-            {equipes.length === 0 ? <div className="text-center py-12">
+            {equipes.length === 0 ? (
+              <div className="text-center py-12">
                 <div className="text-6xl mb-4">👥</div>
                 <h3 className="text-2xl font-bold text-gray-600 mb-2">
                   Nenhuma equipe cadastrada
@@ -43,22 +43,31 @@ const SeletorEquipes = ({
                 <p className="text-gray-500">
                   Entre em contato com o professor para cadastrar as equipes
                 </p>
-              </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {equipes.map(equipe => {
-              const corEquipe = equipe.cor_tema || '#3b82f6';
-              const emblemaEquipe = equipe.emblema || '👥';
-              const gastoAtualizado = calcularGastosEquipe(equipe.id);
-              const saldoRestante = equipe.saldo_inicial - gastoAtualizado;
-              return <Card key={equipe.id} className="shadow-lg border-2 border-gray-200 hover:border-orange-300 transition-all duration-200 hover:scale-105">
+                  const corEquipe = equipe.cor_tema || '#3b82f6';
+                  const emblemaEquipe = equipe.emblema || '👥';
+                  const gastoAtualizado = calcularGastosEquipe(equipe.id);
+                  const saldoRestante = equipe.saldo_inicial - gastoAtualizado;
+                  
+                  return (
+                    <Card 
+                      key={equipe.id} 
+                      className="shadow-lg border-2 border-gray-200 hover:border-orange-300 transition-all duration-200 hover:scale-105"
+                    >
                       <CardContent className="p-6 text-center">
                         <div className="mb-4">
                           <div className="text-6xl mb-3">{emblemaEquipe}</div>
                           <h3 className="text-xl font-bold text-gray-800 mb-2">
                             {equipe.nome}
                           </h3>
-                          {equipe.professor_responsavel && <p className="text-sm text-gray-600 mb-3">
+                          {equipe.professor_responsavel && (
+                            <p className="text-sm text-gray-600 mb-3">
                               Prof: {equipe.professor_responsavel}
-                            </p>}
+                            </p>
+                          )}
                           
                           <div className="space-y-2 text-sm text-gray-600 mb-4">
                             <div className="flex justify-between">
@@ -82,15 +91,20 @@ const SeletorEquipes = ({
                           </div>
                         </div>
                         
-                        <Button onClick={() => onEquipeSelecionada(equipe.nome)} className="w-full text-white font-bold py-3 text-lg transition-all duration-200 hover:opacity-90" style={{
-                    backgroundColor: corEquipe
-                  }} size="lg">
+                        <Button 
+                          onClick={() => onEquipeSelecionada(equipe.nome, equipe.id)} 
+                          className="w-full text-white font-bold py-3 text-lg transition-all duration-200 hover:opacity-90" 
+                          style={{ backgroundColor: corEquipe }}
+                          size="lg"
+                        >
                           🍕 Entrar na Cozinha
                         </Button>
                       </CardContent>
-                    </Card>;
-            })}
-              </div>}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -121,6 +135,8 @@ const SeletorEquipes = ({
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default SeletorEquipes;
