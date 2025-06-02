@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -26,7 +25,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
   const { compras } = useCompras(equipeAtual?.id);
   const { rodadas: historicoRodadas } = useHistoricoRodadas(equipeAtual?.id);
 
-  // Sistema realtime centralizado
+  // Sistema realtime centralizado - silencioso
   const { isConnected } = useGlobalRealtime({
     enableHeartbeat: true,
     silent: true
@@ -143,7 +142,7 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
             </div>
           </div>
           
-          {/* Status da Rodada com informações de sincronização */}
+          {/* Status da Rodada sem indicadores de conexão */}
           <Card className="shadow-lg border-2 border-yellow-200">
             <CardContent className="p-4">
               {rodadaAtual ? (
@@ -154,9 +153,6 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
                     </div>
                     <div className="text-sm text-gray-600 capitalize">
                       {rodadaAtual.status}
-                      {isConnected && (
-                        <span className="ml-2 text-green-600">● Sincronizado</span>
-                      )}
                     </div>
                   </div>
                   <div>
@@ -180,9 +176,6 @@ const EquipeScreen = ({ teamName }: EquipeScreenProps) => {
               ) : (
                 <div className="text-lg text-gray-600 text-center">
                   Nenhuma rodada ativa
-                  {isConnected && (
-                    <span className="block text-sm text-green-600 mt-1">● Conectado e aguardando</span>
-                  )}
                 </div>
               )}
               

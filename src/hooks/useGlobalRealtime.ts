@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, createContext, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { toast } from 'sonner';
 
 interface GlobalRealtimeContextType {
   isConnected: boolean;
@@ -32,7 +31,6 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   const [lastHeartbeat, setLastHeartbeat] = useState<Date | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectAttemptsRef = useRef(0);
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const maxReconnectAttempts = 3;
   const baseReconnectDelay = 2000;
 
@@ -44,29 +42,6 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     if (connected) {
       setLastHeartbeat(new Date());
       reconnectAttemptsRef.current = 0;
-    }
-  };
-
-  const startHeartbeat = () => {
-    if (!options.enableHeartbeat) return;
-    
-    heartbeatIntervalRef.current = setInterval(() => {
-      if (channelRef.current?.state === 'joined') {
-        setLastHeartbeat(new Date());
-        // Send heartbeat
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'heartbeat',
-          payload: { timestamp: Date.now() }
-        });
-      }
-    }, 30000); // Heartbeat every 30 seconds
-  };
-
-  const stopHeartbeat = () => {
-    if (heartbeatIntervalRef.current) {
-      clearInterval(heartbeatIntervalRef.current);
-      heartbeatIntervalRef.current = null;
     }
   };
 
@@ -95,28 +70,15 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('❌ Realtime: Client left', key);
       })
-      .on('broadcast', { event: 'heartbeat' }, (payload) => {
-        console.log('💓 Realtime: Heartbeat received');
-        setLastHeartbeat(new Date());
-        updateConnectionStatus(true, 'excellent');
-      })
       .subscribe((status) => {
         console.log('🌐 Realtime status:', status);
         
         if (status === 'SUBSCRIBED') {
           updateConnectionStatus(true, 'excellent');
-          startHeartbeat();
-          
-          if (!options.silent) {
-            toast.success('🟢 Conectado ao tempo real', {
-              duration: 2000,
-            });
-          }
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           updateConnectionStatus(false);
-          stopHeartbeat();
           
-          // Intelligent reconnection with exponential backoff
+          // Reconexão silenciosa
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
             const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
             reconnectAttemptsRef.current++;
@@ -126,16 +88,6 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
             setTimeout(() => {
               setupConnection();
             }, delay);
-          } else {
-            if (!options.silent) {
-              toast.error('🔴 Falha na conexão em tempo real', {
-                duration: 4000,
-                action: {
-                  label: 'Tentar novamente',
-                  onClick: () => forceReconnect()
-                }
-              });
-            }
           }
         }
       });
@@ -151,7 +103,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     setupConnection();
   };
 
-  // Network state monitoring
+  // Network state monitoring - silencioso
   useEffect(() => {
     const handleOnline = () => {
       console.log('🌐 Rede online detectada');
@@ -163,13 +115,11 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     const handleOffline = () => {
       console.log('❌ Rede offline detectada');
       updateConnectionStatus(false);
-      stopHeartbeat();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         console.log('👁️ Página visível - verificando conexão');
-        // Verificar se ainda estamos conectados após voltar ao foco
         setTimeout(() => {
           if (!isConnected || channelRef.current?.state !== 'joined') {
             forceReconnect();
@@ -194,7 +144,6 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
     const channel = setupConnection();
 
     return () => {
-      stopHeartbeat();
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
