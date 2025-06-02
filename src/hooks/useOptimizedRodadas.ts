@@ -215,6 +215,20 @@ export const useOptimizedRodadas = () => {
                   });
                 }
               }
+              
+              // Notificar sobre mudanças no tempo limite
+              if (rodadaAtual.tempo_limite !== rodadaAtualizada.tempo_limite) {
+                console.log('Tempo limite alterado no banco:', rodadaAtualizada.tempo_limite);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('rodada-tempo-alterado', { 
+                    detail: { 
+                      rodadaId: rodadaAtualizada.id,
+                      novoTempoLimite: rodadaAtualizada.tempo_limite,
+                      timestamp: new Date().toISOString() 
+                    } 
+                  }));
+                }
+              }
             }
           } else if (payload.eventType === 'INSERT') {
             // Nova rodada criada
@@ -239,6 +253,7 @@ export const useOptimizedRodadas = () => {
   // Escutar eventos customizados globais
   useEffect(() => {
     const handleRodadaEvent = (event: CustomEvent) => {
+      console.log('Hook recebeu evento:', event.type, event.detail);
       // Refetch silencioso para garantir sincronização
       fetchRodadaAtual(true);
     };
@@ -247,12 +262,14 @@ export const useOptimizedRodadas = () => {
     window.addEventListener('rodada-iniciada', handleRodadaEvent as EventListener);
     window.addEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
     window.addEventListener('rodada-criada', handleRodadaEvent as EventListener);
+    window.addEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
 
     return () => {
       window.removeEventListener('rodada-updated', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-iniciada', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-criada', handleRodadaEvent as EventListener);
+      window.removeEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
     };
   }, [fetchRodadaAtual]);
 
