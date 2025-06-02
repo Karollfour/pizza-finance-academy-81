@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,6 +72,10 @@ const AvaliadorScreen = () => {
 
   const getCorEquipe = (index: number) => {
     return coresEquipe[index % coresEquipe.length];
+  };
+
+  const getSaborPizza = (pizza: any) => {
+    return pizza.sabor?.nome || 'Sabor não informado';
   };
 
   // Se não selecionou equipe ainda, mostrar seletor
@@ -208,14 +211,17 @@ const AvaliadorScreen = () => {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Pizza #{pizza.id.slice(-6)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
+                        Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* Visualização da Pizza */}
+                      {/* Visualização da Pizza com Sabor */}
                       <div className="bg-gradient-to-br from-yellow-100 to-orange-100 p-6 rounded-lg text-center">
                         <div className="text-6xl mb-2">🍕</div>
-                        <p className="text-gray-600">Pizza produzida pela {getEquipeNome(pizza.equipe_id)}</p>
+                        <div className="space-y-1">
+                          <p className="text-lg font-semibold text-gray-700">Pizza {getSaborPizza(pizza)}</p>
+                          <p className="text-gray-600">Produzida pela {getEquipeNome(pizza.equipe_id)}</p>
+                        </div>
                       </div>
 
                       {/* Área de Justificativa */}
@@ -286,7 +292,7 @@ const AvaliadorScreen = () => {
                             <div>
                               <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
                               <p className="text-sm text-gray-600">
-                                Pizza #{pizza.id.slice(-6)} • Rodada {rodadaAtual?.numero || 'N/A'}
+                                Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
