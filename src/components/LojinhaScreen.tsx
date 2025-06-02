@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +9,8 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import { useSabores } from '@/hooks/useSabores';
 import { usePersistedState } from '@/hooks/usePersistedState';
-import { DashboardLojinha } from './DashboardLojinha';
-import { ComprasPorEquipe } from './ComprasPorEquipe';
+import DashboardLojinha from './DashboardLojinha';
+import ComprasPorEquipe from './ComprasPorEquipe';
 import { toast } from 'sonner';
 
 const LojinhaScreen = () => {
