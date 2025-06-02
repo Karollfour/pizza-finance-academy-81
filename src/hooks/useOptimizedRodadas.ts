@@ -16,6 +16,7 @@ export const useOptimizedRodadas = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchRodadaAtual = useCallback(async (silent = false) => {
     try {
@@ -170,18 +171,24 @@ export const useOptimizedRodadas = () => {
     }
   };
 
-  // Escutar mudanças em tempo real otimizado
-  useEffect(() => {
-    // Create unique channel name
-    const channelName = `rodadas-optimized-${Date.now()}`;
-    
-    // Cleanup previous channel
-    if (channelRef.current) {
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
+  };
 
-    channelRef.current = supabase
+  // Escutar mudanças em tempo real otimizado
+  useEffect(() => {
+    // Cleanup previous channel first
+    cleanupChannel();
+
+    // Create unique channel name with timestamp and random component
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `rodadas-optimized-${uniqueId}`;
+    
+    const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
@@ -252,14 +259,20 @@ export const useOptimizedRodadas = () => {
             }
           }
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        }
+      });
+      channelRef.current = channel;
+    }
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
   }, [rodadaAtual]);
 
