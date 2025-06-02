@@ -54,6 +54,7 @@ export const useHistoricoRodadas = (equipeId?: string) => {
 
         rodadasComPizzas.push({
           ...rodada,
+          status: rodada.status as 'aguardando' | 'ativa' | 'finalizada',
           pizzas,
           pizzas_aprovadas,
           pizzas_reprovadas,
