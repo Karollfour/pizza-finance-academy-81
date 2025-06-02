@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SaborPizza } from '@/types/database';
@@ -191,15 +190,6 @@ export const useSabores = () => {
         id: '2',
         nome: 'Mussarela', 
         descricao: 'Pizza de queijo mussarela',
-        disponivel: true,
-        created_at: new Date().toISOString(),
-        ingredientes: [],
-        imagem: null
-      },
-      { 
-        id: '3',
-        nome: 'Margherita', 
-        descricao: 'Pizza com molho de tomate, mussarela e manjericão',
         disponivel: true,
         created_at: new Date().toISOString(),
         ingredientes: [],

@@ -13,11 +13,12 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useCompras } from '@/hooks/useCompras';
 import { useRodadas } from '@/hooks/useRodadas';
-import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 import DashboardLojinha from './DashboardLojinha';
 import ComprasPorEquipe from './ComprasPorEquipe';
+import GerenciadorSabores from './GerenciadorSabores';
 import { Trash2, Edit, Upload, Image, ShoppingCart, Plus, Minus, X } from 'lucide-react';
+
 interface ItemCarrinho {
   produtoId: string;
   produtoNome: string;
@@ -25,6 +26,7 @@ interface ItemCarrinho {
   valorUnitario: number;
   valorTotal: number;
 }
+
 const LojinhaScreen = () => {
   const {
     equipes,
@@ -39,12 +41,6 @@ const LojinhaScreen = () => {
     atualizarProduto,
     loading: loadingProdutos
   } = useProdutos();
-  const {
-    sabores,
-    criarSabor,
-    atualizarSabor,
-    loading: loadingSabores
-  } = useSabores();
   const {
     registrarCompra
   } = useCompras();
@@ -357,7 +353,7 @@ const LojinhaScreen = () => {
   const handleTaxaViagemChange = (checked: boolean) => {
     setIncluirTaxaViagem(checked);
   };
-  if (loadingEquipes || loadingProdutos || loadingSabores) {
+  if (loadingEquipes || loadingProdutos) {
     return <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center">
         <div className="text-2xl text-orange-600">Carregando lojinha...</div>
       </div>;
@@ -375,7 +371,7 @@ const LojinhaScreen = () => {
         </div>
 
         <Tabs defaultValue="gestao" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
@@ -704,70 +700,7 @@ const LojinhaScreen = () => {
           </TabsContent>
 
           <TabsContent value="sabores" className="space-y-6">
-            <Card className="shadow-lg border-2 border-orange-200">
-              <CardHeader className="bg-orange-50">
-                <CardTitle className="text-orange-600">🍕 Gerenciar Sabores de Pizza</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <Label htmlFor="nomeSabor">Nome do Sabor *</Label>
-                    <Input id="nomeSabor" value={novoSabor.nome} onChange={e => setNovoSabor({
-                    ...novoSabor,
-                    nome: e.target.value
-                  })} placeholder="Ex: Margherita" />
-                  </div>
-                  <div>
-                    <Label htmlFor="descricaoSabor">Descrição (opcional)</Label>
-                    <Input id="descricaoSabor" value={novoSabor.descricao} onChange={e => setNovoSabor({
-                    ...novoSabor,
-                    descricao: e.target.value
-                  })} placeholder="Ex: Molho de tomate, mussarela e manjericão" />
-                  </div>
-                </div>
-                <Button onClick={handleCriarSabor} className="w-full bg-orange-500 hover:bg-orange-600">
-                  Adicionar Sabor
-                </Button>
-
-                <div className="mt-8 space-y-3">
-                  <h3 className="font-semibold text-orange-600">Sabores Disponíveis:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sabores.map(sabor => <div key={sabor.id} className="p-4 bg-white rounded-lg border border-orange-200 shadow-sm">
-                        {saborEditando === sabor.id ? <div className="space-y-3">
-                            <Input value={dadosEdicaoSabor.nome} onChange={e => setDadosEdicaoSabor({
-                        ...dadosEdicaoSabor,
-                        nome: e.target.value
-                      })} placeholder="Nome do sabor" />
-                            <Input value={dadosEdicaoSabor.descricao} onChange={e => setDadosEdicaoSabor({
-                        ...dadosEdicaoSabor,
-                        descricao: e.target.value
-                      })} placeholder="Descrição" />
-                            <div className="flex gap-2">
-                              <Button onClick={salvarEdicaoSabor} size="sm" className="bg-green-500 hover:bg-green-600">
-                                Salvar
-                              </Button>
-                              <Button onClick={() => setSaborEditando(null)} size="sm" variant="outline">
-                                Cancelar
-                              </Button>
-                            </div>
-                          </div> : <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-2xl">🍕</span>
-                              <div className="font-medium text-lg">{sabor.nome}</div>
-                            </div>
-                            {sabor.descricao && <div className="text-sm text-gray-600 mb-3">{sabor.descricao}</div>}
-                            <div className="flex gap-2">
-                              <Button onClick={() => iniciarEdicaoSabor(sabor)} size="sm" variant="outline" className="flex-1">
-                                <Edit className="h-3 w-3 mr-1" />
-                                Editar
-                              </Button>
-                            </div>
-                          </div>}
-                      </div>)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <GerenciadorSabores />
           </TabsContent>
 
           <TabsContent value="vendas" className="space-y-6">
@@ -911,4 +844,5 @@ const LojinhaScreen = () => {
       </div>
     </div>;
 };
+
 export default LojinhaScreen;
