@@ -379,7 +379,7 @@ const LojinhaScreen = () => {
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
-            <TabsTrigger value="vendas">💰 Gestão de Vendas</TabsTrigger>
+            <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
