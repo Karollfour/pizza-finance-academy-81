@@ -1,34 +1,20 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { useEquipes } from '@/hooks/useEquipes';
 
 interface LoginScreenProps {
   onLogin: (userType: string, teamId?: string) => void;
 }
 
-const LoginScreen = ({
-  onLogin
-}: LoginScreenProps) => {
-  const [userType, setUserType] = useState('');
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-  const {
-    equipes,
-    loading
-  } = useEquipes();
-
+const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   const handleLogin = () => {
-    if (userType && (userType !== 'equipe' || selectedTeamId)) {
-      // Para equipes, passamos o nome da equipe selecionada
-      const teamName = userType === 'equipe' ? equipes.find(equipe => equipe.id === selectedTeamId)?.nome : undefined;
-      onLogin(userType, teamName);
-    }
+    // Todos entram como tipo padrão - a seleção será feita nas abas internas
+    onLogin('default');
   };
 
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-yellow-50 to-red-100 p-4">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-yellow-50 to-red-100 p-4">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-orange-300 rounded-full opacity-20 animate-bounce-gentle"></div>
         <div className="absolute top-20 right-20 w-32 h-32 bg-red-300 rounded-full opacity-20 animate-bounce-gentle delay-1000"></div>
@@ -50,51 +36,25 @@ const LoginScreen = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="userType">Tipo de Usuário</Label>
-            <Select value={userType} onValueChange={setUserType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione seu perfil" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lojinha">🏪 Professor - Lojinha</SelectItem>
-                <SelectItem value="avaliador">🧑‍🏫 Professor - Avaliador</SelectItem>
-                <SelectItem value="equipe">👥 Equipe</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="text-center space-y-4">
+            <p className="text-gray-700">
+              Bem-vindo à Pizzaria! 🍕
+            </p>
+            <p className="text-sm text-gray-600">
+              Escolha seu papel após entrar no sistema usando as abas de navegação
+            </p>
           </div>
 
-          {userType === 'equipe' && <div className="space-y-2">
-              <Label htmlFor="teamSelect">Selecione sua Equipe</Label>
-              {loading ? <div className="flex items-center justify-center p-4">
-                  <div className="text-sm text-gray-500">Carregando equipes...</div>
-                </div> : <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha sua equipe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipes.map(equipe => <SelectItem key={equipe.id} value={equipe.id}>
-                        <div className="flex items-center gap-2">
-                          <span>👥</span>
-                          <span>{equipe.nome}</span>
-                          <span className="text-xs text-gray-500">
-                            (R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)} disponível)
-                          </span>
-                        </div>
-                      </SelectItem>)}
-                  </SelectContent>
-                </Select>}
-              {equipes.length === 0 && !loading && <div className="text-sm text-gray-500 text-center p-2">
-                  Nenhuma equipe cadastrada ainda
-                </div>}
-            </div>}
-
-          <Button onClick={handleLogin} className="w-full pizza-button text-lg" disabled={!userType || userType === 'equipe' && !selectedTeamId || loading}>
+          <Button 
+            onClick={handleLogin} 
+            className="w-full pizza-button text-lg"
+          >
             🚀 Entrar na Pizzaria
           </Button>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
 
 export default LoginScreen;

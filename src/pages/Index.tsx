@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LoginScreen from '@/components/LoginScreen';
 import LojinhaScreen from '@/components/LojinhaScreen';
 import ProducaoScreen from '@/components/ProducaoScreen';
@@ -9,39 +9,36 @@ import SeletorEquipes from '@/components/SeletorEquipes';
 import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
 import { GlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
-  const [currentUser, setCurrentUser] = useState<{
-    type: string;
-    teamId?: string;
-  } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState('producao');
+  const [selectedTeam, setSelectedTeam] = useState<string>('');
 
-  // Inicializar sistema global de realtime
+  // Inicializar sistema global de realtime - completamente silencioso
   const { contextValue } = useGlobalRealtime({
     enableHeartbeat: true,
-    silent: false
+    silent: true
   });
 
-  const handleLogin = (userType: string, teamId?: string) => {
-    setCurrentUser({
-      type: userType,
-      teamId
-    });
+  const handleLogin = () => {
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setSelectedTeam('');
+    setActiveTab('producao');
   };
 
   const handleEquipeSelecionada = (equipeNome: string) => {
-    setCurrentUser({
-      type: 'equipe',
-      teamId: equipeNome
-    });
+    setSelectedTeam(equipeNome);
+    setActiveTab('equipe');
   };
 
   // Se não estiver logado, mostrar tela de login
-  if (!currentUser) {
+  if (!isLoggedIn) {
     return (
       <GlobalRealtimeContext.Provider value={contextValue}>
         <LoginScreen onLogin={handleLogin} />
@@ -49,27 +46,9 @@ const Index = () => {
     );
   }
 
-  // Renderizar tela baseada no tipo de usuário
-  const renderScreen = () => {
-    switch (currentUser.type) {
-      case 'lojinha':
-        return <LojinhaScreen />;
-      case 'producao':
-        return <ProducaoScreen />;
-      case 'avaliador':
-        return <AvaliadorScreen />;
-      case 'equipe':
-        return <EquipeScreen teamName={currentUser.teamId || 'Equipe Sem Nome'} />;
-      case 'seletor_equipes':
-        return <SeletorEquipes onEquipeSelecionada={handleEquipeSelecionada} />;
-      default:
-        return <LoginScreen onLogin={handleLogin} />;
-    }
-  };
-
   return (
     <GlobalRealtimeContext.Provider value={contextValue}>
-      <div className="relative">
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100">
         {/* Botão de Logout fixo */}
         <div className="fixed top-4 right-4 z-50">
           <Button 
@@ -81,45 +60,57 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* Navegação rápida para demonstração */}
-        <div className="fixed top-4 left-4 z-50 space-x-2">
-          <Button 
-            onClick={() => setCurrentUser({ type: 'producao' })} 
-            variant="outline" 
-            size="sm" 
-            className="bg-white/90 backdrop-blur-sm border-2 border-red-200 hover:bg-red-50"
-          >
-            🍽️ Produção
-          </Button>
-          <Button 
-            onClick={() => setCurrentUser({ type: 'lojinha' })} 
-            variant="outline" 
-            size="sm" 
-            className="bg-white/90 backdrop-blur-sm border-2 border-orange-200 hover:bg-orange-50"
-          >
-            🏪 Loja
-          </Button>
-          <Button 
-            onClick={() => setCurrentUser({ type: 'avaliador' })} 
-            variant="outline" 
-            size="sm" 
-            className="bg-white/90 backdrop-blur-sm border-2 border-purple-200 hover:bg-purple-50"
-          >
-            🧑‍🏫 Avaliador
-          </Button>
-          <Button 
-            onClick={() => setCurrentUser({ type: 'seletor_equipes' })} 
-            variant="outline" 
-            size="sm" 
-            className="bg-white/90 backdrop-blur-sm border-2 border-green-200 hover:bg-green-50 mx-0 my-[6px]"
-          >
-            👥 Equipes
-          </Button>
-        </div>
+        {/* Sistema de Abas Principal */}
+        <div className="pt-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex justify-center mb-6">
+              <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-white/80 backdrop-blur-sm">
+                <TabsTrigger value="producao" className="text-red-600 data-[state=active]:bg-red-100">
+                  🍽️ Produção
+                </TabsTrigger>
+                <TabsTrigger value="lojinha" className="text-orange-600 data-[state=active]:bg-orange-100">
+                  🏪 Lojinha
+                </TabsTrigger>
+                <TabsTrigger value="avaliador" className="text-purple-600 data-[state=active]:bg-purple-100">
+                  🧑‍🏫 Avaliador
+                </TabsTrigger>
+                <TabsTrigger value="equipes" className="text-green-600 data-[state=active]:bg-green-100">
+                  👥 Equipes
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-        {/* Conteúdo principal com margem superior */}
-        <div className="pt-20">
-          {renderScreen()}
+            <TabsContent value="producao" className="mt-0">
+              <ProducaoScreen />
+            </TabsContent>
+
+            <TabsContent value="lojinha" className="mt-0">
+              <LojinhaScreen />
+            </TabsContent>
+
+            <TabsContent value="avaliador" className="mt-0">
+              <AvaliadorScreen />
+            </TabsContent>
+
+            <TabsContent value="equipes" className="mt-0">
+              {selectedTeam ? (
+                <div>
+                  <div className="flex justify-center mb-4">
+                    <Button 
+                      onClick={() => setSelectedTeam('')}
+                      variant="outline"
+                      className="bg-white/90 backdrop-blur-sm"
+                    >
+                      ← Voltar para Seleção de Equipes
+                    </Button>
+                  </div>
+                  <EquipeScreen teamName={selectedTeam} />
+                </div>
+              ) : (
+                <SeletorEquipes onEquipeSelecionada={handleEquipeSelecionada} />
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </GlobalRealtimeContext.Provider>

@@ -60,19 +60,15 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
         }
       })
       .on('presence', { event: 'sync' }, () => {
-        console.log('🔄 Realtime: Presence sync');
         updateConnectionStatus(true, 'excellent');
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('✅ Realtime: Client joined', key);
         updateConnectionStatus(true, 'excellent');
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('❌ Realtime: Client left', key);
+        // Silencioso - sem logs
       })
       .subscribe((status) => {
-        console.log('🌐 Realtime status:', status);
-        
         if (status === 'SUBSCRIBED') {
           updateConnectionStatus(true, 'excellent');
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
@@ -82,8 +78,6 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
             const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
             reconnectAttemptsRef.current++;
-            
-            console.log(`🔄 Tentativa de reconexão ${reconnectAttemptsRef.current}/${maxReconnectAttempts} em ${delay}ms`);
             
             setTimeout(() => {
               setupConnection();
@@ -97,29 +91,25 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   };
 
   const forceReconnect = () => {
-    console.log('🔄 Forçando reconexão...');
     reconnectAttemptsRef.current = 0;
     updateConnectionStatus(false);
     setupConnection();
   };
 
-  // Network state monitoring - silencioso
+  // Network state monitoring - completamente silencioso
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🌐 Rede online detectada');
       if (!isConnected) {
         forceReconnect();
       }
     };
 
     const handleOffline = () => {
-      console.log('❌ Rede offline detectada');
       updateConnectionStatus(false);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('👁️ Página visível - verificando conexão');
         setTimeout(() => {
           if (!isConnected || channelRef.current?.state !== 'joined') {
             forceReconnect();
