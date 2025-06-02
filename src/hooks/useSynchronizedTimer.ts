@@ -61,11 +61,15 @@ export const useSynchronizedTimer = (
     }
 
     setIsActive(true);
-    setHasWarned(false);
     
-    // Atualizar imediatamente
+    // Atualizar imediatamente quando a rodada ou tempo_limite mudar
     const remaining = calculateTimeRemaining();
     setTimeRemaining(remaining);
+    
+    // Resetar warning quando o tempo limite muda
+    if (remaining > warningThreshold) {
+      setHasWarned(false);
+    }
 
     // Configurar intervalo com correção automática a cada segundo
     const interval = setInterval(() => {
@@ -95,7 +99,32 @@ export const useSynchronizedTimer = (
       clearInterval(interval);
       clearInterval(driftCorrection);
     };
-  }, [rodada, calculateTimeRemaining, onTimeUp, onWarning, warningThreshold, hasWarned]);
+  }, [rodada?.id, rodada?.status, rodada?.tempo_limite, rodada?.iniciou_em, calculateTimeRemaining, onTimeUp, onWarning, warningThreshold, hasWarned]);
+
+  // Escutar eventos globais de rodada para sincronização instantânea
+  useEffect(() => {
+    const handleRodadaEvent = (event: CustomEvent) => {
+      console.log('Timer recebeu evento de rodada:', event.type);
+      // Recalcular imediatamente quando houver mudança de rodada
+      setTimeout(() => {
+        const remaining = calculateTimeRemaining();
+        setTimeRemaining(remaining);
+        console.log('Timer atualizado para:', remaining, 'segundos');
+      }, 100);
+    };
+
+    window.addEventListener('rodada-iniciada', handleRodadaEvent as EventListener);
+    window.addEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
+    window.addEventListener('rodada-updated', handleRodadaEvent as EventListener);
+    window.addEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('rodada-iniciada', handleRodadaEvent as EventListener);
+      window.removeEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
+      window.removeEventListener('rodada-updated', handleRodadaEvent as EventListener);
+      window.removeEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
+    };
+  }, [calculateTimeRemaining]);
 
   // Sincronização quando a página volta ao foco
   useEffect(() => {
@@ -115,27 +144,6 @@ export const useSynchronizedTimer = (
   useEffect(() => {
     calculateServerTimeOffset();
   }, [calculateServerTimeOffset]);
-
-  // Escutar eventos globais de rodada para sincronização instantânea
-  useEffect(() => {
-    const handleRodadaEvent = () => {
-      // Recalcular imediatamente quando houver mudança de rodada
-      setTimeout(() => {
-        const remaining = calculateTimeRemaining();
-        setTimeRemaining(remaining);
-      }, 100);
-    };
-
-    window.addEventListener('rodada-iniciada', handleRodadaEvent);
-    window.addEventListener('rodada-finalizada', handleRodadaEvent);
-    window.addEventListener('rodada-updated', handleRodadaEvent);
-
-    return () => {
-      window.removeEventListener('rodada-iniciada', handleRodadaEvent);
-      window.removeEventListener('rodada-finalizada', handleRodadaEvent);
-      window.removeEventListener('rodada-updated', handleRodadaEvent);
-    };
-  }, [calculateTimeRemaining]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

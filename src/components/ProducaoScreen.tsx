@@ -190,6 +190,8 @@ const ProducaoScreen = () => {
     try {
       const novoTempoLimite = rodadaAtual.tempo_limite + (minutos * 60);
       
+      console.log(`Alterando tempo limite de ${rodadaAtual.tempo_limite}s para ${novoTempoLimite}s`);
+      
       const { error } = await supabase
         .from('rodadas')
         .update({ tempo_limite: novoTempoLimite })
@@ -197,10 +199,23 @@ const ProducaoScreen = () => {
 
       if (error) throw error;
       
+      // Disparar evento customizado para notificar o timer
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-tempo-alterado', { 
+          detail: { 
+            rodadaId: rodadaAtual.id,
+            novoTempoLimite,
+            alteracao: minutos,
+            timestamp: new Date().toISOString() 
+          } 
+        }));
+      }
+      
       toast.success(`${minutos > 0 ? 'Adicionados' : 'Removidos'} ${Math.abs(minutos)} minuto(s)`, {
         duration: 2000,
       });
     } catch (error) {
+      console.error('Erro ao ajustar tempo da rodada:', error);
       toast.error('Erro ao ajustar tempo da rodada');
     }
   };
