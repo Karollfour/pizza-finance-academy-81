@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProdutoLoja } from '@/types/database';
 
@@ -7,6 +7,7 @@ export const useProdutos = () => {
   const [produtos, setProdutos] = useState<ProdutoLoja[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchProdutos = async () => {
     try {
@@ -110,6 +111,32 @@ export const useProdutos = () => {
 
   useEffect(() => {
     fetchProdutos();
+
+    // Setup realtime subscription with proper cleanup
+    if (!channelRef.current) {
+      channelRef.current = supabase
+        .channel('produtos-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'produtos_loja'
+          },
+          () => {
+            console.log('Produto atualizado, recarregando...');
+            fetchProdutos();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, []);
 
   return {

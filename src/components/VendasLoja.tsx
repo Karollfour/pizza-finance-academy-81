@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -264,7 +263,7 @@ const VendasLoja = () => {
               <Checkbox 
                 id="cobrancaViagem" 
                 checked={cobrancaViagem}
-                onCheckedChange={setCobrancaViagem}
+                onCheckedChange={(checked) => setCobrancaViagem(checked === true)}
               />
               <label htmlFor="cobrancaViagem" className="text-sm">
                 Cobrar taxa de viagem à loja (R$ 10,00)
