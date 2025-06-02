@@ -1,3 +1,4 @@
+
 export interface Equipe {
   id: string;
   nome: string;
@@ -57,6 +58,7 @@ export interface Pizza {
   id: string;
   equipe_id: string;
   rodada_id: string;
+  sabor_id: string | null;
   status: 'em_producao' | 'pronta' | 'avaliada';
   resultado: 'aprovada' | 'reprovada' | null;
   tempo_producao_segundos: number | null;
@@ -64,6 +66,8 @@ export interface Pizza {
   avaliado_por: string | null;
   created_at: string;
   updated_at: string;
+  // Campos de join
+  sabor?: SaborPizza;
 }
 
 export interface Configuracao {

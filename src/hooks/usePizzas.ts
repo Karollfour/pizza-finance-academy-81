@@ -11,7 +11,12 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
   const fetchPizzas = async () => {
     try {
       setLoading(true);
-      let query = supabase.from('pizzas').select('*');
+      let query = supabase
+        .from('pizzas')
+        .select(`
+          *,
+          sabor:sabores_pizza(*)
+        `);
       
       if (equipeId) {
         query = query.eq('equipe_id', equipeId);
@@ -32,22 +37,42 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
     }
   };
 
-  const marcarPizzaPronta = async (equipeId: string, rodadaId: string) => {
+  const marcarPizzaPronta = async (equipeId: string, rodadaId: string, saborId?: string) => {
     try {
       const { data, error } = await supabase
         .from('pizzas')
         .insert({
           equipe_id: equipeId,
           rodada_id: rodadaId,
+          sabor_id: saborId || null,
           status: 'pronta'
         })
-        .select()
+        .select(`
+          *,
+          sabor:sabores_pizza(*)
+        `)
         .single();
 
       if (error) throw error;
+      
+      const novaPizza = data as Pizza;
+      
+      // Disparar evento global com informação completa da pizza
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pizza-enviada-com-sabor', { 
+          detail: { 
+            pizza: novaPizza,
+            equipeId,
+            rodadaId,
+            saborId,
+            timestamp: new Date().toISOString() 
+          } 
+        }));
+      }
+      
       await fetchPizzas();
       
-      return data as Pizza;
+      return novaPizza;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao marcar pizza como pronta');
       throw err;
@@ -68,6 +93,20 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
         .eq('id', pizzaId);
 
       if (error) throw error;
+      
+      // Disparar evento global
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pizza-avaliada', { 
+          detail: { 
+            pizzaId,
+            resultado,
+            justificativa,
+            avaliador,
+            timestamp: new Date().toISOString() 
+          } 
+        }));
+      }
+      
       await fetchPizzas();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao avaliar pizza');

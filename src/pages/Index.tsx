@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import LoginScreen from '@/components/LoginScreen';
 import LojinhaScreen from '@/components/LojinhaScreen';
 import ProducaoScreen from '@/components/ProducaoScreen';
@@ -8,13 +8,14 @@ import AvaliadorScreen from '@/components/AvaliadorScreen';
 import SeletorEquipes from '@/components/SeletorEquipes';
 import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
 import { GlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
+import { usePersistedState } from '@/hooks/usePersistedState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState('producao');
-  const [selectedTeam, setSelectedTeam] = useState<{ nome: string; id: string } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = usePersistedState('pizza-app-logged-in', false);
+  const [activeTab, setActiveTab] = usePersistedState('pizza-app-active-tab', 'producao');
+  const [selectedTeam, setSelectedTeam] = usePersistedState<{ nome: string; id: string } | null>('pizza-app-selected-team', null);
 
   // Inicializar sistema global de realtime - completamente silencioso
   const { contextValue } = useGlobalRealtime({
@@ -36,12 +37,12 @@ const Index = () => {
     // Atualizar estado atomicamente para evitar condições de corrida
     setSelectedTeam({ nome: equipeNome, id: equipeId });
     setActiveTab('equipes');
-  }, []);
+  }, [setSelectedTeam, setActiveTab]);
 
   const handleVoltarSeletor = useCallback(() => {
     setSelectedTeam(null);
     // Manter na aba equipes para melhor UX
-  }, []);
+  }, [setSelectedTeam]);
 
   // Se não estiver logado, mostrar tela de login
   if (!isLoggedIn) {
