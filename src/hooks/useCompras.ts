@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Compra } from '@/types/database';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ export const useCompras = (equipeId?: string) => {
   const [compras, setCompras] = useState<Compra[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchCompras = async () => {
     try {
@@ -68,12 +69,22 @@ export const useCompras = (equipeId?: string) => {
       .reduce((total, compra) => total + compra.valor_total, 0);
   };
 
-  // Escutar mudanças em tempo real para compras
   useEffect(() => {
+    fetchCompras();
+
+    // Create unique channel name
+    const channelName = `compras-updates-${equipeId || 'global'}-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     console.log('Configurando escuta em tempo real para compras', equipeId ? `da equipe ${equipeId}` : 'globais');
     
-    const channel = supabase
-      .channel(`compras-updates${equipeId ? `-${equipeId}` : ''}`)
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -116,12 +127,11 @@ export const useCompras = (equipeId?: string) => {
 
     return () => {
       console.log('Removendo escuta em tempo real para compras');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [equipeId]);
-
-  useEffect(() => {
-    fetchCompras();
   }, [equipeId]);
 
   return {

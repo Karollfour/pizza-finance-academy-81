@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipe } from '@/types/database';
 import { toast } from 'sonner';
@@ -16,6 +15,7 @@ export const useEquipes = () => {
   const [equipes, setEquipes] = useState<EquipeExtended[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const fetchEquipes = async () => {
     try {
@@ -144,12 +144,22 @@ export const useEquipes = () => {
     }
   };
 
-  // Escutar mudanças em tempo real para equipes
   useEffect(() => {
+    fetchEquipes();
+
+    // Create unique channel name
+    const channelName = `equipes-updates-${Date.now()}`;
+    
+    // Cleanup previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     console.log('Configurando escuta em tempo real para equipes');
     
-    const channel = supabase
-      .channel('equipes-updates')
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -201,12 +211,11 @@ export const useEquipes = () => {
 
     return () => {
       console.log('Removendo escuta em tempo real para equipes');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, []);
-
-  useEffect(() => {
-    fetchEquipes();
   }, []);
 
   return {
