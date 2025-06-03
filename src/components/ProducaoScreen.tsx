@@ -375,7 +375,7 @@ const ProducaoScreen = () => {
                               🍕 SABOR ATUAL
                             </Badge>
                             <div className="text-4xl mb-3">🍕</div>
-                            <h3 className="text-2xl font-bold text-green-700 mb-2">
+                            <h3 className="font-bold text-green-700 mb-2 text-5xl">
                               {getSaborNome(saborAtual)}
                             </h3>
                             {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
@@ -399,7 +399,7 @@ const ProducaoScreen = () => {
                                 PRÓXIMO
                               </Badge>
                               <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="text-lg font-bold text-blue-700">
+                              <h4 className="font-bold text-blue-700 text-3xl">
                                 {getSaborNome(proximoSabor)}
                               </h4>
                               <div className="text-xs text-blue-600">
@@ -419,7 +419,7 @@ const ProducaoScreen = () => {
                                 DEPOIS
                               </Badge>
                               <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="text-lg font-bold text-purple-700">
+                              <h4 className="font-bold text-purple-700 text-lg">
                                 {getSaborNome(segundoProximoSabor)}
                               </h4>
                               <div className="text-xs text-purple-600">
