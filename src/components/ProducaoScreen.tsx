@@ -451,9 +451,7 @@ const ProducaoScreen = () => {
                       <div className="space-y-3">
                         {historico[1] && <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                             <CardContent className="p-3 text-center">
-                              <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">
-                                SEGUNDO
-                              </Badge>
+                              <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
                               <div className="text-2xl mb-2">🍕</div>
                               <h4 className="text-lg font-bold text-blue-700">
                                 {getSaborNome(historico[1])}
