@@ -69,6 +69,18 @@ export interface Pizza {
   sabor?: SaborPizza;
 }
 
+export interface HistoricoSaborRodada {
+  id: string;
+  rodada_id: string;
+  sabor_id: string;
+  ordem: number;
+  definido_em: string;
+  definido_por: string | null;
+  created_at: string;
+  // Campos de join
+  sabor?: SaborPizza;
+}
+
 export interface Configuracao {
   id: string;
   chave: string;
