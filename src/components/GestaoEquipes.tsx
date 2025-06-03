@@ -5,16 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useEquipes } from '@/hooks/useEquipes';
+import { useCompras } from '@/hooks/useCompras';
 import { toast } from 'sonner';
 
 const GestaoEquipes = () => {
   const { equipes, criarEquipe, atualizarEquipe, removerEquipe } = useEquipes();
+  const { compras } = useCompras();
   const [novaEquipe, setNovaEquipe] = useState({
     nome: '',
     saldoInicial: 100,
     professorResponsavel: ''
   });
   const [editandoEquipe, setEditandoEquipe] = useState<string | null>(null);
+
+  // Função para calcular o gasto total de uma equipe
+  const calcularGastoTotal = (equipeId: string) => {
+    return compras
+      .filter(compra => compra.equipe_id === equipeId)
+      .reduce((total, compra) => total + compra.valor_total, 0);
+  };
 
   const handleCriarEquipe = async () => {
     if (!novaEquipe.nome || !novaEquipe.professorResponsavel) {
@@ -107,77 +116,82 @@ const GestaoEquipes = () => {
                 <p>Nenhuma equipe cadastrada</p>
               </div>
             ) : (
-              equipes.map((equipe) => (
-                <div key={equipe.id} className="p-4 border border-gray-200 rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold">{equipe.nome}</h3>
-                        <Badge style={{ backgroundColor: equipe.cor_tema }}>
-                          {equipe.emblema}
-                        </Badge>
+              equipes.map((equipe) => {
+                const gastoTotal = calcularGastoTotal(equipe.id);
+                const saldoDisponivel = equipe.saldo_inicial - gastoTotal;
+                
+                return (
+                  <div key={equipe.id} className="p-4 border border-gray-200 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-semibold">{equipe.nome}</h3>
+                          <Badge style={{ backgroundColor: equipe.cor_tema }}>
+                            {equipe.emblema}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Professor:</strong> {equipe.professor_responsavel}
+                        </p>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <span className="text-green-600">
+                            <strong>Saldo Inicial:</strong> R$ {equipe.saldo_inicial.toFixed(2)}
+                          </span>
+                          <span className="text-red-600">
+                            <strong>Gasto Total:</strong> R$ {gastoTotal.toFixed(2)}
+                          </span>
+                          <span className={`font-bold ${saldoDisponivel >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                            <strong>Disponível:</strong> R$ {saldoDisponivel.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>Professor:</strong> {equipe.professor_responsavel}
-                      </p>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <span className="text-green-600">
-                          <strong>Saldo Inicial:</strong> R$ {equipe.saldo_inicial.toFixed(2)}
-                        </span>
-                        <span className="text-red-600">
-                          <strong>Gasto Total:</strong> R$ {equipe.gasto_total.toFixed(2)}
-                        </span>
-                        <span className="text-blue-600">
-                          <strong>Disponível:</strong> R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditandoEquipe(editandoEquipe === equipe.id ? null : equipe.id)}
-                      >
-                        {editandoEquipe === equipe.id ? 'Cancelar' : 'Editar'}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRemoverEquipe(equipe.id, equipe.nome)}
-                      >
-                        Remover
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {editandoEquipe === equipe.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          placeholder="Novo saldo inicial"
-                          defaultValue={equipe.saldo_inicial}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              const input = e.target as HTMLInputElement;
-                              handleAtualizarSaldo(equipe.id, Number(input.value));
-                            }
-                          }}
-                        />
+                      <div className="flex space-x-2">
                         <Button
+                          variant="outline"
                           size="sm"
-                          onClick={(e) => {
-                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                            handleAtualizarSaldo(equipe.id, Number(input.value));
-                          }}
+                          onClick={() => setEditandoEquipe(editandoEquipe === equipe.id ? null : equipe.id)}
                         >
-                          Atualizar
+                          {editandoEquipe === equipe.id ? 'Cancelar' : 'Editar'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoverEquipe(equipe.id, equipe.nome)}
+                        >
+                          Remover
                         </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))
+                    
+                    {editandoEquipe === equipe.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="number"
+                            placeholder="Novo saldo inicial"
+                            defaultValue={equipe.saldo_inicial}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                const input = e.target as HTMLInputElement;
+                                handleAtualizarSaldo(equipe.id, Number(input.value));
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              handleAtualizarSaldo(equipe.id, Number(input.value));
+                            }}
+                          >
+                            Atualizar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </CardContent>
