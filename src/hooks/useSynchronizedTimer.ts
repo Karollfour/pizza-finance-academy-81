@@ -15,7 +15,6 @@ export const useSynchronizedTimer = (
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [hasWarned, setHasWarned] = useState(false);
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
   const { 
     onTimeUp, 
@@ -23,35 +22,24 @@ export const useSynchronizedTimer = (
     warningThreshold = 30 
   } = options;
 
-  // Calcular offset do servidor para sincronização precisa
-  const calculateServerTimeOffset = useCallback(async () => {
-    try {
-      const clientTime = Date.now();
-      // Simular ping para estimar latência (em produção, você faria uma requisição real)
-      const serverTime = clientTime; // Em produção, buscar tempo do servidor
-      setServerTimeOffset(serverTime - clientTime);
-    } catch (error) {
-      console.warn('Erro ao calcular offset do servidor:', error);
-      setServerTimeOffset(0);
-    }
-  }, []);
-
-  // Calcular tempo restante sincronizado
+  // Calcular tempo restante com precisão melhorada
   const calculateTimeRemaining = useCallback(() => {
     if (!rodada || rodada.status !== 'ativa' || !rodada.iniciou_em) {
       return 0;
     }
 
-    const now = Date.now() + serverTimeOffset;
+    // Usar UTC para evitar problemas de timezone em dispositivos móveis
+    const now = new Date().getTime();
     const startTime = new Date(rodada.iniciou_em).getTime();
-    const duration = rodada.tempo_limite * 1000;
+    const duration = rodada.tempo_limite * 1000; // converter para millisegundos
     const elapsed = now - startTime;
     const remaining = Math.max(0, duration - elapsed);
     
-    return Math.ceil(remaining / 1000);
-  }, [rodada, serverTimeOffset]);
+    // Converter de volta para segundos e garantir que seja um número inteiro
+    return Math.floor(remaining / 1000);
+  }, [rodada]);
 
-  // Timer principal com correção automática
+  // Timer principal com correção para dispositivos móveis
   useEffect(() => {
     if (!rodada || rodada.status !== 'ativa' || !rodada.iniciou_em) {
       setTimeRemaining(0);
@@ -62,7 +50,7 @@ export const useSynchronizedTimer = (
 
     setIsActive(true);
     
-    // Atualizar imediatamente quando a rodada ou tempo_limite mudar
+    // Atualizar imediatamente
     const remaining = calculateTimeRemaining();
     setTimeRemaining(remaining);
     
@@ -71,8 +59,11 @@ export const useSynchronizedTimer = (
       setHasWarned(false);
     }
 
-    // Configurar intervalo com correção automática a cada segundo
-    const interval = setInterval(() => {
+    // Usar requestAnimationFrame para melhor performance em mobile
+    let intervalId: number;
+    let rafId: number;
+
+    const updateTimer = () => {
       const remaining = calculateTimeRemaining();
       setTimeRemaining(remaining);
 
@@ -86,18 +77,21 @@ export const useSynchronizedTimer = (
       if (remaining <= 0) {
         setIsActive(false);
         onTimeUp?.();
-        clearInterval(interval);
+        return;
       }
-    }, 1000);
 
-    // Correção de drift a cada 30 segundos
-    const driftCorrection = setInterval(() => {
-      calculateServerTimeOffset();
-    }, 30000);
+      // Continuar atualizando
+      rafId = requestAnimationFrame(() => {
+        setTimeout(updateTimer, 1000);
+      });
+    };
+
+    // Iniciar timer
+    intervalId = window.setTimeout(updateTimer, 1000);
 
     return () => {
-      clearInterval(interval);
-      clearInterval(driftCorrection);
+      if (intervalId) clearTimeout(intervalId);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, [rodada?.id, rodada?.status, rodada?.tempo_limite, rodada?.iniciou_em, calculateTimeRemaining, onTimeUp, onWarning, warningThreshold, hasWarned]);
 
@@ -126,28 +120,38 @@ export const useSynchronizedTimer = (
     };
   }, [calculateTimeRemaining]);
 
-  // Sincronização quando a página volta ao foco
+  // Sincronização quando a página volta ao foco (importante para mobile)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isActive) {
-        calculateServerTimeOffset();
         const remaining = calculateTimeRemaining();
         setTimeRemaining(remaining);
+        console.log('Timer sincronizado após foco:', remaining, 'segundos');
+      }
+    };
+
+    const handlePageShow = () => {
+      if (isActive) {
+        const remaining = calculateTimeRemaining();
+        setTimeRemaining(remaining);
+        console.log('Timer sincronizado após pageshow:', remaining, 'segundos');
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, [isActive, calculateTimeRemaining]);
 
-  // Inicializar offset do servidor
-  useEffect(() => {
-    calculateServerTimeOffset();
-  }, [calculateServerTimeOffset]);
-
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    // Garantir que seconds seja um número válido
+    const validSeconds = Math.max(0, Math.floor(seconds));
+    const mins = Math.floor(validSeconds / 60);
+    const secs = validSeconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
