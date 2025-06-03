@@ -371,9 +371,7 @@ const ProducaoScreen = () => {
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
                           <CardContent className="p-6 text-center my-[10px]">
-                            <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">
-                              🍕 SABOR ATUAL
-                            </Badge>
+                            <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
                             <h3 className="font-bold text-green-700 mb-2 text-5xl">
                               {getSaborNome(saborAtual)}
@@ -395,9 +393,7 @@ const ProducaoScreen = () => {
                       <div className="space-y-3">
                         {proximoSabor ? <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                             <CardContent className="p-3 text-center">
-                              <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">
-                                PRÓXIMO
-                              </Badge>
+                              <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 1</Badge>
                               <div className="text-2xl mb-2">🍕</div>
                               <h4 className="font-bold text-blue-700 text-3xl">
                                 {getSaborNome(proximoSabor)}
@@ -415,9 +411,7 @@ const ProducaoScreen = () => {
 
                         {segundoProximoSabor && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                             <CardContent className="p-3 text-center">
-                              <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">
-                                DEPOIS
-                              </Badge>
+                              <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
                               <div className="text-2xl mb-2">🍕</div>
                               <h4 className="font-bold text-purple-700 text-3xl">
                                 {getSaborNome(segundoProximoSabor)}
