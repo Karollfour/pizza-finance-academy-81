@@ -12,11 +12,13 @@ import { useProdutos } from '@/hooks/useProdutos';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { toast } from 'sonner';
 import { Trash2, Plus, Minus } from 'lucide-react';
+
 interface ItemCarrinho {
   produtoId: string;
   quantidade: number;
   produto: any;
 }
+
 const VendasLoja = () => {
   const {
     compras,
@@ -35,6 +37,7 @@ const VendasLoja = () => {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [cobrancaViagem, setCobrancaViagem] = useState(true);
   const [descricaoVenda, setDescricaoVenda] = useState('');
+
   const adicionarAoCarrinho = (produtoId: string) => {
     const produto = produtos.find(p => p.id === produtoId);
     if (!produto) return;
@@ -52,9 +55,11 @@ const VendasLoja = () => {
       }]);
     }
   };
+
   const removerDoCarrinho = (produtoId: string) => {
     setCarrinho(prev => prev.filter(item => item.produtoId !== produtoId));
   };
+
   const alterarQuantidade = (produtoId: string, novaQuantidade: number) => {
     if (novaQuantidade <= 0) {
       removerDoCarrinho(produtoId);
@@ -65,17 +70,20 @@ const VendasLoja = () => {
       quantidade: novaQuantidade
     } : item));
   };
+
   const calcularTotalCarrinho = () => {
     const totalProdutos = carrinho.reduce((total, item) => total + item.produto.valor_unitario * item.quantidade, 0);
-    const valorViagem = cobrancaViagem ? 10 : 0;
+    const valorViagem = cobrancaViagem ? 5 : 0;
     return totalProdutos + valorViagem;
   };
+
   const limparCarrinho = () => {
     setCarrinho([]);
     setEquipeId('');
     setCobrancaViagem(true);
     setDescricaoVenda('');
   };
+
   const finalizarVenda = async () => {
     if (!equipeId) {
       toast.error('Selecione uma equipe!');
@@ -93,7 +101,7 @@ const VendasLoja = () => {
 
       // Registrar cobrança de viagem se marcada
       if (cobrancaViagem) {
-        await registrarCompra(equipeId, null, rodadaAtual?.id || null, 1, 10, 'viagem', descricaoVenda || 'Taxa de viagem à loja');
+        await registrarCompra(equipeId, null, rodadaAtual?.id || null, 1, 5, 'viagem', descricaoVenda || 'Taxa de viagem à loja');
       }
       limparCarrinho();
       toast.success('Venda finalizada com sucesso!');
@@ -101,16 +109,19 @@ const VendasLoja = () => {
       toast.error('Erro ao finalizar venda');
     }
   };
+
   const getEquipeNome = (equipeId: string) => {
     const equipe = equipes.find(e => e.id === equipeId);
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
+
   const vendas5Recentes = compras.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
   const totalVendasHoje = compras.filter(c => {
     const hoje = new Date().toDateString();
     const dataCompra = new Date(c.created_at).toDateString();
     return hoje === dataCompra;
   }).reduce((sum, c) => sum + c.valor_total, 0);
+
   return <div className="space-y-6">
       {/* Carrinho de Compras */}
       <Card>
@@ -294,4 +305,5 @@ const VendasLoja = () => {
       </Card>
     </div>;
 };
+
 export default VendasLoja;
