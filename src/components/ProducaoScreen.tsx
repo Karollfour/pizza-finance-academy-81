@@ -433,9 +433,7 @@ const ProducaoScreen = () => {
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                           <CardContent className="p-6 text-center py-[55px]">
-                            <Badge className="bg-yellow-500 text-white text-sm px-3 py-1 mb-3">
-                              🍕 PRIMEIRO SABOR
-                            </Badge>
+                            <Badge className="bg-yellow-500 text-white text-sm px-3 py-1 mb-3">🍕 EM  PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
                             <h3 className="text-2xl font-bold text-yellow-700 mb-2">
                               {getSaborNome(historico[0])}
