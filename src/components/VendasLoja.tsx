@@ -213,7 +213,7 @@ const VendasLoja = () => {
               </div>
               {cobrancaViagem && <div className="flex justify-between items-center mb-2">
                   <span className="text-sm">Taxa de viagem:</span>
-                  <span className="font-semibold">R$ 10,00</span>
+                  <span className="font-semibold">R$ 5,00</span>
                 </div>}
               <Separator className="my-2" />
               <div className="flex justify-between items-center text-lg">
