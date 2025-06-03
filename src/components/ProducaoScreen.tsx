@@ -370,7 +370,7 @@ const ProducaoScreen = () => {
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
-                          <CardContent className="p-6 text-center">
+                          <CardContent className="p-6 text-center my-[10px]">
                             <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">
                               🍕 SABOR ATUAL
                             </Badge>
