@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -55,7 +54,9 @@ const ProducaoScreen = () => {
   } = useSequenciaSabores();
 
   // Sincronização global ativa
-  const { forceGlobalSync } = useGlobalSync({
+  const {
+    forceGlobalSync
+  } = useGlobalSync({
     enabled: true,
     silent: true
   });
@@ -81,10 +82,8 @@ const ProducaoScreen = () => {
     },
     warningThreshold: 30
   });
-  
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
-
   const handleIniciarRodada = async () => {
     try {
       if (!rodadaAtual) {
@@ -99,7 +98,7 @@ const ProducaoScreen = () => {
 
           // Aguardar um momento para a sequência ser salva
           await new Promise(resolve => setTimeout(resolve, 500));
-          
+
           // Forçar atualização global imediata
           forceGlobalSync();
         }
@@ -110,33 +109,29 @@ const ProducaoScreen = () => {
         });
         return;
       }
-      
       if (rodadaAtual.status === 'aguardando') {
         // Verificar se já existe sequência de sabores
         const {
           data: historicoExistente
         } = await supabase.from('historico_sabores_rodada').select('id').eq('rodada_id', rodadaAtual.id).limit(1);
-        
         if (!historicoExistente || historicoExistente.length === 0) {
           console.log('Criando sequência de sabores para rodada existente...');
           await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
 
           // Aguardar um momento para a sequência ser salva
           await new Promise(resolve => setTimeout(resolve, 500));
-          
+
           // Forçar atualização global imediata
           forceGlobalSync();
         }
-        
         console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
-        
+
         // Forçar atualização global imediata após iniciar
         setTimeout(() => {
           forceGlobalSync();
           refetchRodadas();
         }, 500);
-        
         toast.success(`🚀 Rodada ${rodadaAtual.numero} iniciada!`, {
           duration: 3000,
           position: 'top-center'
@@ -150,7 +145,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -247,8 +241,11 @@ const ProducaoScreen = () => {
   // Escutar eventos globais para atualização automática
   useEffect(() => {
     const handleGlobalDataChange = (event: CustomEvent) => {
-      const { table, action } = event.detail;
-      
+      const {
+        table,
+        action
+      } = event.detail;
+
       // Atualizar dados relevantes baseado na tabela alterada
       if (table === 'rodadas') {
         refetchRodadas();
@@ -259,9 +256,7 @@ const ProducaoScreen = () => {
         refetchPizzas();
       }
     };
-
     window.addEventListener('global-data-changed', handleGlobalDataChange as EventListener);
-
     return () => {
       window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
@@ -328,7 +323,6 @@ const ProducaoScreen = () => {
       return '#6b7280'; // cinza padrão
     }
   };
-
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -336,11 +330,7 @@ const ProducaoScreen = () => {
           <p className="text-gray-600">Acompanhe o status das pizzas em tempo real</p>
           <div className="mt-2 text-sm text-gray-500">
             Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
-            <button 
-              onClick={forceGlobalSync}
-              className="ml-2 text-blue-600 hover:text-blue-800 text-xs"
-              title="Forçar sincronização"
-            >
+            <button onClick={forceGlobalSync} className="ml-2 text-blue-600 hover:text-blue-800 text-xs" title="Forçar sincronização">
               🔄
             </button>
           </div>
@@ -399,7 +389,7 @@ const ProducaoScreen = () => {
 
         {/* Timer, Status da Rodada e Sabores Integrados */}
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
-          <CardHeader>
+          <CardHeader className="my-0 mx-0">
             <CardTitle className="flex items-center justify-between">
               <span className="text-2xl">Rodada {numeroRodadaDisplay}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'}>
@@ -408,7 +398,7 @@ const ProducaoScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-6 my-0 mx-0 px-0 py-0">
               {/* Timer */}
               <div className="space-y-4">
                 <div className="text-center">
@@ -424,8 +414,7 @@ const ProducaoScreen = () => {
                   <h3 className="font-semibold text-orange-600 mb-4 text-center text-2xl">🍕 Sabores da Rodada</h3>
                   
                   {/* Rodada Ativa - Sistema Automático */}
-                  {rodadaAtual.status === 'ativa' && saborAtual ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
@@ -481,9 +470,8 @@ const ProducaoScreen = () => {
                             </CardContent>
                           </Card>}
                       </div>
-                    </div>
-                  ) : (/* Rodada Aguardando - Primeiros 3 Sabores */
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    </div> : (/* Rodada Aguardando - Primeiros 3 Sabores */
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                           <CardContent className="p-6 text-center py-[71px] my-[6px]">
@@ -533,36 +521,18 @@ const ProducaoScreen = () => {
                     </div>)}
 
                   {/* Histórico Visual da Rodada Atual - Agora integrado ao final dos sabores */}
-                  {rodadaAtual.status === 'ativa' && historico.length > 0 && (
-                    <div className="mt-6 pt-4 border-t border-orange-200">
-                      <h4 className="text-lg font-semibold text-yellow-800 mb-4 text-center">
-                        📊 Sequência de Sabores - Rodada Atual
-                      </h4>
+                  {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
+                      
                       <div className="grid grid-cols-10 md:grid-cols-15 lg:grid-cols-20 gap-2">
                         {historico.map((sabor, index) => {
-                          const saborNome = getSaborNome(sabor);
-                          const cor = getSaborCorRodadaAtual(saborNome);
-                          const isAtual = index === saborAtualIndex;
-                          const isPassado = index < saborAtualIndex;
-                          
-                          return (
-                            <div
-                              key={sabor.id}
-                              className={`relative group cursor-pointer transition-all duration-200 ${
-                                isAtual ? 'scale-125 z-10' : ''
-                              }`}
-                              title={`Pizza #${index + 1}: ${saborNome}`}
-                            >
-                              <div
-                                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${
-                                  isAtual 
-                                    ? 'border-yellow-600 animate-pulse' 
-                                    : isPassado 
-                                      ? 'border-gray-400 opacity-60' 
-                                      : 'border-yellow-400'
-                                }`}
-                                style={{ backgroundColor: cor }}
-                              >
+                    const saborNome = getSaborNome(sabor);
+                    const cor = getSaborCorRodadaAtual(saborNome);
+                    const isAtual = index === saborAtualIndex;
+                    const isPassado = index < saborAtualIndex;
+                    return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-125 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
+                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${isAtual ? 'border-yellow-600 animate-pulse' : isPassado ? 'border-gray-400 opacity-60' : 'border-yellow-400'}`} style={{
+                        backgroundColor: cor
+                      }}>
                                 {index + 1}
                               </div>
                               
@@ -572,19 +542,14 @@ const ProducaoScreen = () => {
                               </div>
                               
                               {/* Indicador de status */}
-                              {isAtual && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-white animate-pulse"></div>
-                              )}
-                              {isPassado && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full border border-white">
+                              {isAtual && <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-white animate-pulse"></div>}
+                              {isPassado && <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full border border-white">
                                   <div className="w-full h-full flex items-center justify-center">
                                     <div className="w-1 h-1 bg-white rounded-full"></div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                                </div>}
+                            </div>;
+                  })}
                       </div>
                       
                       {/* Legenda específica para rodada atual */}
@@ -598,24 +563,23 @@ const ProducaoScreen = () => {
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                          <span>Margherita/Tomate</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                          <span>Frango</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-                          <span>Portuguesa</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-                          <span>Outros</span>
+                          
+                          
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>}
             </div>
           </CardContent>
@@ -726,5 +690,4 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
-
 export default ProducaoScreen;
