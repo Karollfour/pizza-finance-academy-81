@@ -324,7 +324,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Rodada {numeroRodadaDisplay}</span>
+              <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
               </Badge>
@@ -432,13 +432,13 @@ const ProducaoScreen = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
-                          <CardContent className="p-6 text-center py-[55px]">
-                            <Badge className="bg-yellow-500 text-white text-sm px-3 py-1 mb-3">🍕 EM  PRODUÇÃO</Badge>
+                          <CardContent className="p-6 text-center py-[71px] my-[6px]">
+                            <Badge className="bg-yellow-500 text-white text-sm px-3 mb-3 py-[3px] rounded-md">🍕 EM  PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
-                            <h3 className="text-2xl font-bold text-yellow-700 mb-2">
+                            <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
                               {getSaborNome(historico[0])}
                             </h3>
-                            {getSaborDescricao(historico[0]) && <p className="text-sm text-yellow-600 mb-3">
+                            {getSaborDescricao(historico[0]) && <p className="text-yellow-600 mb-3 text-xl">
                                 {getSaborDescricao(historico[0])}
                               </p>}
                             <div className="text-sm text-yellow-600">
@@ -452,8 +452,8 @@ const ProducaoScreen = () => {
                         {historico[1] && <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                             <CardContent className="p-3 text-center">
                               <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
-                              <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="text-lg font-bold text-blue-700">
+                              <div className="text-2xl mb-2 my-[4px]">🍕</div>
+                              <h4 className="font-bold text-blue-700 text-4xl py-0 my-[13px] mx-0">
                                 {getSaborNome(historico[1])}
                               </h4>
                               <div className="text-xs text-blue-600">
@@ -466,8 +466,8 @@ const ProducaoScreen = () => {
                             <CardContent className="p-3 text-center">
                               <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 3
                       </Badge>
-                              <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="text-lg font-bold text-purple-700">
+                              <div className="text-2xl mb-2 my-0">🍕</div>
+                              <h4 className="font-bold text-purple-700 text-4xl my-[12px]">
                                 {getSaborNome(historico[2])}
                               </h4>
                               <div className="text-xs text-purple-600">
