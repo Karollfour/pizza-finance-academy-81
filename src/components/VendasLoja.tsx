@@ -192,9 +192,7 @@ const VendasLoja = () => {
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
               <Checkbox id="cobrancaViagem" checked={cobrancaViagem} onCheckedChange={checked => setCobrancaViagem(checked === true)} />
-              <label htmlFor="cobrancaViagem" className="text-sm">
-                Cobrar taxa de viagem à loja (R$ 10,00)
-              </label>
+              <label htmlFor="cobrancaViagem" className="text-sm">Cobrar taxa de viagem à loja (R$ 5,00)</label>
             </div>
 
             <div>
