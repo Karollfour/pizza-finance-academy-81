@@ -11,7 +11,7 @@ interface PedidoAtualEquipeProps {
 }
 
 const PedidoAtualEquipe = ({ rodadaAtual, equipeId }: PedidoAtualEquipeProps) => {
-  const { pedidoAtivo, pedidos } = usePedidosRodada(rodadaAtual?.id);
+  const { pedidoAtivo } = usePedidosRodada(rodadaAtual?.id);
   const [jaEntregou, setJaEntregou] = useState(false);
 
   useEffect(() => {
@@ -91,7 +91,7 @@ const PedidoAtualEquipe = ({ rodadaAtual, equipeId }: PedidoAtualEquipeProps) =>
           ) : (
             <div className="space-y-4">
               <p className="text-lg text-orange-600 font-medium">
-                Faça uma pizza deste sabor e entregue!
+                Confirme a entrega na seção de produção abaixo
               </p>
               
               <div className="grid grid-cols-2 gap-4 text-sm">

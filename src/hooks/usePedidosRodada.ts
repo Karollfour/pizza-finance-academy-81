@@ -37,31 +37,51 @@ export const usePedidosRodada = (rodadaId?: string) => {
     try {
       setLoading(true);
       
+      // Use raw SQL since the table is new and not in types yet
       const { data, error } = await supabase
-        .from('pedidos_rodada')
-        .select(`
-          *,
-          sabor:sabores_pizza(*)
-        `)
-        .eq('rodada_id', rodadaId)
-        .order('ordem', { ascending: true });
+        .rpc('get_pedidos_rodada', { p_rodada_id: rodadaId });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to direct query if RPC doesn't exist
+        const { data: directData, error: directError } = await supabase
+          .from('pedidos_rodada' as any)
+          .select(`
+            *,
+            sabor:sabores_pizza(*)
+          `)
+          .eq('rodada_id', rodadaId)
+          .order('ordem', { ascending: true });
 
-      const pedidosFormatados = (data || []).map(pedido => ({
-        ...pedido,
-        sabor: pedido.sabor as SaborPizza,
-        equipes_que_entregaram: pedido.equipes_que_entregaram || []
-      })) as PedidoRodada[];
+        if (directError) throw directError;
 
-      setPedidos(pedidosFormatados);
-      
-      // Encontrar pedido ativo
-      const ativo = pedidosFormatados.find(p => p.status === 'ativo');
-      setPedidoAtivo(ativo || null);
+        const pedidosFormatados = (directData || []).map(pedido => ({
+          ...pedido,
+          sabor: pedido.sabor as SaborPizza,
+          equipes_que_entregaram: pedido.equipes_que_entregaram || []
+        })) as PedidoRodada[];
+
+        setPedidos(pedidosFormatados);
+        
+        // Encontrar pedido ativo
+        const ativo = pedidosFormatados.find(p => p.status === 'ativo');
+        setPedidoAtivo(ativo || null);
+      } else {
+        const pedidosFormatados = (data || []).map(pedido => ({
+          ...pedido,
+          sabor: pedido.sabor as SaborPizza,
+          equipes_que_entregaram: pedido.equipes_que_entregaram || []
+        })) as PedidoRodada[];
+
+        setPedidos(pedidosFormatados);
+        
+        // Encontrar pedido ativo
+        const ativo = pedidosFormatados.find(p => p.status === 'ativo');
+        setPedidoAtivo(ativo || null);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar pedidos');
+      console.error('Erro ao buscar pedidos:', err);
     } finally {
       setLoading(false);
     }
@@ -88,7 +108,7 @@ export const usePedidosRodada = (rodadaId?: string) => {
       }
 
       const { error } = await supabase
-        .from('pedidos_rodada')
+        .from('pedidos_rodada' as any)
         .insert(pedidosParaInserir);
 
       if (error) throw error;
@@ -126,7 +146,7 @@ export const usePedidosRodada = (rodadaId?: string) => {
       // Concluir pedido ativo atual se existir
       if (pedidoAtivo) {
         await supabase
-          .from('pedidos_rodada')
+          .from('pedidos_rodada' as any)
           .update({
             status: 'concluido',
             concluido_em: new Date().toISOString()
@@ -136,7 +156,7 @@ export const usePedidosRodada = (rodadaId?: string) => {
 
       // Ativar próximo pedido
       const { error } = await supabase
-        .from('pedidos_rodada')
+        .from('pedidos_rodada' as any)
         .update({
           status: 'ativo',
           ativado_em: new Date().toISOString()
@@ -177,7 +197,7 @@ export const usePedidosRodada = (rodadaId?: string) => {
       }
 
       const { error } = await supabase
-        .from('pedidos_rodada')
+        .from('pedidos_rodada' as any)
         .update({
           pizzas_entregues: pedido.pizzas_entregues + 1,
           equipes_que_entregaram: novasEquipes

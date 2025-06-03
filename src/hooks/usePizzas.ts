@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Pizza } from '@/types/database';
@@ -57,48 +58,6 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
       if (error) throw error;
       
       const novaPizza = data as unknown as Pizza;
-      
-      // Verificar se corresponde ao pedido ativo e registrar entrega
-      if (saborId) {
-        // Buscar pedido ativo da rodada com este sabor
-        const { data: pedidoAtivo } = await supabase
-          .from('pedidos_rodada')
-          .select('*')
-          .eq('rodada_id', rodadaId)
-          .eq('sabor_id', saborId)
-          .eq('status', 'ativo')
-          .single();
-
-        if (pedidoAtivo) {
-          // Registrar entrega no sistema de pedidos
-          const equipeJaEntregou = pedidoAtivo.equipes_que_entregaram?.includes(equipeId) || false;
-          
-          if (!equipeJaEntregou) {
-            const novasEquipes = [...(pedidoAtivo.equipes_que_entregaram || []), equipeId];
-            
-            await supabase
-              .from('pedidos_rodada')
-              .update({
-                pizzas_entregues: (pedidoAtivo.pizzas_entregues || 0) + 1,
-                equipes_que_entregaram: novasEquipes
-              })
-              .eq('id', pedidoAtivo.id);
-
-            // Disparar evento específico de entrega de pedido
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('pizza-entregue-pedido', {
-                detail: {
-                  pedidoId: pedidoAtivo.id,
-                  equipeId,
-                  saborId,
-                  totalEntregues: (pedidoAtivo.pizzas_entregues || 0) + 1,
-                  timestamp: new Date().toISOString()
-                }
-              }));
-            }
-          }
-        }
-      }
       
       // Disparar evento global com informação completa da pizza
       if (typeof window !== 'undefined') {
