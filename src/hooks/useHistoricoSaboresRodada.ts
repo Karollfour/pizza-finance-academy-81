@@ -36,12 +36,14 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
       }
 
       console.log('Histórico carregado:', data);
-      setHistorico((data || []) as HistoricoSaborRodada[]);
+      const historicoFormatado = (data || []) as HistoricoSaborRodada[];
+      setHistorico(historicoFormatado);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar histórico';
       console.error('Erro no fetchHistorico:', errorMessage);
       setError(errorMessage);
+      setHistorico([]); // Limpar em caso de erro
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,10 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
 
   // Escutar mudanças em tempo real
   useEffect(() => {
-    if (!rodadaId) return;
+    if (!rodadaId) {
+      cleanupChannel();
+      return;
+    }
 
     cleanupChannel();
 
@@ -112,7 +117,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
-          console.log('Subscrito às mudanças do histórico de sabores');
+          console.log('Subscrito às mudanças do histórico de sabores para rodada:', rodadaId);
         }
       });
       channelRef.current = channel;
@@ -123,6 +128,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
     };
   }, [rodadaId]);
 
+  // Fetch inicial sempre que rodadaId mudar
   useEffect(() => {
     fetchHistorico();
   }, [rodadaId]);

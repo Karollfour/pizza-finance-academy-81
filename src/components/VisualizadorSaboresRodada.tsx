@@ -9,24 +9,70 @@ interface VisualizadorSaboresRodadaProps {
 }
 
 const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps) => {
-  const { historico } = useHistoricoSaboresRodada(rodadaId);
-  const { sabores } = useSabores();
+  const { historico, loading: loadingHistorico } = useHistoricoSaboresRodada(rodadaId);
+  const { sabores, loading: loadingSabores } = useSabores();
 
-  if (!rodadaId || historico.length === 0) {
+  console.log('VisualizadorSaboresRodada - rodadaId:', rodadaId);
+  console.log('VisualizadorSaboresRodada - historico:', historico);
+  console.log('VisualizadorSaboresRodada - sabores:', sabores);
+
+  if (!rodadaId) {
     return (
       <Card className="shadow-lg border-2 border-gray-200">
         <CardContent className="p-6 text-center">
           <div className="text-4xl mb-4">🍕</div>
-          <p className="text-gray-500">Aguardando início da rodada...</p>
+          <p className="text-gray-500">Aguardando rodada ativa...</p>
         </CardContent>
       </Card>
     );
   }
 
+  if (loadingHistorico || loadingSabores) {
+    return (
+      <Card className="shadow-lg border-2 border-gray-200">
+        <CardContent className="p-6 text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-gray-500">Carregando sequência de sabores...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (historico.length === 0) {
+    return (
+      <Card className="shadow-lg border-2 border-gray-200">
+        <CardContent className="p-6 text-center">
+          <div className="text-4xl mb-4">🍕</div>
+          <p className="text-gray-500">Sequência de sabores não criada ainda...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Ordenar por ordem crescente para garantir que temos a sequência correta
+  const historicoOrdenado = [...historico].sort((a, b) => a.ordem - b.ordem);
+  
   // Sempre mostrar os 3 primeiros sabores da sequência
-  const saborAtual = historico[0]; // Primeiro sabor (atual)
-  const proximoSabor2 = historico[1]; // Segundo sabor
-  const proximoSabor3 = historico[2]; // Terceiro sabor
+  const saborAtual = historicoOrdenado[0]; // Primeiro sabor (atual)
+  const proximoSabor2 = historicoOrdenado[1]; // Segundo sabor
+  const proximoSabor3 = historicoOrdenado[2]; // Terceiro sabor
+
+  const getSaborNome = (item: any) => {
+    if (item?.sabor?.nome) {
+      return item.sabor.nome;
+    }
+    // Fallback: buscar sabor pelo ID
+    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
+    return saborEncontrado?.nome || 'Sabor não encontrado';
+  };
+
+  const getSaborDescricao = (item: any) => {
+    if (item?.sabor?.descricao) {
+      return item.sabor.descricao;
+    }
+    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
+    return saborEncontrado?.descricao;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -39,11 +85,11 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
             </Badge>
             <div className="text-6xl mb-4">🍕</div>
             <h2 className="text-4xl font-bold text-green-700 mb-2">
-              {saborAtual?.sabor?.nome || 'Sabor não encontrado'}
+              {getSaborNome(saborAtual)}
             </h2>
-            {saborAtual?.sabor?.descricao && (
+            {getSaborDescricao(saborAtual) && (
               <p className="text-lg text-green-600 mb-4">
-                {saborAtual.sabor.descricao}
+                {getSaborDescricao(saborAtual)}
               </p>
             )}
             <div className="text-lg text-green-600">
@@ -56,7 +102,7 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
       {/* Próximos Sabores - Em azul, um em cima do outro */}
       <div className="space-y-4">
         {/* Próximo Sabor 2 */}
-        {proximoSabor2 && (
+        {proximoSabor2 ? (
           <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
             <CardContent className="p-4 text-center">
               <Badge className="bg-blue-500 text-white text-sm px-3 py-1 mb-2">
@@ -64,17 +110,26 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
               </Badge>
               <div className="text-3xl mb-2">🍕</div>
               <h3 className="text-xl font-bold text-blue-700">
-                {proximoSabor2.sabor?.nome || 'Sabor não encontrado'}
+                {getSaborNome(proximoSabor2)}
               </h3>
               <div className="text-sm text-blue-600">
                 Pizza #{proximoSabor2.ordem}
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <Card className="shadow-lg border-2 border-gray-200">
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl mb-2">⏳</div>
+              <p className="text-sm text-gray-500">
+                Próximo sabor não definido
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Próximo Sabor 3 */}
-        {proximoSabor3 && (
+        {proximoSabor3 ? (
           <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
             <CardContent className="p-4 text-center">
               <Badge className="bg-blue-500 text-white text-sm px-3 py-1 mb-2">
@@ -82,22 +137,19 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
               </Badge>
               <div className="text-3xl mb-2">🍕</div>
               <h3 className="text-xl font-bold text-blue-700">
-                {proximoSabor3.sabor?.nome || 'Sabor não encontrado'}
+                {getSaborNome(proximoSabor3)}
               </h3>
               <div className="text-sm text-blue-600">
                 Pizza #{proximoSabor3.ordem}
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Mensagem quando não há próximos sabores */}
-        {!proximoSabor2 && !proximoSabor3 && (
+        ) : (
           <Card className="shadow-lg border-2 border-gray-200">
             <CardContent className="p-4 text-center">
               <div className="text-2xl mb-2">⏳</div>
               <p className="text-sm text-gray-500">
-                Próximos sabores serão revelados
+                Terceiro sabor não definido
               </p>
             </CardContent>
           </Card>
