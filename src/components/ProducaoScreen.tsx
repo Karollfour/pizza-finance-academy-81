@@ -163,6 +163,41 @@ const ProducaoScreen = () => {
       });
     }
   };
+  const handlePausarRodada = async () => {
+    if (!rodadaAtual) return;
+    try {
+      console.log('Pausando rodada...');
+      const { error } = await supabase
+        .from('rodadas')
+        .update({
+          status: 'pausada'
+        })
+        .eq('id', rodadaAtual.id);
+
+      if (error) throw error;
+
+      // Disparar evento customizado para notificar outros componentes
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-pausada', {
+          detail: {
+            rodadaId: rodadaAtual.id,
+            timestamp: new Date().toISOString()
+          }
+        }));
+      }
+
+      toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
+        duration: 3000,
+        position: 'top-center'
+      });
+    } catch (error) {
+      console.error('Erro ao pausar rodada:', error);
+      toast.error('Erro ao pausar rodada. Tente novamente.', {
+        duration: 4000,
+        position: 'top-center'
+      });
+    }
+  };
   const adicionarMinutos = async (minutos: number) => {
     if (!rodadaAtual) return;
     try {
@@ -418,9 +453,10 @@ const ProducaoScreen = () => {
                     {rodadaAtual.status === 'ativa' && (
                       <div className="flex gap-2">
                         <Button 
+                          onClick={handlePausarRodada}
                           size="sm" 
                           variant="outline"
-                          className="text-xs px-2 py-1 h-7"
+                          className="text-sm px-3 py-2 h-9 text-yellow-600 hover:text-yellow-700"
                           title="Pausar rodada"
                         >
                           ⏸️
@@ -429,7 +465,7 @@ const ProducaoScreen = () => {
                           onClick={handleFinalizarRodada}
                           size="sm" 
                           variant="outline"
-                          className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700"
+                          className="text-sm px-3 py-2 h-9 text-red-600 hover:text-red-700"
                           title="Encerrar rodada"
                         >
                           ⏹️
