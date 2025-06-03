@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -282,8 +283,8 @@ const AvaliadorScreen = () => {
             {pizzasAvaliadas.length > 0 ? (
               <div className="space-y-4">
                 {pizzasAvaliadas
-                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-                  .map((pizza) => (
+                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                  .map((pizza, index) => (
                     <Card key={pizza.id} className="shadow-lg border-2 border-blue-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -292,7 +293,7 @@ const AvaliadorScreen = () => {
                             <div>
                               <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
                               <p className="text-sm text-gray-600">
-                                Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
+                                Pedido #{index + 1} • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
