@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -443,8 +442,9 @@ const ProducaoScreen = () => {
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
                   <h3 className="font-semibold text-orange-600 mb-4 text-center text-2xl">🍕 Sabores da Rodada</h3>
                   
-                  {rodadaAtual.status === 'ativa' && saborAtual ? (/* Rodada Ativa - Sistema Automático */
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Rodada Ativa - Sistema Automático */}
+                  {rodadaAtual.status === 'ativa' && saborAtual ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
@@ -500,8 +500,9 @@ const ProducaoScreen = () => {
                             </CardContent>
                           </Card>}
                       </div>
-                    </div>) : (/* Rodada Aguardando - Primeiros 3 Sabores */
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    </div>
+                  ) : (/* Rodada Aguardando - Primeiros 3 Sabores */
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                           <CardContent className="p-6 text-center py-[71px] my-[6px]">
