@@ -39,10 +39,10 @@ export const useOptimizedRodadas = () => {
         setLastUpdate(new Date());
         
         // Broadcast silencioso do evento para outros hooks
-        if (novaRodada && typeof window !== 'undefined') {
+        if (typeof window !== 'undefined') {
           const event: RodadaEvent = {
-            type: novaRodada.status === 'ativa' ? 'STARTED' : 'UPDATED',
-            rodada: novaRodada,
+            type: novaRodada?.status === 'ativa' ? 'STARTED' : 'UPDATED',
+            rodada: novaRodada!,
             timestamp: new Date().toISOString()
           };
           
@@ -164,12 +164,21 @@ export const useOptimizedRodadas = () => {
       // Fetch imediato para atualizar estado local
       await fetchRodadaAtual(true);
       
-      // Broadcast global do início da rodada
+      // Forçar atualização global imediata
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-iniciada', { 
           detail: { 
             rodadaId,
             timestamp: new Date().toISOString() 
+          } 
+        }));
+        
+        // Forçar refresh global para todas as telas
+        window.dispatchEvent(new CustomEvent('global-data-changed', { 
+          detail: { 
+            table: 'rodadas',
+            action: 'iniciada',
+            timestamp: Date.now() 
           } 
         }));
       }
@@ -199,12 +208,21 @@ export const useOptimizedRodadas = () => {
       // Fetch imediato para atualizar estado local
       await fetchRodadaAtual(true);
       
-      // Broadcast global do fim da rodada
+      // Forçar atualização global imediata
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-finalizada', { 
           detail: { 
             rodadaId,
             timestamp: new Date().toISOString() 
+          } 
+        }));
+        
+        // Forçar refresh global para todas as telas
+        window.dispatchEvent(new CustomEvent('global-data-changed', { 
+          detail: { 
+            table: 'rodadas',
+            action: 'finalizada',
+            timestamp: Date.now() 
           } 
         }));
       }
@@ -250,22 +268,52 @@ export const useOptimizedRodadas = () => {
 
       // Incrementar o contador APÓS criar a rodada com sucesso
       try {
-        await incrementarContador();
+        const { data: rpcData, error: rpcError } = await supabase.rpc('obter_proximo_numero_rodada');
+        
+        if (rpcError) {
+          console.log('RPC falhou, usando incremento manual...', rpcError);
+          
+          const { data: contadorAtual, error: selectError } = await supabase
+            .from('contadores_jogo')
+            .select('valor')
+            .eq('chave', 'proximo_numero_rodada')
+            .single();
+
+          if (!selectError && contadorAtual) {
+            const novoValor = contadorAtual.valor + 1;
+            await supabase
+              .from('contadores_jogo')
+              .upsert({ 
+                chave: 'proximo_numero_rodada', 
+                valor: novoValor 
+              }, {
+                onConflict: 'chave'
+              });
+          }
+        }
         console.log('Contador incrementado após criação da rodada');
       } catch (contadorError) {
         console.error('Erro ao incrementar contador, mas rodada foi criada:', contadorError);
-        // Não falhar a criação da rodada por erro no contador
       }
       
       // Fetch imediato para atualizar estado local
       await fetchRodadaAtual(true);
       
-      // Broadcast global da criação da rodada
+      // Forçar atualização global imediata
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-criada', { 
           detail: { 
             rodada: data as Rodada,
             timestamp: new Date().toISOString() 
+          } 
+        }));
+        
+        // Forçar refresh global para todas as telas
+        window.dispatchEvent(new CustomEvent('global-data-changed', { 
+          detail: { 
+            table: 'rodadas',
+            action: 'criada',
+            timestamp: Date.now() 
           } 
         }));
       }
@@ -407,6 +455,25 @@ export const useOptimizedRodadas = () => {
       window.removeEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-criada', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
+    };
+  }, [fetchRodadaAtual]);
+
+  // Escutar eventos de sincronização global
+  useEffect(() => {
+    const handleGlobalDataChange = (event: CustomEvent) => {
+      const { table, timestamp } = event.detail;
+      if (table === 'rodadas' || table === 'historico_sabores_rodada' || table === 'contadores_jogo') {
+        // Refetch silencioso para garantir sincronização
+        setTimeout(() => {
+          fetchRodadaAtual(true);
+        }, 100);
+      }
+    };
+
+    window.addEventListener('global-data-changed', handleGlobalDataChange as EventListener);
+
+    return () => {
+      window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
   }, [fetchRodadaAtual]);
 

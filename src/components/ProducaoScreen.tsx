@@ -15,18 +15,21 @@ import { useResetJogo } from '@/hooks/useResetJogo';
 import { useSequenciaSabores } from '@/hooks/useSequenciaSabores';
 import { useSaborAutomatico } from '@/hooks/useSaborAutomatico';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
+import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
     iniciarRodada,
     finalizarRodada,
     criarNovaRodada,
-    lastUpdate
+    lastUpdate,
+    refetch: refetchRodadas
   } = useOptimizedRodadas();
   const {
     proximoNumero,
@@ -51,6 +54,12 @@ const ProducaoScreen = () => {
     loading: loadingSequencia
   } = useSequenciaSabores();
 
+  // Sincronização global ativa
+  const { forceGlobalSync } = useGlobalSync({
+    enabled: true,
+    silent: true
+  });
+
   // Timer sincronizado
   const {
     timeRemaining,
@@ -72,8 +81,10 @@ const ProducaoScreen = () => {
     },
     warningThreshold: 30
   });
+  
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
+
   const handleIniciarRodada = async () => {
     try {
       if (!rodadaAtual) {
@@ -88,6 +99,9 @@ const ProducaoScreen = () => {
 
           // Aguardar um momento para a sequência ser salva
           await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Forçar atualização global imediata
+          forceGlobalSync();
         }
         await refetchCounter();
         toast.success(`🎯 Rodada ${proximoNumero} criada com ${numeroPizzas} pizzas!`, {
@@ -96,20 +110,33 @@ const ProducaoScreen = () => {
         });
         return;
       }
+      
       if (rodadaAtual.status === 'aguardando') {
         // Verificar se já existe sequência de sabores
         const {
           data: historicoExistente
         } = await supabase.from('historico_sabores_rodada').select('id').eq('rodada_id', rodadaAtual.id).limit(1);
+        
         if (!historicoExistente || historicoExistente.length === 0) {
           console.log('Criando sequência de sabores para rodada existente...');
           await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
 
           // Aguardar um momento para a sequência ser salva
           await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Forçar atualização global imediata
+          forceGlobalSync();
         }
+        
         console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
+        
+        // Forçar atualização global imediata após iniciar
+        setTimeout(() => {
+          forceGlobalSync();
+          refetchRodadas();
+        }, 500);
+        
         toast.success(`🚀 Rodada ${rodadaAtual.numero} iniciada!`, {
           duration: 3000,
           position: 'top-center'
@@ -123,6 +150,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -216,6 +244,29 @@ const ProducaoScreen = () => {
     numeroPizzas
   });
 
+  // Escutar eventos globais para atualização automática
+  useEffect(() => {
+    const handleGlobalDataChange = (event: CustomEvent) => {
+      const { table, action } = event.detail;
+      
+      // Atualizar dados relevantes baseado na tabela alterada
+      if (table === 'rodadas') {
+        refetchRodadas();
+        refetchCounter();
+      } else if (table === 'historico_sabores_rodada') {
+        // Os hooks já escutam isso automaticamente
+      } else if (table === 'pizzas') {
+        refetchPizzas();
+      }
+    };
+
+    window.addEventListener('global-data-changed', handleGlobalDataChange as EventListener);
+
+    return () => {
+      window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
+    };
+  }, [refetchRodadas, refetchCounter, refetchPizzas]);
+
   // Organizar pizzas por status
   const pizzasProntas = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
@@ -266,6 +317,13 @@ const ProducaoScreen = () => {
           <p className="text-gray-600">Acompanhe o status das pizzas em tempo real</p>
           <div className="mt-2 text-sm text-gray-500">
             Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
+            <button 
+              onClick={forceGlobalSync}
+              className="ml-2 text-blue-600 hover:text-blue-800 text-xs"
+              title="Forçar sincronização"
+            >
+              🔄
+            </button>
           </div>
         </div>
 
@@ -560,4 +618,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;

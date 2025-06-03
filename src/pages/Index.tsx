@@ -7,7 +7,7 @@ import EquipeScreen from '@/components/EquipeScreen';
 import AvaliadorScreen from '@/components/AvaliadorScreen';
 import SeletorEquipes from '@/components/SeletorEquipes';
 import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
-import { useGlobalRefresh } from '@/hooks/useGlobalRefresh';
+import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { GlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { Button } from '@/components/ui/button';
@@ -29,10 +29,9 @@ const Index = () => {
     silent: true
   });
 
-  // Inicializar sistema global de refresh automático com sincronização entre dispositivos
-  const { forceRefresh } = useGlobalRefresh({
+  // Inicializar sistema de sincronização global aprimorado
+  const { forceGlobalSync } = useGlobalSync({
     enabled: isLoggedIn, // Só ativar quando logado
-    interval: 1000, // 1 segundo
     silent: true // Completamente silencioso
   });
 
@@ -71,7 +70,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100">
         {/* Botão invisível para forçar refresh em todos os dispositivos */}
         <button
-          onClick={forceRefresh}
+          onClick={forceGlobalSync}
           className="fixed top-0 left-0 w-1 h-1 opacity-0 pointer-events-auto z-[9999]"
           style={{ 
             backgroundColor: 'transparent',
