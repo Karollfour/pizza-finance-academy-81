@@ -324,7 +324,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
+              <span className="text-2xl">Rodada {numeroRodadaDisplay}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
               </Badge>
@@ -363,7 +363,7 @@ const ProducaoScreen = () => {
 
               {/* Sabores da Rodada Integrados */}
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
-                  <h3 className="font-semibold text-orange-600 mb-4 text-center text-3xl">🍕 Sabores da Rodada</h3>
+                  <h3 className="font-semibold text-orange-600 mb-4 text-center text-2xl">🍕 Sabores da Rodada</h3>
                   
                   {rodadaAtual.status === 'ativa' && saborAtual ? (/* Rodada Ativa - Sistema Automático */
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -373,7 +373,7 @@ const ProducaoScreen = () => {
                           <CardContent className="p-6 text-center my-[10px]">
                             <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
-                            <h3 className="font-bold text-green-700 mb-2 text-5xl">
+                            <h3 className="font-bold text-green-700 mb-2 text-4xl">
                               {getSaborNome(saborAtual)}
                             </h3>
                             {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
