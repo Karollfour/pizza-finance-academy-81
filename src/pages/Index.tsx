@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import LoginScreen from '@/components/LoginScreen';
 import LojinhaScreen from '@/components/LojinhaScreen';
@@ -6,10 +7,12 @@ import EquipeScreen from '@/components/EquipeScreen';
 import AvaliadorScreen from '@/components/AvaliadorScreen';
 import SeletorEquipes from '@/components/SeletorEquipes';
 import { useGlobalRealtime } from '@/hooks/useGlobalRealtime';
+import { useGlobalRefresh } from '@/hooks/useGlobalRefresh';
 import { GlobalRealtimeContext } from '@/hooks/useGlobalRealtime';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = usePersistedState('pizza-app-logged-in', false);
   const [activeTab, setActiveTab] = usePersistedState('pizza-app-active-tab', 'producao');
@@ -25,14 +28,24 @@ const Index = () => {
     enableHeartbeat: true,
     silent: true
   });
+
+  // Inicializar sistema global de refresh automático
+  useGlobalRefresh({
+    enabled: isLoggedIn, // Só ativar quando logado
+    interval: 1000, // 1 segundo
+    silent: true // Completamente silencioso
+  });
+
   const handleLogin = () => {
     setIsLoggedIn(true);
   };
+  
   const handleLogout = () => {
     setIsLoggedIn(false);
     setSelectedTeam(null);
     setActiveTab('producao');
   };
+  
   const handleEquipeSelecionada = useCallback((equipeNome: string, equipeId: string) => {
     // Atualizar estado atomicamente para evitar condições de corrida
     setSelectedTeam({
@@ -41,6 +54,7 @@ const Index = () => {
     });
     setActiveTab('equipes');
   }, [setSelectedTeam, setActiveTab]);
+  
   const handleVoltarSeletor = useCallback(() => {
     setSelectedTeam(null);
     // Manter na aba equipes para melhor UX
@@ -52,6 +66,7 @@ const Index = () => {
         <LoginScreen onLogin={handleLogin} />
       </GlobalRealtimeContext.Provider>;
   }
+
   return <GlobalRealtimeContext.Provider value={contextValue}>
       <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100">
         {/* Botão de Logout fixo */}
@@ -98,4 +113,5 @@ const Index = () => {
       </div>
     </GlobalRealtimeContext.Provider>;
 };
+
 export default Index;
