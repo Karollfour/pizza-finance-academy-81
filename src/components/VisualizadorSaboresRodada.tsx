@@ -1,20 +1,24 @@
+import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { useSabores } from '@/hooks/useSabores';
 import { useSaborAutomatico } from '@/hooks/useSaborAutomatico';
 import { Rodada } from '@/types/database';
+
 interface VisualizadorSaboresRodadaProps {
   rodada: Rodada | null;
   numeroPizzas: number;
 }
+
 const VisualizadorSaboresRodada = ({
   rodada,
   numeroPizzas
 }: VisualizadorSaboresRodadaProps) => {
   const {
     historico,
-    loading: loadingHistorico
+    loading: loadingHistorico,
+    refetch
   } = useHistoricoSaboresRodada(rodada?.id);
   const {
     sabores,
@@ -34,9 +38,41 @@ const VisualizadorSaboresRodada = ({
     rodada,
     numeroPizzas
   });
+
+  // Escutar eventos globais para atualização imediata
+  useEffect(() => {
+    const handleGlobalUpdate = (event: CustomEvent) => {
+      const { table } = event.detail;
+      if (table === 'historico_sabores_rodada' || table === 'rodadas') {
+        setTimeout(() => {
+          refetch();
+        }, 100);
+      }
+    };
+
+    const handleRodadaEvent = () => {
+      setTimeout(() => {
+        refetch();
+      }, 100);
+    };
+
+    window.addEventListener('global-data-changed', handleGlobalUpdate as EventListener);
+    window.addEventListener('rodada-iniciada', handleRodadaEvent);
+    window.addEventListener('rodada-updated', handleRodadaEvent);
+    window.addEventListener('sabor-automatico-alterado', handleRodadaEvent);
+
+    return () => {
+      window.removeEventListener('global-data-changed', handleGlobalUpdate as EventListener);
+      window.removeEventListener('rodada-iniciada', handleRodadaEvent);
+      window.removeEventListener('rodada-updated', handleRodadaEvent);
+      window.removeEventListener('sabor-automatico-alterado', handleRodadaEvent);
+    };
+  }, [refetch]);
+
   console.log('VisualizadorSaboresRodada - rodada:', rodada);
   console.log('VisualizadorSaboresRodada - historico:', historico);
   console.log('VisualizadorSaboresRodada - saborAtual:', saborAtual);
+
   if (!rodada) {
     return <Card className="shadow-lg border-2 border-gray-200">
         <CardContent className="p-6 text-center">
@@ -45,6 +81,7 @@ const VisualizadorSaboresRodada = ({
         </CardContent>
       </Card>;
   }
+
   if (loadingHistorico || loadingSabores) {
     return <Card className="shadow-lg border-2 border-gray-200">
         <CardContent className="p-6 text-center">
@@ -53,6 +90,7 @@ const VisualizadorSaboresRodada = ({
         </CardContent>
       </Card>;
   }
+
   if (historico.length === 0) {
     return <Card className="shadow-lg border-2 border-gray-200">
         <CardContent className="p-6 text-center">
@@ -62,25 +100,34 @@ const VisualizadorSaboresRodada = ({
       </Card>;
   }
 
+  const getSaborNome = (item: any) => {
+    if (item?.sabor?.nome) {
+      return item.sabor.nome;
+    }
+    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
+    return saborEncontrado?.nome || 'Sabor não encontrado';
+  };
+
+  const getSaborDescricao = (item: any) => {
+    if (item?.sabor?.descricao) {
+      return item.sabor.descricao;
+    }
+    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
+    return saborEncontrado?.descricao;
+  };
+
+  const formatarTempo = (segundos: number) => {
+    const mins = Math.floor(segundos / 60);
+    const secs = segundos % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // Se a rodada não está ativa, mostrar apenas o primeiro sabor
   if (rodada.status !== 'ativa') {
     const primeiroSabor = historico[0];
     const segundoSabor = historico[1];
     const terceiroSabor = historico[2];
-    const getSaborNome = (item: any) => {
-      if (item?.sabor?.nome) {
-        return item.sabor.nome;
-      }
-      const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
-      return saborEncontrado?.nome || 'Sabor não encontrado';
-    };
-    const getSaborDescricao = (item: any) => {
-      if (item?.sabor?.descricao) {
-        return item.sabor.descricao;
-      }
-      const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
-      return saborEncontrado?.descricao;
-    };
+
     return <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Primeiro Sabor */}
         <div className="lg:col-span-2">
@@ -147,25 +194,7 @@ const VisualizadorSaboresRodada = ({
         </CardContent>
       </Card>;
   }
-  const getSaborNome = (item: any) => {
-    if (item?.sabor?.nome) {
-      return item.sabor.nome;
-    }
-    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
-    return saborEncontrado?.nome || 'Sabor não encontrado';
-  };
-  const getSaborDescricao = (item: any) => {
-    if (item?.sabor?.descricao) {
-      return item.sabor.descricao;
-    }
-    const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
-    return saborEncontrado?.descricao;
-  };
-  const formatarTempo = (segundos: number) => {
-    const mins = Math.floor(segundos / 60);
-    const secs = segundos % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+
   return <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Sabor Atual - Automático */}
       <div className="lg:col-span-2">
@@ -245,9 +274,24 @@ const VisualizadorSaboresRodada = ({
 
         {/* Estatísticas */}
         <Card className="shadow-lg border-2 border-gray-200">
-          
+          <CardContent className="p-4 text-center">
+            <div className="text-lg font-bold text-gray-700 mb-2">
+              Progresso da Rodada
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-green-600 font-bold">{saboresPassados.length}</div>
+                <div className="text-gray-500">Finalizados</div>
+              </div>
+              <div>
+                <div className="text-blue-600 font-bold">{historico.length - saborAtualIndex - 1}</div>
+                <div className="text-gray-500">Restantes</div>
+              </div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>;
 };
+
 export default VisualizadorSaboresRodada;

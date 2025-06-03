@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +10,46 @@ import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 const HistoricoTodasRodadas = () => {
   const [rodadaSelecionada, setRodadaSelecionada] = useState<string>('');
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
-  const { rodadas } = useTodasRodadas();
-  const { historico } = useHistoricoSaboresRodada(rodadaSelecionada);
+  const { rodadas, refetch: refetchRodadas } = useTodasRodadas();
+  const { historico, refetch: refetchHistorico } = useHistoricoSaboresRodada(rodadaSelecionada);
 
   const rodadasFinalizadas = rodadas.filter(r => r.status === 'finalizada');
+
+  // Escutar eventos globais para atualização automática
+  useEffect(() => {
+    const handleGlobalUpdate = (event: CustomEvent) => {
+      const { table } = event.detail;
+      if (table === 'rodadas') {
+        setTimeout(() => {
+          refetchRodadas();
+        }, 100);
+      }
+      if (table === 'historico_sabores_rodada' && rodadaSelecionada) {
+        setTimeout(() => {
+          refetchHistorico();
+        }, 100);
+      }
+    };
+
+    const handleRodadaEvent = () => {
+      setTimeout(() => {
+        refetchRodadas();
+        if (rodadaSelecionada) {
+          refetchHistorico();
+        }
+      }, 100);
+    };
+
+    window.addEventListener('global-data-changed', handleGlobalUpdate as EventListener);
+    window.addEventListener('rodada-finalizada', handleRodadaEvent);
+    window.addEventListener('rodada-updated', handleRodadaEvent);
+
+    return () => {
+      window.removeEventListener('global-data-changed', handleGlobalUpdate as EventListener);
+      window.removeEventListener('rodada-finalizada', handleRodadaEvent);
+      window.removeEventListener('rodada-updated', handleRodadaEvent);
+    };
+  }, [refetchRodadas, refetchHistorico, rodadaSelecionada]);
 
   return (
     <div className="space-y-4">

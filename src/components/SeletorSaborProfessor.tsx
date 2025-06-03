@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useSabores } from '@/hooks/useSabores';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface SeletorSaborProfessorProps {
@@ -13,18 +14,48 @@ interface SeletorSaborProfessorProps {
 
 const SeletorSaborProfessor = ({ rodadaId }: SeletorSaborProfessorProps) => {
   const [saborSelecionado, setSaborSelecionado] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const { sabores } = useSabores();
-  const { historico, adicionarSabor, loading } = useHistoricoSaboresRodada(rodadaId);
+  const { historico, refetch } = useHistoricoSaboresRodada(rodadaId);
 
   const handleAdicionarSabor = async () => {
     if (!saborSelecionado || !rodadaId) return;
 
     try {
-      await adicionarSabor(saborSelecionado);
+      setLoading(true);
+      
+      const proximaOrdem = historico.length + 1;
+      
+      const { error } = await supabase
+        .from('historico_sabores_rodada')
+        .insert({
+          rodada_id: rodadaId,
+          sabor_id: saborSelecionado,
+          ordem: proximaOrdem
+        });
+
+      if (error) throw error;
+
       setSaborSelecionado('');
+      
+      // Forçar atualização imediata
+      await refetch();
+      
+      // Disparar evento global para sincronização
+      window.dispatchEvent(new CustomEvent('global-data-changed', {
+        detail: { 
+          table: 'historico_sabores_rodada',
+          action: 'insert',
+          timestamp: Date.now() 
+        }
+      }));
+      
       toast.success('Sabor adicionado ao histórico da rodada!');
     } catch (error) {
+      console.error('Erro ao adicionar sabor:', error);
       toast.error('Erro ao adicionar sabor');
+    } finally {
+      setLoading(false);
     }
   };
 

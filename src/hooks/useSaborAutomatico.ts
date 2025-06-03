@@ -10,10 +10,11 @@ interface UseSaborAutomaticoProps {
 }
 
 export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoProps) => {
-  const { historico } = useHistoricoSaboresRodada(rodada?.id);
+  const { historico, refetch } = useHistoricoSaboresRodada(rodada?.id);
   const [saborAtualIndex, setSaborAtualIndex] = useState(0);
   const [saboresPassados, setSaboresPassados] = useState<any[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUpdateRef = useRef<number>(0);
   
   // Calcular intervalo de troca (tempo total ÷ número de pizzas)
   const intervaloTroca = rodada && numeroPizzas > 0 ? Math.floor(rodada.tempo_limite / numeroPizzas) : 0;
@@ -21,10 +22,47 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   // Timer sincronizado para obter tempo restante
   const { timeRemaining } = useSynchronizedTimer(rodada, {});
   
+  // Escutar eventos globais para atualização imediata
+  useEffect(() => {
+    const handleGlobalDataChange = (event: CustomEvent) => {
+      const { table } = event.detail;
+      if (table === 'historico_sabores_rodada' && rodada?.id) {
+        setTimeout(() => {
+          refetch();
+        }, 100);
+      }
+    };
+
+    const handleRodadaEvent = () => {
+      if (rodada?.id) {
+        setTimeout(() => {
+          refetch();
+        }, 100);
+      }
+    };
+
+    window.addEventListener('global-data-changed', handleGlobalDataChange as EventListener);
+    window.addEventListener('rodada-iniciada', handleRodadaEvent);
+    window.addEventListener('rodada-updated', handleRodadaEvent);
+
+    return () => {
+      window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
+      window.removeEventListener('rodada-iniciada', handleRodadaEvent);
+      window.removeEventListener('rodada-updated', handleRodadaEvent);
+    };
+  }, [rodada?.id, refetch]);
+  
   useEffect(() => {
     if (!rodada || rodada.status !== 'ativa' || !historico.length || intervaloTroca <= 0) {
       return;
     }
+    
+    const now = Date.now();
+    // Evitar atualizações muito frequentes
+    if (now - lastUpdateRef.current < 500) {
+      return;
+    }
+    lastUpdateRef.current = now;
     
     // Calcular qual sabor deveria estar ativo baseado no tempo decorrido
     const tempoDecorrido = rodada.tempo_limite - timeRemaining;
