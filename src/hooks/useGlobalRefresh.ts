@@ -1,6 +1,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseGlobalRefreshOptions {
   enabled?: boolean;
@@ -19,6 +21,8 @@ export const useGlobalRefresh = (options: UseGlobalRefreshOptions = {}) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefreshRef = useRef<number>(0);
   const deviceIdRef = useRef<string>('');
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const isSubscribedRef = useRef(false);
 
   // Gerar ID único para este dispositivo/aba
   useEffect(() => {
@@ -68,15 +72,6 @@ export const useGlobalRefresh = (options: UseGlobalRefreshOptions = {}) => {
 
       lastRefreshRef.current = now;
 
-      // Sincronizar com outros dispositivos via localStorage
-      const syncData = {
-        timestamp: now,
-        deviceId: deviceIdRef.current,
-        action: 'refresh_triggered'
-      };
-      
-      localStorage.setItem('global_refresh_sync', JSON.stringify(syncData));
-
       if (!silent) {
         console.log('🔄 Global refresh executado', new Date().toLocaleTimeString());
       }
@@ -87,40 +82,55 @@ export const useGlobalRefresh = (options: UseGlobalRefreshOptions = {}) => {
     }
   };
 
-  // Escutar mudanças no localStorage para sincronizar entre abas/dispositivos
-  useEffect(() => {
-    if (!enabled) return;
+  // Configurar canal de sincronização via Supabase Realtime
+  const setupRealtimeChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
 
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'global_refresh_sync' && event.newValue) {
-        try {
-          const syncData = JSON.parse(event.newValue);
-          
-          // Só processar se veio de outro dispositivo
-          if (syncData.deviceId !== deviceIdRef.current) {
-            const timeDiff = Date.now() - syncData.timestamp;
-            
-            // Só processar se o evento é recente (menos de 2 segundos)
-            if (timeDiff < 2000) {
-              performRefresh();
-            }
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `global-refresh-sync-${uniqueId}`;
+
+    const channel = supabase
+      .channel(channelName, {
+        config: {
+          broadcast: {
+            self: false // Não receber próprias mensagens
           }
-        } catch (error) {
-          console.error('Erro ao processar sincronização:', error);
         }
-      }
-    };
+      })
+      .on('broadcast', { event: 'force_refresh' }, (payload) => {
+        // Só processar se veio de outro dispositivo
+        if (payload.payload?.deviceId !== deviceIdRef.current) {
+          const timeDiff = Date.now() - (payload.payload?.timestamp || 0);
+          
+          // Só processar se o evento é recente (menos de 5 segundos)
+          if (timeDiff < 5000) {
+            performRefresh();
+          }
+        }
+      });
 
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [enabled, deviceIdRef.current]);
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+        }
+      });
+      channelRef.current = channel;
+    }
+  };
 
   // Sistema principal de refresh com interval
   useEffect(() => {
     if (!enabled) return;
+
+    // Configurar canal de realtime
+    setupRealtimeChannel();
 
     // Executar refresh inicial após um pequeno delay
     const initialTimeout = setTimeout(() => {
@@ -135,6 +145,11 @@ export const useGlobalRefresh = (options: UseGlobalRefreshOptions = {}) => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      if (channelRef.current && isSubscribedRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [enabled, interval, silent, queryClient]);
@@ -170,18 +185,21 @@ export const useGlobalRefresh = (options: UseGlobalRefreshOptions = {}) => {
     };
   }, [enabled, interval, queryClient]);
 
-  // Função para forçar refresh manual
+  // Função para forçar refresh manual em todos os dispositivos
   const forceRefresh = () => {
+    // Executar refresh local
     performRefresh();
     
-    // Disparar evento customizado para outros componentes
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('force-global-refresh', {
-        detail: {
+    // Enviar comando via Supabase Realtime para todos os outros dispositivos
+    if (channelRef.current && isSubscribedRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'force_refresh',
+        payload: {
           timestamp: Date.now(),
           deviceId: deviceIdRef.current
         }
-      }));
+      });
     }
   };
 
