@@ -24,13 +24,13 @@ export const useSequenciaSabores = () => {
     const sequencia: string[] = [];
     
     for (let i = 0; i < numeroPizzas; i++) {
-      // Usar alternância simples entre os sabores disponíveis
-      const indice = i % saboresDisponiveis.length;
-      const saborEscolhido = saboresDisponiveis[indice];
+      // Gerar índice aleatório para escolher sabor
+      const indiceAleatorio = Math.floor(Math.random() * saboresDisponiveis.length);
+      const saborEscolhido = saboresDisponiveis[indiceAleatorio];
       sequencia.push(saborEscolhido.id);
     }
     
-    console.log(`Sequência gerada para ${numeroPizzas} pizzas:`, sequencia);
+    console.log(`Sequência aleatória gerada para ${numeroPizzas} pizzas:`, sequencia);
     return sequencia;
   };
 
