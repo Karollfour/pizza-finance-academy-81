@@ -79,6 +79,7 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   
   const saborAtual = historico[saborAtualIndex];
   const proximoSabor = historico[saborAtualIndex + 1];
+  const segundoProximoSabor = historico[saborAtualIndex + 2];
   
   // Calcular tempo restante para próxima troca
   const tempoDecorrido = rodada ? rodada.tempo_limite - timeRemaining : 0;
@@ -88,6 +89,7 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   return {
     saborAtual,
     proximoSabor,
+    segundoProximoSabor,
     saboresPassados,
     saborAtualIndex,
     intervaloTroca,

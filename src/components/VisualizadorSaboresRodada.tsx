@@ -19,6 +19,7 @@ const VisualizadorSaboresRodada = ({ rodada, numeroPizzas }: VisualizadorSabores
   const {
     saborAtual,
     proximoSabor,
+    segundoProximoSabor,
     saboresPassados,
     saborAtualIndex,
     intervaloTroca,
@@ -129,16 +130,16 @@ const VisualizadorSaboresRodada = ({ rodada, numeroPizzas }: VisualizadorSabores
           )}
 
           {terceiroSabor && (
-            <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+            <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
               <CardContent className="p-4 text-center">
-                <Badge className="bg-blue-500 text-white text-sm px-3 py-1 mb-2">
+                <Badge className="bg-purple-500 text-white text-sm px-3 py-1 mb-2">
                   TERCEIRO
                 </Badge>
                 <div className="text-3xl mb-2">🍕</div>
-                <h3 className="text-xl font-bold text-blue-700">
+                <h3 className="text-xl font-bold text-purple-700">
                   {getSaborNome(terceiroSabor)}
                 </h3>
-                <div className="text-sm text-blue-600">
+                <div className="text-sm text-purple-600">
                   Pizza #{terceiroSabor.ordem}
                 </div>
               </CardContent>
@@ -218,7 +219,7 @@ const VisualizadorSaboresRodada = ({ rodada, numeroPizzas }: VisualizadorSabores
         </Card>
       </div>
 
-      {/* Próximo Sabor e Estatísticas */}
+      {/* Próximos 2 Sabores e Estatísticas */}
       <div className="space-y-4">
         {proximoSabor ? (
           <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
@@ -233,6 +234,9 @@ const VisualizadorSaboresRodada = ({ rodada, numeroPizzas }: VisualizadorSabores
               <div className="text-sm text-blue-600">
                 Pizza #{saborAtualIndex + 2}
               </div>
+              <div className="text-xs text-blue-500 mt-1">
+                Em {formatarTempo(tempoProximaTroca)}
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -246,24 +250,44 @@ const VisualizadorSaboresRodada = ({ rodada, numeroPizzas }: VisualizadorSabores
           </Card>
         )}
 
+        {segundoProximoSabor && (
+          <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+            <CardContent className="p-4 text-center">
+              <Badge className="bg-purple-500 text-white text-sm px-3 py-1 mb-2">
+                DEPOIS
+              </Badge>
+              <div className="text-3xl mb-2">🍕</div>
+              <h3 className="text-lg font-bold text-purple-700">
+                {getSaborNome(segundoProximoSabor)}
+              </h3>
+              <div className="text-sm text-purple-600">
+                Pizza #{saborAtualIndex + 3}
+              </div>
+              <div className="text-xs text-purple-500 mt-1">
+                Em {formatarTempo(tempoProximaTroca + intervaloTroca)}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Estatísticas */}
-        <Card className="shadow-lg border-2 border-purple-200">
+        <Card className="shadow-lg border-2 border-gray-200">
           <CardContent className="p-4">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-sm text-purple-600">Finalizadas:</span>
+                <span className="text-sm text-gray-600">Finalizadas:</span>
                 <Badge variant="outline" className="bg-green-100 text-green-700">
                   {saboresPassados.length}
                 </Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-purple-600">Restantes:</span>
+                <span className="text-sm text-gray-600">Restantes:</span>
                 <Badge variant="outline" className="bg-orange-100 text-orange-700">
                   {historico.length - saborAtualIndex - 1}
                 </Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-purple-600">Total:</span>
+                <span className="text-sm text-gray-600">Total:</span>
                 <Badge variant="outline" className="bg-purple-100 text-purple-700">
                   {historico.length}
                 </Badge>

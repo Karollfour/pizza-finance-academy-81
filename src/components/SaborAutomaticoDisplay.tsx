@@ -14,6 +14,7 @@ const SaborAutomaticoDisplay = ({ rodada, numeroPizzas }: SaborAutomaticoDisplay
   const {
     saborAtual,
     proximoSabor,
+    segundoProximoSabor,
     saboresPassados,
     saborAtualIndex,
     intervaloTroca,
@@ -71,39 +72,82 @@ const SaborAutomaticoDisplay = ({ rodada, numeroPizzas }: SaborAutomaticoDisplay
               Intervalo: {formatarTempo(intervaloTroca)} por pizza
             </div>
           </div>
-          
-          {proximoSabor && (
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <div className="text-sm text-blue-600 font-medium">
-                Próximo: {proximoSabor.sabor?.nome}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
+      {/* Próximos 2 Sabores */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {proximoSabor && (
+          <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-blue-600 text-lg">
+                🔜 PRÓXIMO - Pizza #{saborAtualIndex + 2}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-2">
+              <div className="text-4xl mb-2">🍕</div>
+              <h3 className="text-xl font-bold text-blue-700">
+                {proximoSabor.sabor?.nome || 'Sabor não encontrado'}
+              </h3>
+              {proximoSabor.sabor?.descricao && (
+                <p className="text-sm text-blue-600">
+                  {proximoSabor.sabor.descricao}
+                </p>
+              )}
+              <div className="text-sm text-blue-600">
+                Em {formatarTempo(tempoProximaTroca)}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {segundoProximoSabor && (
+          <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-purple-600 text-lg">
+                🔜 DEPOIS - Pizza #{saborAtualIndex + 3}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-2">
+              <div className="text-4xl mb-2">🍕</div>
+              <h3 className="text-xl font-bold text-purple-700">
+                {segundoProximoSabor.sabor?.nome || 'Sabor não encontrado'}
+              </h3>
+              {segundoProximoSabor.sabor?.descricao && (
+                <p className="text-sm text-purple-600">
+                  {segundoProximoSabor.sabor.descricao}
+                </p>
+              )}
+              <div className="text-sm text-purple-600">
+                Em {formatarTempo(tempoProximaTroca + intervaloTroca)}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       {/* Histórico de Sabores Passados */}
       {saboresPassados.length > 0 && (
-        <Card className="shadow-lg border-2 border-blue-200">
+        <Card className="shadow-lg border-2 border-amber-200">
           <CardHeader>
-            <CardTitle className="text-blue-600">
+            <CardTitle className="text-amber-600">
               📜 Sabores Já Passados ({saboresPassados.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-48 overflow-y-auto">
               {saboresPassados.map((sabor, index) => (
-                <div key={sabor.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div key={sabor.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-center space-x-3">
-                    <Badge variant="outline" className="bg-blue-100 text-blue-700">
+                    <Badge variant="outline" className="bg-amber-100 text-amber-700">
                       Pizza #{index + 1}
                     </Badge>
                     <div>
-                      <div className="font-medium text-blue-700">
+                      <div className="font-medium text-amber-700">
                         {sabor.sabor?.nome || 'Sabor não encontrado'}
                       </div>
                       {sabor.sabor?.descricao && (
-                        <div className="text-sm text-blue-600">
+                        <div className="text-sm text-amber-600">
                           {sabor.sabor.descricao}
                         </div>
                       )}
@@ -125,12 +169,12 @@ const SaborAutomaticoDisplay = ({ rodada, numeroPizzas }: SaborAutomaticoDisplay
       )}
 
       {/* Informações da Sequência */}
-      <Card className="shadow-lg border-2 border-purple-200">
+      <Card className="shadow-lg border-2 border-gray-200">
         <CardContent className="p-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{saborAtualIndex + 1}</div>
-              <div className="text-sm text-purple-700">Pizza Atual</div>
+            <div className="bg-green-100 p-3 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{saborAtualIndex + 1}</div>
+              <div className="text-sm text-green-700">Pizza Atual</div>
             </div>
             <div className="bg-blue-100 p-3 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{saboresPassados.length}</div>
