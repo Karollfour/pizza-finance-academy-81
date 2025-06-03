@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,18 @@ const VendasLoja = () => {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [cobrancaViagem, setCobrancaViagem] = useState(true);
   const [descricaoVenda, setDescricaoVenda] = useState('');
+
+  // Função para calcular o gasto total de uma equipe baseado nas compras do banco
+  const calcularGastoTotalEquipe = (equipeId: string) => {
+    const comprasEquipe = compras.filter(compra => compra.equipe_id === equipeId);
+    return comprasEquipe.reduce((total, compra) => total + compra.valor_total, 0);
+  };
+
+  // Função para calcular o saldo disponível real de uma equipe
+  const calcularSaldoDisponivel = (equipe: any) => {
+    const gastoTotal = calcularGastoTotalEquipe(equipe.id);
+    return equipe.saldo_inicial - gastoTotal;
+  };
 
   const adicionarAoCarrinho = (produtoId: string) => {
     const produto = produtos.find(p => p.id === produtoId);
@@ -137,9 +150,14 @@ const VendasLoja = () => {
                 <SelectValue placeholder="Selecione uma equipe" />
               </SelectTrigger>
               <SelectContent>
-                {equipes.map(equipe => <SelectItem key={equipe.id} value={equipe.id}>
-                    {equipe.nome} - R$ {(equipe.saldo_inicial - equipe.gasto_total).toFixed(2)} disponível
-                  </SelectItem>)}
+                {equipes.map(equipe => {
+                  const saldoDisponivel = calcularSaldoDisponivel(equipe);
+                  return (
+                    <SelectItem key={equipe.id} value={equipe.id}>
+                      {equipe.nome} - R$ {saldoDisponivel.toFixed(2)} disponível
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
