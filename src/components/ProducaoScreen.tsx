@@ -14,6 +14,8 @@ import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import PedidosRodadaManager from './PedidosRodadaManager';
+
 interface SaborRodada {
   sabor: string;
   iniciadoEm: string;
@@ -382,8 +384,11 @@ const ProducaoScreen = () => {
           </CardContent>
         </Card>
 
+        {/* Sistema de Pedidos da Rodada */}
+        <PedidosRodadaManager rodadaAtual={rodadaAtual} />
+
         {/* Status por Equipe */}
-        <Card className="shadow-lg border-2 border-purple-200 mb-8">
+        <Card className="shadow-lg border-2 border-purple-200 mb-8 mt-8">
           <CardHeader>
             <CardTitle className="text-purple-600">👥 Status por Equipe</CardTitle>
           </CardHeader>
