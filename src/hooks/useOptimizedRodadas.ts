@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
@@ -59,6 +58,96 @@ export const useOptimizedRodadas = () => {
       if (!silent) setLoading(false);
     }
   }, [rodadaAtual]);
+
+  const obterProximoNumeroRodada = async () => {
+    try {
+      console.log('Obtendo próximo número da rodada...');
+      
+      // Buscar contador atual
+      const { data: contadorData, error: contadorError } = await supabase
+        .from('contadores_jogo')
+        .select('valor')
+        .eq('chave', 'proximo_numero_rodada')
+        .single();
+
+      if (contadorError && contadorError.code !== 'PGRST116') {
+        throw contadorError;
+      }
+
+      if (!contadorData) {
+        // Se não existe contador, criar baseado na última rodada
+        const { data: ultimaRodada } = await supabase
+          .from('rodadas')
+          .select('numero')
+          .order('numero', { ascending: false })
+          .limit(1)
+          .single();
+
+        const proximoNumero = ultimaRodada ? ultimaRodada.numero + 1 : 1;
+
+        // Criar contador inicial
+        const { error: insertError } = await supabase
+          .from('contadores_jogo')
+          .insert({ chave: 'proximo_numero_rodada', valor: proximoNumero });
+
+        if (insertError) throw insertError;
+        
+        console.log(`Contador criado com valor inicial: ${proximoNumero}`);
+        return proximoNumero;
+      }
+
+      console.log(`Próximo número obtido: ${contadorData.valor}`);
+      return contadorData.valor;
+    } catch (error) {
+      console.error('Erro ao obter próximo número:', error);
+      throw error;
+    }
+  };
+
+  const incrementarContador = async () => {
+    try {
+      console.log('Incrementando contador...');
+      
+      // Tentar usar a função RPC primeiro
+      const { data: rpcData, error: rpcError } = await supabase.rpc('obter_proximo_numero_rodada');
+      
+      if (!rpcError && rpcData) {
+        console.log(`Contador incrementado via RPC para: ${rpcData}`);
+        return rpcData;
+      }
+
+      console.log('RPC falhou, usando incremento manual...', rpcError);
+      
+      // Fallback: incremento manual com upsert
+      const { data: contadorAtual, error: selectError } = await supabase
+        .from('contadores_jogo')
+        .select('valor')
+        .eq('chave', 'proximo_numero_rodada')
+        .single();
+
+      if (selectError && selectError.code !== 'PGRST116') throw selectError;
+
+      const valorAtual = contadorAtual?.valor || 1;
+      const novoValor = valorAtual + 1;
+
+      const { error: updateError } = await supabase
+        .from('contadores_jogo')
+        .upsert({ 
+          chave: 'proximo_numero_rodada', 
+          valor: novoValor 
+        }, {
+          onConflict: 'chave'
+        });
+
+      if (updateError) throw updateError;
+
+      console.log(`Contador incrementado manualmente para: ${novoValor}`);
+      return novoValor;
+    } catch (error) {
+      console.error('Erro ao incrementar contador:', error);
+      throw error;
+    }
+  };
 
   const iniciarRodada = async (rodadaId: string) => {
     try {
@@ -132,6 +221,19 @@ export const useOptimizedRodadas = () => {
 
   const criarNovaRodada = async (numero: number, tempoLimite: number = 300) => {
     try {
+      console.log(`Criando nova rodada com número: ${numero}`);
+      
+      // Verificar se já existe rodada com este número
+      const { data: rodadaExistente } = await supabase
+        .from('rodadas')
+        .select('id')
+        .eq('numero', numero)
+        .single();
+
+      if (rodadaExistente) {
+        throw new Error(`Já existe uma rodada com o número ${numero}`);
+      }
+
       const { data, error } = await supabase
         .from('rodadas')
         .insert({
@@ -144,8 +246,16 @@ export const useOptimizedRodadas = () => {
 
       if (error) throw error;
 
-      // Incrementar o contador após criar a rodada com sucesso
-      await supabase.rpc('obter_proximo_numero_rodada');
+      console.log(`Rodada ${numero} criada com sucesso`);
+
+      // Incrementar o contador APÓS criar a rodada com sucesso
+      try {
+        await incrementarContador();
+        console.log('Contador incrementado após criação da rodada');
+      } catch (contadorError) {
+        console.error('Erro ao incrementar contador, mas rodada foi criada:', contadorError);
+        // Não falhar a criação da rodada por erro no contador
+      }
       
       // Fetch imediato para atualizar estado local
       await fetchRodadaAtual(true);
@@ -166,6 +276,7 @@ export const useOptimizedRodadas = () => {
       
       return data as Rodada;
     } catch (err) {
+      console.error('Erro ao criar rodada:', err);
       setError(err instanceof Error ? err.message : 'Erro ao criar rodada');
       throw err;
     }
@@ -312,6 +423,7 @@ export const useOptimizedRodadas = () => {
     iniciarRodada,
     finalizarRodada,
     criarNovaRodada,
+    obterProximoNumeroRodada,
     refetch: () => fetchRodadaAtual(false)
   };
 };
