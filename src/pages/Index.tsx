@@ -56,9 +56,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100">
         {/* Botão de Logout fixo */}
         <div className="fixed top-4 right-4 z-50">
-          <Button onClick={handleLogout} variant="outline" className="bg-white/90 backdrop-blur-sm border-2 border-orange-200 hover:bg-orange-50">
-            🚪 Sair
-          </Button>
+          
         </div>
 
         {/* Sistema de Abas Principal */}
