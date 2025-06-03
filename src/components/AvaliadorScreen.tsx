@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePizzas } from '@/hooks/usePizzas';
@@ -16,7 +15,7 @@ const AvaliadorScreen = () => {
   const { equipes } = useEquipes();
   const [equipeParaAvaliar, setEquipeParaAvaliar] = useState<string | null>(null);
   const { pizzas, avaliarPizza } = usePizzas(equipeParaAvaliar || undefined, rodadaAtual?.id);
-  const [justifications, setJustifications] = useState<{ [key: string]: string }>({});
+  const [motivosReprovacao, setMotivosReprovacao] = useState<{ [key: string]: string }>({});
 
   // Cores predefinidas para as equipes
   const coresEquipe = [
@@ -30,12 +29,19 @@ const AvaliadorScreen = () => {
     'bg-orange-500 hover:bg-orange-600'
   ];
 
+  // Opções de motivos para reprovação
+  const motivosReprovacaoOpcoes = [
+    { value: 'fora_padrao', label: 'Fora do Padrão' },
+    { value: 'sequencia_errada', label: 'Sequência Errada' },
+    { value: 'fora_padrao_sequencia_errada', label: 'Fora do padrão e Sequência Errada' }
+  ];
+
   const pizzasPendentes = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
 
   const handleEvaluation = async (pizzaId: string, approved: boolean) => {
     try {
-      const justificativa = approved ? 'Pizza aprovada!' : justifications[pizzaId] || 'Não atende aos critérios';
+      const justificativa = approved ? 'Pizza aprovada!' : motivosReprovacao[pizzaId] || '';
       
       await avaliarPizza(
         pizzaId,
@@ -44,10 +50,10 @@ const AvaliadorScreen = () => {
         'Avaliador'
       );
 
-      // Limpar justificativa
-      const newJustifications = { ...justifications };
-      delete newJustifications[pizzaId];
-      setJustifications(newJustifications);
+      // Limpar motivo de reprovação
+      const newMotivos = { ...motivosReprovacao };
+      delete newMotivos[pizzaId];
+      setMotivosReprovacao(newMotivos);
 
       toast.success(`Pizza ${approved ? 'aprovada' : 'reprovada'} com sucesso!`);
     } catch (error) {
@@ -55,11 +61,16 @@ const AvaliadorScreen = () => {
     }
   };
 
-  const updateJustification = (pizzaId: string, text: string) => {
-    setJustifications({
-      ...justifications,
-      [pizzaId]: text,
+  const updateMotivoReprovacao = (pizzaId: string, motivo: string) => {
+    setMotivosReprovacao({
+      ...motivosReprovacao,
+      [pizzaId]: motivo,
     });
+  };
+
+  const getMotivoLabel = (value: string) => {
+    const opcao = motivosReprovacaoOpcoes.find(op => op.value === value);
+    return opcao ? opcao.label : value;
   };
 
   const getEquipeNome = (equipeId: string) => {
@@ -225,17 +236,26 @@ const AvaliadorScreen = () => {
                         </div>
                       </div>
 
-                      {/* Área de Justificativa */}
+                      {/* Dropdown de Motivo de Reprovação */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">
-                          Justificativa (obrigatória para reprovação):
+                          Motivo da reprovação (obrigatório para reprovar):
                         </label>
-                        <Textarea
-                          placeholder="Digite aqui os critérios avaliados, pontos fortes e áreas de melhoria..."
-                          value={justifications[pizza.id] || ''}
-                          onChange={(e) => updateJustification(pizza.id, e.target.value)}
-                          className="min-h-[100px]"
-                        />
+                        <Select
+                          value={motivosReprovacao[pizza.id] || ''}
+                          onValueChange={(value) => updateMotivoReprovacao(pizza.id, value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o motivo da reprovação..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {motivosReprovacaoOpcoes.map((opcao) => (
+                              <SelectItem key={opcao.value} value={opcao.value}>
+                                {opcao.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       {/* Botões de Avaliação */}
@@ -248,16 +268,16 @@ const AvaliadorScreen = () => {
                         </Button>
                         <Button
                           onClick={() => handleEvaluation(pizza.id, false)}
-                          disabled={!justifications[pizza.id]?.trim()}
+                          disabled={!motivosReprovacao[pizza.id]}
                           className="flex-1 bg-red-500 hover:bg-red-600 text-white disabled:opacity-50"
                         >
                           ❌ Reprovar
                         </Button>
                       </div>
 
-                      {!justifications[pizza.id]?.trim() && (
+                      {!motivosReprovacao[pizza.id] && (
                         <p className="text-sm text-red-600 text-center">
-                          Justificativa é obrigatória para reprovação
+                          Selecione um motivo para poder reprovar
                         </p>
                       )}
                     </CardContent>
@@ -311,9 +331,9 @@ const AvaliadorScreen = () => {
                             >
                               {pizza.resultado === 'aprovada' ? '✅ Aprovada' : '❌ Reprovada'}
                             </Badge>
-                            {pizza.justificativa_reprovacao && (
+                            {pizza.justificativa_reprovacao && pizza.resultado === 'reprovada' && (
                               <p className="text-sm text-gray-600 mt-2 max-w-xs">
-                                "{pizza.justificativa_reprovacao}"
+                                "{getMotivoLabel(pizza.justificativa_reprovacao)}"
                               </p>
                             )}
                           </div>
