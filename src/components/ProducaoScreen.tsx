@@ -453,15 +453,6 @@ const ProducaoScreen = () => {
                     {rodadaAtual.status === 'ativa' && (
                       <div className="flex gap-2">
                         <Button 
-                          onClick={handlePausarRodada}
-                          size="sm" 
-                          variant="outline"
-                          className="text-sm px-3 py-2 h-9 text-yellow-600 hover:text-yellow-700"
-                          title="Pausar rodada"
-                        >
-                          ⏸️
-                        </Button>
-                        <Button 
                           onClick={handleFinalizarRodada}
                           size="sm" 
                           variant="outline"
