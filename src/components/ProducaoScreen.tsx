@@ -310,6 +310,25 @@ const ProducaoScreen = () => {
     const secs = segundos % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Helper function para obter cor do sabor específica
+  const getSaborCorRodadaAtual = (saborNome: string) => {
+    const nome = saborNome?.toLowerCase() || '';
+    if (nome.includes('mussarela') || nome.includes('queijo')) {
+      return '#eab308'; // amarelo
+    } else if (nome.includes('pepperoni') || nome.includes('calabresa')) {
+      return '#ea580c'; // laranja
+    } else if (nome.includes('margherita') || nome.includes('tomate')) {
+      return '#16a34a'; // verde
+    } else if (nome.includes('frango') || nome.includes('chicken')) {
+      return '#dc2626'; // vermelho
+    } else if (nome.includes('portuguesa')) {
+      return '#7c3aed'; // roxo
+    } else {
+      return '#6b7280'; // cinza padrão
+    }
+  };
+
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -485,7 +504,7 @@ const ProducaoScreen = () => {
                       <div className="lg:col-span-2">
                         <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                           <CardContent className="p-6 text-center py-[71px] my-[6px]">
-                            <Badge className="bg-yellow-500 text-white text-sm px-3 mb-3 py-[3px] rounded-md">🍕 EM  PRODUÇÃO</Badge>
+                            <Badge className="bg-yellow-500 text-white text-sm px-3 mb-3 py-[3px] rounded-md">🍕 EM  PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
                             <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
                               {getSaborNome(historico[0])}
@@ -533,6 +552,93 @@ const ProducaoScreen = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Histórico Visual da Rodada Atual - Logo após os sabores */}
+        {rodadaAtual && rodada.status === 'ativa' && historico.length > 0 && (
+          <Card className="shadow-lg border-2 border-yellow-200 bg-yellow-50 mb-8">
+            <CardContent className="p-4">
+              <h4 className="text-lg font-semibold text-yellow-800 mb-4 text-center">
+                📊 Sequência de Sabores - Rodada Atual
+              </h4>
+              <div className="grid grid-cols-10 md:grid-cols-15 lg:grid-cols-20 gap-2">
+                {historico.map((sabor, index) => {
+                  const saborNome = getSaborNome(sabor);
+                  const cor = getSaborCorRodadaAtual(saborNome);
+                  const isAtual = index === saborAtualIndex;
+                  const isPassado = index < saborAtualIndex;
+                  
+                  return (
+                    <div
+                      key={sabor.id}
+                      className={`relative group cursor-pointer transition-all duration-200 ${
+                        isAtual ? 'scale-125 z-10' : ''
+                      }`}
+                      title={`Pizza #${index + 1}: ${saborNome}`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${
+                          isAtual 
+                            ? 'border-yellow-600 animate-pulse' 
+                            : isPassado 
+                              ? 'border-gray-400 opacity-60' 
+                              : 'border-yellow-400'
+                        }`}
+                        style={{ backgroundColor: cor }}
+                      >
+                        {index + 1}
+                      </div>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+                        Pizza #{index + 1}: {saborNome}
+                      </div>
+                      
+                      {/* Indicador de status */}
+                      {isAtual && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-white animate-pulse"></div>
+                      )}
+                      {isPassado && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full border border-white">
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-1 h-1 bg-white rounded-full"></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Legenda específica para rodada atual */}
+              <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span>Mussarela/Queijo</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                  <span>Pepperoni/Calabresa</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                  <span>Margherita/Tomate</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                  <span>Frango</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                  <span>Portuguesa</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+                  <span>Outros</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Visualizador de Sabores da Rodada - Agora com sistema automático */}
         {rodadaAtual && <Card className="shadow-lg border-2 border-blue-200 mb-8">
