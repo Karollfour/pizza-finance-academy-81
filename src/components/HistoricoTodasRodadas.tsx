@@ -22,9 +22,9 @@ const HistoricoTodasRodadas = () => {
           onClick={() => setMostrarHistorico(!mostrarHistorico)}
           variant="outline"
           size="sm"
-          className="text-xs"
+          className="w-full bg-purple-500 hover:bg-purple-600 text-white border-purple-500 hover:border-purple-600 font-medium"
         >
-          {mostrarHistorico ? '📖 Ocultar' : '📖 Ver Histórico de Rodadas'}
+          {mostrarHistorico ? '📖 Ocultar Histórico' : '📖 Ver Histórico de Rodadas'}
         </Button>
       </div>
 
