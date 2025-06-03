@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -529,12 +528,11 @@ const ProducaoScreen = () => {
                     const cor = getSaborCorRodadaAtual(saborNome);
                     const isAtual = index === saborAtualIndex;
                     const isPassado = index < saborAtualIndex;
-                    
+
                     // Só mostrar se for passado ou atual
                     if (!isPassado && !isAtual) {
                       return null;
                     }
-                    
                     return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-125 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
                               <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
                         backgroundColor: cor
@@ -548,7 +546,7 @@ const ProducaoScreen = () => {
                               </div>
                               
                               {/* Indicador de status */}
-                              {isAtual && <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-white animate-pulse"></div>}
+                              {isAtual && <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white animate-pulse bg-orange-400"></div>}
                               {isPassado && <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full border border-white">
                                   <div className="w-full h-full flex items-center justify-center">
                                     <div className="w-1 h-1 bg-white rounded-full"></div>
@@ -569,20 +567,20 @@ const ProducaoScreen = () => {
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                          <span>Margherita/Tomate</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                          <span>Frango</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-                          <span>Portuguesa</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-                          <span>Outros</span>
+                          
+                          
                         </div>
                       </div>
                     </div>}
