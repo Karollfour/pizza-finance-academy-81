@@ -12,17 +12,11 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
+import { useSequenciaSabores } from '@/hooks/useSequenciaSabores';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import SeletorSaborProfessor from './SeletorSaborProfessor';
+import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
-
-interface SaborRodada {
-  sabor: string;
-  iniciadoEm: string;
-  pizzasEnviadas: number;
-  equipesQueEnviaram: string[];
-}
 
 const ProducaoScreen = () => {
   const {
@@ -50,6 +44,10 @@ const ProducaoScreen = () => {
     resetarJogo,
     loading: resetLoading
   } = useResetJogo();
+  const {
+    criarSequenciaParaRodada,
+    loading: loadingSequencia
+  } = useSequenciaSabores();
 
   // Timer sincronizado
   const {
@@ -70,113 +68,48 @@ const ProducaoScreen = () => {
     },
     warningThreshold: 30
   });
+  
   const [tempoLimite, setTempoLimite] = useState(300);
-  const [saborAtual, setSaborAtual] = useState<string>('');
-  const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
-  const [ultimaTrocaEmEquipes, setUltimaTrocaEmEquipes] = useState(0);
+  const [numeroPizzas, setNumeroPizzas] = useState(10);
 
-  // Função para gerar sabor aleatório
-  const gerarSaborAleatorio = () => {
-    if (sabores.length > 0) {
-      const saborAleatorio = sabores[Math.floor(Math.random() * sabores.length)];
-      return saborAleatorio.nome;
-    }
-    return '';
-  };
-
-  // Função para iniciar novo sabor
-  const iniciarNovoSabor = () => {
-    const novoSabor = gerarSaborAleatorio();
-    setSaborAtual(novoSabor);
-    const novoSaborRodada: SaborRodada = {
-      sabor: novoSabor,
-      iniciadoEm: new Date().toISOString(),
-      pizzasEnviadas: 0,
-      equipesQueEnviaram: []
-    };
-    setHistoricoSabores(prev => [...prev, novoSaborRodada]);
-    toast.info(`🍕 Novo sabor da rodada: ${novoSabor}`, {
-      duration: 4000
-    });
-  };
-
-  // Efeito principal para verificar mudança de sabor baseado nas pizzas
-  useEffect(() => {
-    if (!rodadaAtual || rodadaAtual.status !== 'ativa' || equipes.length === 0 || pizzas.length === 0) return;
-    const metadeEquipes = Math.ceil(equipes.length / 2);
-
-    // Contar equipes únicas que enviaram pizzas
-    const equipesQueEnviaram = new Set<string>();
-    pizzas.forEach(pizza => {
-      equipesQueEnviaram.add(pizza.equipe_id);
-    });
-    const numEquipesQueEnviaram = equipesQueEnviaram.size;
-    console.log(`Verificando troca de sabor: ${numEquipesQueEnviaram} equipes enviaram, metade necessária: ${metadeEquipes}, última troca em: ${ultimaTrocaEmEquipes}`);
-
-    // Verificar se deve trocar sabor
-    if (numEquipesQueEnviaram >= metadeEquipes && numEquipesQueEnviaram > ultimaTrocaEmEquipes) {
-      console.log('Iniciando troca de sabor...');
-
-      // Atualizar histórico do sabor anterior se existe
-      if (historicoSabores.length > 0) {
-        setHistoricoSabores(prev => prev.map((item, index) => index === prev.length - 1 ? {
-          ...item,
-          pizzasEnviadas: pizzas.length,
-          equipesQueEnviaram: Array.from(equipesQueEnviaram) as string[]
-        } : item));
-      }
-
-      // Marcar que já houve troca para este número de equipes
-      setUltimaTrocaEmEquipes(numEquipesQueEnviaram);
-
-      // Iniciar novo sabor após pequeno delay
-      setTimeout(() => {
-        iniciarNovoSabor();
-      }, 1000);
-    }
-  }, [pizzas.length, equipes.length, rodadaAtual?.id, ultimaTrocaEmEquipes, historicoSabores.length]);
-
-  // Resetar estado quando rodada muda ou é criada
-  useEffect(() => {
-    if (!rodadaAtual) {
-      // Nenhuma rodada ativa, limpar tudo
-      setSaborAtual('');
-      setHistoricoSabores([]);
-      setUltimaTrocaEmEquipes(0);
-      return;
-    }
-    if (rodadaAtual.status === 'aguardando') {
-      // Rodada aguardando, resetar para próxima
-      setSaborAtual('');
-      setHistoricoSabores([]);
-      setUltimaTrocaEmEquipes(0);
-      return;
-    }
-    if (rodadaAtual.status === 'ativa' && historicoSabores.length === 0 && sabores.length > 0) {
-      // Rodada ativa sem sabor definido, iniciar primeiro sabor
-      console.log('Iniciando primeiro sabor da rodada');
-      iniciarNovoSabor();
-    }
-  }, [rodadaAtual?.status, rodadaAtual?.id, sabores.length, historicoSabores.length]);
   const handleIniciarRodada = async () => {
     if (!rodadaAtual) {
       // Criar nova rodada se não existe uma aguardando
       try {
-        await criarNovaRodada(proximoNumero, tempoLimite);
+        const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
+        
+        // Criar sequência automática de sabores
+        if (novaRodada?.id) {
+          await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
+        }
+        
         await refetchCounter();
       } catch (error) {
         toast.error('Erro ao criar nova rodada');
       }
       return;
     }
+    
     if (rodadaAtual.status === 'aguardando') {
       try {
+        // Se não há sequência de sabores, criar uma
+        const { data: historicoExistente } = await supabase
+          .from('historico_sabores_rodada')
+          .select('id')
+          .eq('rodada_id', rodadaAtual.id)
+          .limit(1);
+
+        if (!historicoExistente || historicoExistente.length === 0) {
+          await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
+        }
+        
         await iniciarRodada(rodadaAtual.id);
       } catch (error) {
         toast.error('Erro ao iniciar rodada');
       }
     }
   };
+
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -186,6 +119,7 @@ const ProducaoScreen = () => {
       toast.error('Erro ao finalizar rodada');
     }
   };
+
   const adicionarMinutos = async (minutos: number) => {
     if (!rodadaAtual) return;
     try {
@@ -217,6 +151,7 @@ const ProducaoScreen = () => {
       toast.error('Erro ao ajustar tempo da rodada');
     }
   };
+
   const handleResetarJogo = async () => {
     if (!confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?')) {
       return;
@@ -250,13 +185,14 @@ const ProducaoScreen = () => {
       reprovadas: pizzasEquipe.filter(p => p.resultado === 'reprovada').length
     };
   });
+
   const getEquipeNome = (equipeId: string) => {
     const equipe = equipes.find(e => e.id === equipeId);
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
 
-  // Obter número da rodada para exibição
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
@@ -274,7 +210,7 @@ const ProducaoScreen = () => {
             <CardTitle>⚙️ Controle da Rodada</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
               {/* Tempo Limite */}
               <div>
                 <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
@@ -284,6 +220,20 @@ const ProducaoScreen = () => {
                   value={tempoLimite} 
                   onChange={e => setTempoLimite(Number(e.target.value))} 
                   disabled={rodadaAtual?.status === 'ativa'} 
+                />
+              </div>
+
+              {/* Número de Pizzas */}
+              <div>
+                <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
+                <Input 
+                  id="numeroPizzas" 
+                  type="number" 
+                  value={numeroPizzas} 
+                  onChange={e => setNumeroPizzas(Number(e.target.value))} 
+                  disabled={rodadaAtual?.status === 'ativa'}
+                  min="1"
+                  max="50"
                 />
               </div>
 
@@ -300,8 +250,9 @@ const ProducaoScreen = () => {
                   <Button 
                     onClick={handleIniciarRodada} 
                     className="w-full bg-green-500 hover:bg-green-600"
+                    disabled={loadingSequencia}
                   >
-                    Iniciar Rodada {numeroRodadaDisplay}
+                    {loadingSequencia ? 'Criando...' : `Iniciar Rodada ${numeroRodadaDisplay}`}
                   </Button>
                 )}
               </div>
@@ -373,16 +324,6 @@ const ProducaoScreen = () => {
                   {formattedTime}
                 </div>
                 <Progress value={progressPercentage} className="w-full mb-4" />
-                
-                {/* Seletor de Sabor do Professor */}
-                {rodadaAtual && (
-                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
-                    <h3 className="text-lg font-bold text-blue-800 mb-3">
-                      🍕 Controle de Sabores da Rodada
-                    </h3>
-                    <SeletorSaborProfessor rodadaId={rodadaAtual.id} />
-                  </div>
-                )}
               </div>
               
               <div className="grid grid-cols-4 gap-4 text-center">
@@ -406,6 +347,18 @@ const ProducaoScreen = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Visualizador de Sabores da Rodada */}
+        {rodadaAtual && (
+          <Card className="shadow-lg border-2 border-blue-200 mb-8">
+            <CardHeader>
+              <CardTitle className="text-blue-600">🍕 Sabores da Rodada {numeroRodadaDisplay}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <VisualizadorSaboresRodada rodadaId={rodadaAtual.id} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Histórico de Todas as Rodadas */}
         <div className="mb-8">
