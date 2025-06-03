@@ -18,8 +18,8 @@ const GestaoEquipes = () => {
   });
   const [editandoEquipe, setEditandoEquipe] = useState<string | null>(null);
 
-  // Função para calcular o gasto total de uma equipe
-  const calcularGastoTotal = (equipeId: string) => {
+  // Função para calcular o gasto total de uma equipe baseado nas compras do banco
+  const calcularGastoTotalEquipe = (equipeId: string) => {
     return compras
       .filter(compra => compra.equipe_id === equipeId)
       .reduce((total, compra) => total + compra.valor_total, 0);
@@ -117,8 +117,16 @@ const GestaoEquipes = () => {
               </div>
             ) : (
               equipes.map((equipe) => {
-                const gastoTotal = calcularGastoTotal(equipe.id);
-                const saldoDisponivel = equipe.saldo_inicial - gastoTotal;
+                const gastoTotalCalculado = calcularGastoTotalEquipe(equipe.id);
+                const saldoDisponivel = equipe.saldo_inicial - gastoTotalCalculado;
+                
+                console.log(`Equipe ${equipe.nome}:`, {
+                  saldoInicial: equipe.saldo_inicial,
+                  gastoTotalBanco: equipe.gasto_total,
+                  gastoTotalCalculado,
+                  saldoDisponivel,
+                  comprasEquipe: compras.filter(c => c.equipe_id === equipe.id)
+                });
                 
                 return (
                   <div key={equipe.id} className="p-4 border border-gray-200 rounded-lg">
@@ -138,7 +146,7 @@ const GestaoEquipes = () => {
                             <strong>Saldo Inicial:</strong> R$ {equipe.saldo_inicial.toFixed(2)}
                           </span>
                           <span className="text-red-600">
-                            <strong>Gasto Total:</strong> R$ {gastoTotal.toFixed(2)}
+                            <strong>Gasto Total:</strong> R$ {gastoTotalCalculado.toFixed(2)}
                           </span>
                           <span className={`font-bold ${saldoDisponivel >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                             <strong>Disponível:</strong> R$ {saldoDisponivel.toFixed(2)}
