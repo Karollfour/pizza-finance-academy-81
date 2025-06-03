@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -554,7 +555,7 @@ const ProducaoScreen = () => {
         </Card>
 
         {/* Histórico Visual da Rodada Atual - Logo após os sabores */}
-        {rodadaAtual && rodada.status === 'ativa' && historico.length > 0 && (
+        {rodadaAtual && rodadaAtual.status === 'ativa' && historico.length > 0 && (
           <Card className="shadow-lg border-2 border-yellow-200 bg-yellow-50 mb-8">
             <CardContent className="p-4">
               <h4 className="text-lg font-semibold text-yellow-800 mb-4 text-center">
