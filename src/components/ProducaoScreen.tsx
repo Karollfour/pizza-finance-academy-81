@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -520,17 +521,22 @@ const ProducaoScreen = () => {
                       </div>
                     </div>)}
 
-                  {/* Histórico Visual da Rodada Atual - Agora integrado ao final dos sabores */}
+                  {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
                   {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
-                      
                       <div className="grid grid-cols-10 md:grid-cols-15 lg:grid-cols-20 gap-2">
                         {historico.map((sabor, index) => {
                     const saborNome = getSaborNome(sabor);
                     const cor = getSaborCorRodadaAtual(saborNome);
                     const isAtual = index === saborAtualIndex;
                     const isPassado = index < saborAtualIndex;
+                    
+                    // Só mostrar se for passado ou atual
+                    if (!isPassado && !isAtual) {
+                      return null;
+                    }
+                    
                     return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-125 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
-                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${isAtual ? 'border-yellow-600 animate-pulse' : isPassado ? 'border-gray-400 opacity-60' : 'border-yellow-400'}`} style={{
+                              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-md ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
                         backgroundColor: cor
                       }}>
                                 {index + 1}
@@ -563,20 +569,20 @@ const ProducaoScreen = () => {
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                          <span>Margherita/Tomate</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                          <span>Frango</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                          <span>Portuguesa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+                          <span>Outros</span>
                         </div>
                       </div>
                     </div>}
