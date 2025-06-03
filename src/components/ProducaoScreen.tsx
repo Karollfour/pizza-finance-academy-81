@@ -12,14 +12,18 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useSabores } from '@/hooks/useSabores';
 import { useResetJogo } from '@/hooks/useResetJogo';
+import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import SeletorSaborProfessor from './SeletorSaborProfessor';
+
 interface SaborRodada {
   sabor: string;
   iniciadoEm: string;
   pizzasEnviadas: number;
   equipesQueEnviaram: string[];
 }
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -28,24 +32,34 @@ const ProducaoScreen = () => {
     criarNovaRodada,
     lastUpdate
   } = useOptimizedRodadas();
+  
   const {
     proximoNumero,
     refetch: refetchCounter
   } = useRodadaCounter();
+  
   const {
     pizzas,
     refetch: refetchPizzas
   } = usePizzas(undefined, rodadaAtual?.id);
+  
   const {
     equipes
   } = useEquipes();
+  
   const {
     sabores
   } = useSabores();
+  
   const {
     resetarJogo,
     loading: resetLoading
   } = useResetJogo();
+
+  // Hook para histórico de sabores do banco
+  const {
+    saborAtual: saborAtualDB
+  } = useHistoricoSaboresRodada(rodadaAtual?.id);
 
   // Timer sincronizado
   const {
@@ -66,10 +80,23 @@ const ProducaoScreen = () => {
     },
     warningThreshold: 30
   });
+
   const [tempoLimite, setTempoLimite] = useState(300);
+  
+  // Estados para compatibilidade com sistema antigo (mantido para não quebrar)
   const [saborAtual, setSaborAtual] = useState<string>('');
   const [historicoSabores, setHistoricoSabores] = useState<SaborRodada[]>([]);
   const [ultimaTrocaEmEquipes, setUltimaTrocaEmEquipes] = useState(0);
+
+  // Atualizar sabor atual baseado no banco de dados
+  useEffect(() => {
+    if (saborAtualDB) {
+      const saborNome = sabores.find(s => s.id === saborAtualDB.sabor_id)?.nome || '';
+      setSaborAtual(saborNome);
+    } else {
+      setSaborAtual('');
+    }
+  }, [saborAtualDB, sabores]);
 
   // Função para gerar sabor aleatório
   const gerarSaborAleatorio = () => {
@@ -253,6 +280,7 @@ const ProducaoScreen = () => {
 
   // Obter número da rodada para exibição
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
+
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -262,6 +290,12 @@ const ProducaoScreen = () => {
             Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
           </div>
         </div>
+
+        {/* Seletor de Sabor do Professor */}
+        <SeletorSaborProfessor 
+          rodadaId={rodadaAtual?.id}
+          rodadaAtiva={rodadaAtual?.status === 'ativa'}
+        />
 
         {/* Controles da Rodada Simplificados */}
         <Card className="shadow-lg border-2 border-red-200 mb-8">
@@ -325,39 +359,6 @@ const ProducaoScreen = () => {
                   {formattedTime}
                 </div>
                 <Progress value={progressPercentage} className="w-full mb-4" />
-                
-                {/* Sabor Atual da Rodada */}
-                {rodadaAtual?.status === 'ativa' && saborAtual && <div className="bg-yellow-100 border-2 border-yellow-300 rounded-lg p-4 mb-4">
-                    <h3 className="text-lg font-bold text-yellow-800 mb-2">
-                      🍕 Sabor Atual da Rodada
-                    </h3>
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {saborAtual}
-                    </div>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Sabor sendo produzido nesta rodada
-                    </p>
-                  </div>}
-
-                {/* Histórico de Sabores da Rodada */}
-                {historicoSabores.length > 0 && <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
-                    <h3 className="text-lg font-bold text-blue-800 mb-3">
-                      📜 Histórico de Sabores da Rodada
-                    </h3>
-                    <div className="space-y-2">
-                      {historicoSabores.map((sabor, index) => <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
-                          <div>
-                            <span className="font-medium text-blue-600">{sabor.sabor}</span>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {new Date(sabor.iniciadoEm).toLocaleTimeString('pt-BR')}
-                            </span>
-                          </div>
-                          <Badge variant="outline" className="bg-blue-100">
-                            {sabor.equipesQueEnviaram.length} equipes
-                          </Badge>
-                        </div>)}
-                    </div>
-                  </div>}
               </div>
               
               <div className="grid grid-cols-4 gap-4 text-center">
@@ -452,4 +453,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;
