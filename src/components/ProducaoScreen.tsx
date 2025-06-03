@@ -411,8 +411,33 @@ const ProducaoScreen = () => {
 
               {/* Sabores da Rodada Integrados */}
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
-                  <h3 className="font-semibold text-orange-600 mb-4 text-center text-2xl">🍕 Sabores da Rodada</h3>
-                  
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-orange-600 text-center text-2xl">🍕 Sabores da Rodada</h3>
+                    
+                    {/* Botões de controle da rodada */}
+                    {rodadaAtual.status === 'ativa' && (
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-xs px-2 py-1 h-7"
+                          title="Pausar rodada"
+                        >
+                          ⏸️
+                        </Button>
+                        <Button 
+                          onClick={handleFinalizarRodada}
+                          size="sm" 
+                          variant="outline"
+                          className="text-xs px-2 py-1 h-7 text-red-600 hover:text-red-700"
+                          title="Encerrar rodada"
+                        >
+                          ⏹️
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Rodada Ativa - Sistema Automático */}
                   {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
