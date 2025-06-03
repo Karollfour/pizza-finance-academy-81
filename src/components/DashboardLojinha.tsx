@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -5,6 +6,7 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useRodadas } from '@/hooks/useRodadas';
 import { usePizzas } from '@/hooks/usePizzas';
+import { useTodasRodadas } from '@/hooks/useTodasRodadas';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -15,21 +17,34 @@ const DashboardLojinha = () => {
   const { equipes } = useEquipes();
   const { produtos } = useProdutos();
   const { rodadaAtual } = useRodadas();
+  const { rodadas } = useTodasRodadas();
   const { pizzas } = usePizzas();
   const [rodadaSelecionada, setRodadaSelecionada] = useState<number | null>(null);
 
-  // Obter todas as rodadas disponíveis das pizzas
-  const rodadasDisponiveis = Array.from(new Set(pizzas.map(p => {
-    // Assumindo que temos acesso ao número da rodada através do ID
-    // Se não tiver, precisaremos buscar os dados da rodada
-    return 1; // Por enquanto, usando rodada 1 como exemplo
-  }))).sort((a, b) => a - b);
+  // Obter todas as rodadas disponíveis que têm pizzas
+  const rodadasDisponiveis = rodadas
+    .filter(rodada => {
+      // Verificar se a rodada tem pizzas associadas
+      const temPizzas = pizzas.some(pizza => pizza.rodada_id === rodada.id);
+      return temPizzas;
+    })
+    .map(rodada => rodada.numero)
+    .sort((a, b) => a - b);
+
+  // Função para obter rodada por número
+  const getRodadaPorNumero = (numeroRodada: number) => {
+    return rodadas.find(r => r.numero === numeroRodada);
+  };
 
   // Dados de pizzas por rodada e equipe
-  const dadosPizzasPorRodada = (rodada: number) => {
+  const dadosPizzasPorRodada = (numeroRodada: number) => {
+    const rodada = getRodadaPorNumero(numeroRodada);
+    if (!rodada) return [];
+
     return equipes.map(equipe => {
       const pizzasEquipe = pizzas.filter(p => 
         p.equipe_id === equipe.id && 
+        p.rodada_id === rodada.id &&
         p.status === 'avaliada'
       );
       
@@ -119,14 +134,14 @@ const DashboardLojinha = () => {
             >
               Todas as Rodadas
             </Button>
-            {rodadasDisponiveis.map(rodada => (
+            {rodadasDisponiveis.map(numeroRodada => (
               <Button
-                key={rodada}
-                variant={rodadaSelecionada === rodada ? "default" : "outline"}
-                onClick={() => setRodadaSelecionada(rodada)}
+                key={numeroRodada}
+                variant={rodadaSelecionada === numeroRodada ? "default" : "outline"}
+                onClick={() => setRodadaSelecionada(numeroRodada)}
                 size="sm"
               >
-                Rodada {rodada}
+                Rodada {numeroRodada}
               </Button>
             ))}
           </div>
