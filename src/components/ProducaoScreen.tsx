@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
+import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
 
 const ProducaoScreen = () => {
   const {
@@ -394,17 +395,20 @@ const ProducaoScreen = () => {
           </CardContent>
         </Card>
 
-        {/* Visualizador de Sabores da Rodada */}
+        {/* Visualizador de Sabores da Rodada - Agora com sistema automático */}
         {rodadaAtual && (
           <Card className="shadow-lg border-2 border-blue-200 mb-8">
             <CardHeader>
               <CardTitle className="text-blue-600">🍕 Sabores da Rodada {numeroRodadaDisplay}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <VisualizadorSaboresRodada rodadaId={rodadaAtual.id} />
+              <VisualizadorSaboresRodada rodada={rodadaAtual} numeroPizzas={numeroPizzas} />
             </CardContent>
           </Card>
         )}
+
+        {/* Histórico de Sabores Automático */}
+        <HistoricoSaboresAutomatico rodada={rodadaAtual} numeroPizzas={numeroPizzas} />
 
         {/* Histórico de Todas as Rodadas */}
         <div className="mb-8">
