@@ -85,6 +85,9 @@ const ProducaoScreen = () => {
         if (novaRodada?.id) {
           console.log('Criando sequência de sabores...');
           await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
+          
+          // Aguardar um momento para a sequência ser salva
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         await refetchCounter();
@@ -106,6 +109,9 @@ const ProducaoScreen = () => {
         if (!historicoExistente || historicoExistente.length === 0) {
           console.log('Criando sequência de sabores para rodada existente...');
           await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
+          
+          // Aguardar um momento para a sequência ser salva
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         console.log('Iniciando rodada...');
@@ -292,7 +298,7 @@ const ProducaoScreen = () => {
                     className="w-full bg-green-500 hover:bg-green-600"
                     disabled={loadingSequencia}
                   >
-                    {loadingSequencia ? 'Criando...' : `Iniciar Rodada ${numeroRodadaDisplay}`}
+                    {loadingSequencia ? 'Criando Sequência...' : `Iniciar Rodada ${numeroRodadaDisplay}`}
                   </Button>
                 )}
               </div>

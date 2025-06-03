@@ -4,23 +4,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSabores } from '@/hooks/useSabores';
 
 export const useSequenciaSabores = () => {
-  const { sabores } = useSabores();
+  const { sabores, loading: loadingSabores } = useSabores();
   const [loading, setLoading] = useState(false);
 
   const gerarSequenciaAleatoria = (numeroPizzas: number) => {
-    if (sabores.length === 0) return [];
+    if (sabores.length === 0) {
+      console.log('Nenhum sabor disponível para gerar sequência');
+      return [];
+    }
     
     const saboresDisponiveis = sabores.filter(s => s.disponivel);
-    if (saboresDisponiveis.length === 0) return [];
+    if (saboresDisponiveis.length === 0) {
+      console.log('Nenhum sabor disponível filtrado');
+      return [];
+    }
+    
+    console.log('Sabores disponíveis para sequência:', saboresDisponiveis);
     
     const sequencia: string[] = [];
     
     for (let i = 0; i < numeroPizzas; i++) {
-      // Usar Math.random() com timestamp para garantir mais aleatoriedade
-      const seed = Math.random() * Date.now();
-      const indiceAleatorio = Math.floor(seed % saboresDisponiveis.length);
-      const saborAleatorio = saboresDisponiveis[indiceAleatorio];
-      sequencia.push(saborAleatorio.id);
+      // Usar alternância simples entre os sabores disponíveis
+      const indice = i % saboresDisponiveis.length;
+      const saborEscolhido = saboresDisponiveis[indice];
+      sequencia.push(saborEscolhido.id);
     }
     
     console.log(`Sequência gerada para ${numeroPizzas} pizzas:`, sequencia);
@@ -32,8 +39,15 @@ export const useSequenciaSabores = () => {
       throw new Error('Dados inválidos para criar sequência');
     }
 
+    // Aguardar sabores carregarem se ainda estão loading
+    if (loadingSabores) {
+      console.log('Aguardando sabores carregarem...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     try {
       setLoading(true);
+      console.log(`Iniciando criação de sequência para rodada ${rodadaId} com ${numeroPizzas} pizzas`);
       
       // Limpar sequência anterior se existir
       const { error: deleteError } = await supabase
@@ -52,6 +66,8 @@ export const useSequenciaSabores = () => {
         throw new Error('Não foi possível gerar sequência - sabores indisponíveis');
       }
       
+      console.log('Sequência a ser inserida:', sequencia);
+      
       // Inserir todos os sabores da sequência no banco
       const historicoItems = sequencia.map((saborId, index) => ({
         rodada_id: rodadaId,
@@ -61,12 +77,17 @@ export const useSequenciaSabores = () => {
         definido_em: new Date().toISOString()
       }));
 
+      console.log('Items do histórico a serem inseridos:', historicoItems);
+
       const { data, error } = await supabase
         .from('historico_sabores_rodada')
         .insert(historicoItems)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir sequência:', error);
+        throw error;
+      }
 
       console.log(`Sequência de ${numeroPizzas} sabores criada com sucesso para rodada ${rodadaId}:`, data);
       
@@ -83,6 +104,6 @@ export const useSequenciaSabores = () => {
   return {
     criarSequenciaParaRodada,
     gerarSequenciaAleatoria,
-    loading
+    loading: loading || loadingSabores
   };
 };
