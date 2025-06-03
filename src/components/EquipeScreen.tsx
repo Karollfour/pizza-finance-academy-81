@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import { useCompras } from '@/hooks/useCompras';
 import { useHistoricoRodadas } from '@/hooks/useHistoricoRodadas';
 import { useAppState } from '@/hooks/useAppState';
 import FilaProducao from './FilaProducao';
-import PedidoAtualEquipe from './PedidoAtualEquipe';
 import { toast } from 'sonner';
 
 interface EquipeScreenProps {
@@ -98,37 +98,19 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
       toast.info(`${emoji} Sua pizza foi ${resultado}!`, {
         duration: 4000,
       });
-      refetchPizzas();
-    };
-
-    const handlePedidoAtivado = (event: CustomEvent) => {
-      const { pedido } = event.detail;
-      toast.info(`🍕 Novo pedido ativo: ${pedido.sabor.nome}!`, {
-        duration: 4000,
-      });
-    };
-
-    const handlePedidosGerados = (event: CustomEvent) => {
-      const { totalPedidos } = event.detail;
-      toast.success(`🎯 ${totalPedidos} pedidos gerados para esta rodada!`, {
-        duration: 3000,
-      });
+      refetchPizzas(); // Atualizar lista de pizzas imediatamente
     };
 
     window.addEventListener('rodada-iniciada', handleRodadaIniciada);
     window.addEventListener('rodada-finalizada', handleRodadaFinalizada);
     window.addEventListener('rodada-criada', handleRodadaCriada as EventListener);
     window.addEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
-    window.addEventListener('pedido-ativado', handlePedidoAtivado as EventListener);
-    window.addEventListener('pedidos-gerados', handlePedidosGerados as EventListener);
 
     return () => {
       window.removeEventListener('rodada-iniciada', handleRodadaIniciada);
       window.removeEventListener('rodada-finalizada', handleRodadaFinalizada);
       window.removeEventListener('rodada-criada', handleRodadaCriada as EventListener);
       window.removeEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
-      window.removeEventListener('pedido-ativado', handlePedidoAtivado as EventListener);
-      window.removeEventListener('pedidos-gerados', handlePedidosGerados as EventListener);
     };
   }, [refetchPizzas]);
 
@@ -229,16 +211,6 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Pedido Atual da Rodada */}
-        {equipeAtual && (
-          <div className="mb-6">
-            <PedidoAtualEquipe 
-              rodadaAtual={rodadaAtual} 
-              equipeId={equipeAtual.id}
-            />
-          </div>
-        )}
 
         {/* Conteúdo Principal - Produção com atualização automática */}
         <div className="space-y-6">

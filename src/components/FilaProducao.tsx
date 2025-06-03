@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
-import { usePedidosRodada } from '@/hooks/usePedidosRodada';
+import { useSabores } from '@/hooks/useSabores';
 import { toast } from 'sonner';
 
 interface FilaProducaoProps {
@@ -17,27 +18,43 @@ interface FilaProducaoProps {
 const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProps) => {
   const { rodadaAtual } = useOptimizedRodadas();
   const { pizzas, marcarPizzaPronta } = usePizzas(equipeId, rodadaAtual?.id);
-  const { pedidoAtivo, registrarEntregaPizza } = usePedidosRodada(rodadaAtual?.id);
+  const { sabores, loading: loadingSabores } = useSabores();
+  const [saborSelecionado, setSaborSelecionado] = useState<string>('');
   const [enviandoPizza, setEnviandoPizza] = useState(false);
 
-  const handleConfirmarPedido = async () => {
-    if (!rodadaAtual || !pedidoAtivo) return;
+  const handleEnviarPizza = async () => {
+    if (!rodadaAtual) return;
+    
+    if (!saborSelecionado) {
+      toast.error('Por favor, selecione o sabor da pizza antes de enviar!');
+      return;
+    }
     
     try {
       setEnviandoPizza(true);
       
-      // Marcar pizza como pronta com o sabor do pedido ativo
-      await marcarPizzaPronta(equipeId, rodadaAtual.id, pedidoAtivo.sabor_id);
+      // Disparar evento de seleção de sabor
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pizza-sabor-selecionado', { 
+          detail: { 
+            equipeId,
+            rodadaId: rodadaAtual.id,
+            saborId: saborSelecionado,
+            timestamp: new Date().toISOString() 
+          } 
+        }));
+      }
       
-      // Registrar entrega no sistema de pedidos
-      await registrarEntregaPizza(pedidoAtivo.id, equipeId);
-      
+      await marcarPizzaPronta(equipeId, rodadaAtual.id, saborSelecionado);
       onPizzaEnviada();
       
-      toast.success(`🍕 Pizza de ${pedidoAtivo.sabor.nome} confirmada e enviada!`);
+      // Limpar seleção após envio
+      setSaborSelecionado('');
+      
+      toast.success('🍕 Pizza enviada para avaliação!');
     } catch (error) {
-      console.error('Erro ao confirmar pedido:', error);
-      toast.error('Erro ao confirmar pedido. Tente novamente.');
+      console.error('Erro ao enviar pizza para avaliação:', error);
+      toast.error('Erro ao enviar pizza. Tente novamente.');
     } finally {
       setEnviandoPizza(false);
     }
@@ -63,78 +80,78 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
     return pizza.sabor?.nome || 'Sabor não informado';
   };
 
-  // Verificar se a equipe já entregou o pedido ativo
-  const jaEntregouPedidoAtivo = pedidoAtivo?.equipes_que_entregaram?.includes(equipeId) || false;
-
   return (
     <div className="space-y-6">
-      {/* Confirmação do Pedido Ativo */}
-      {pedidoAtivo && (
-        <Card className={`shadow-lg border-2 ${jaEntregouPedidoAtivo ? 'border-green-300' : 'border-orange-300'}`}>
-          <CardHeader className={jaEntregouPedidoAtivo ? 'bg-green-50' : 'bg-orange-50'}>
-            <CardTitle className={`text-center ${jaEntregouPedidoAtivo ? 'text-green-600' : 'text-orange-600'}`}>
-              {jaEntregouPedidoAtivo ? '✅ Pedido Já Entregue' : '🎯 Confirmar Pedido Atual'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <div className={`text-4xl font-bold mb-4 ${jaEntregouPedidoAtivo ? 'text-green-600' : 'text-orange-600'}`}>
-                {pedidoAtivo.sabor.nome}
-              </div>
-              
-              {pedidoAtivo.sabor.descricao && (
-                <div className="p-3 bg-gray-100 rounded-lg">
-                  <p className="text-sm text-gray-700">{pedidoAtivo.sabor.descricao}</p>
-                </div>
-              )}
-              
-              {jaEntregouPedidoAtivo ? (
-                <div className="space-y-2">
-                  <p className="text-lg text-green-600 font-medium">
-                    Sua equipe já entregou este pedido!
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Aguarde o próximo pedido ser ativado
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-lg text-orange-600 font-medium">
-                    Faça uma pizza deste sabor e confirme a entrega
-                  </p>
-                  
-                  <Button
-                    onClick={handleConfirmarPedido}
-                    className="w-full h-16 text-xl bg-orange-500 hover:bg-orange-600 text-white font-bold"
-                    disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || enviandoPizza}
-                  >
-                    {enviandoPizza ? (
-                      <>🔄 Confirmando...</>
-                    ) : (
-                      <>✅ Confirmar Entrega do Pedido</>
-                    )}
-                  </Button>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">
-                        {pedidoAtivo.pizzas_entregues}
+      {/* Formulário para Enviar Pizza */}
+      <Card className="shadow-lg border-2 border-green-200">
+        <CardHeader className="bg-green-50">
+          <CardTitle className="text-green-600 text-center">🍕 Produção de Pizza</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="text-center space-y-4">
+            <div className="text-6xl mb-4">🍕</div>
+            <h3 className="text-xl font-bold text-gray-700">
+              Pronto para enviar uma pizza?
+            </h3>
+            
+            {/* Seleção de Sabor */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-600">
+                Selecione o sabor da pizza:
+              </label>
+              <Select 
+                value={saborSelecionado} 
+                onValueChange={setSaborSelecionado}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || loadingSabores}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Escolha o sabor da pizza..." />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                  {sabores.map((sabor) => (
+                    <SelectItem key={sabor.id} value={sabor.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{sabor.nome}</span>
+                        {sabor.descricao && (
+                          <span className="text-xs text-gray-500">{sabor.descricao}</span>
+                        )}
                       </div>
-                      <div className="text-blue-700">Total Entregues</div>
-                    </div>
-                    <div className="bg-purple-100 p-3 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
-                        {pedidoAtivo.equipes_que_entregaram.length}
-                      </div>
-                      <div className="text-purple-700">Equipes que Entregaram</div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            
+            <p className="text-gray-600">
+              Escolha o sabor e clique no botão abaixo quando sua pizza estiver pronta para avaliação
+            </p>
+            
+            <Button
+              onClick={handleEnviarPizza}
+              className="w-full h-16 text-xl bg-green-500 hover:bg-green-600 text-white font-bold"
+              disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || !saborSelecionado || enviandoPizza}
+            >
+              {enviandoPizza ? (
+                <>🔄 Enviando...</>
+              ) : (
+                <>✅ Enviar Pizza para Avaliação</>
+              )}
+            </Button>
+            
+            {(!rodadaAtual || rodadaAtual.status !== 'ativa') && (
+              <p className="text-sm text-gray-500">
+                Aguardando rodada ativa para enviar pizzas
+              </p>
+            )}
+            
+            {!saborSelecionado && rodadaAtual?.status === 'ativa' && (
+              <p className="text-sm text-orange-600">
+                ⚠️ Selecione o sabor da pizza antes de enviar
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Histórico de Pizzas da Rodada */}
       {pizzas.length > 0 && (
@@ -182,23 +199,8 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
         </Card>
       )}
 
-      {/* Mensagem quando não há pedido ativo */}
-      {!pedidoAtivo && rodadaAtual?.status === 'ativa' && (
-        <Card className="shadow-lg border-2 border-yellow-200">
-          <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-4">⏳</div>
-            <h3 className="text-xl font-bold text-gray-600 mb-2">
-              Aguardando Próximo Pedido
-            </h3>
-            <p className="text-gray-500">
-              O administrador ainda não ativou nenhum pedido para esta rodada
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Mensagem quando não há pizzas */}
-      {pizzas.length === 0 && rodadaAtual?.status === 'ativa' && pedidoAtivo && (
+      {pizzas.length === 0 && rodadaAtual?.status === 'ativa' && (
         <Card className="shadow-lg border-2 border-yellow-200">
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-4">🎯</div>
@@ -206,7 +208,7 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
               Primeira Pizza da Rodada
             </h3>
             <p className="text-gray-500">
-              Confirme o pedido acima para ser o primeiro a enviar uma pizza nesta rodada!
+              Escolha um sabor e seja o primeiro a enviar uma pizza para avaliação nesta rodada!
             </p>
           </CardContent>
         </Card>
