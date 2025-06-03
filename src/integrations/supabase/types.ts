@@ -142,51 +142,6 @@ export type Database = {
         }
         Relationships: []
       }
-      historico_sabores_rodada: {
-        Row: {
-          created_at: string
-          definido_em: string
-          definido_por: string | null
-          id: string
-          ordem: number
-          rodada_id: string
-          sabor_id: string
-        }
-        Insert: {
-          created_at?: string
-          definido_em?: string
-          definido_por?: string | null
-          id?: string
-          ordem: number
-          rodada_id: string
-          sabor_id: string
-        }
-        Update: {
-          created_at?: string
-          definido_em?: string
-          definido_por?: string | null
-          id?: string
-          ordem?: number
-          rodada_id?: string
-          sabor_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "historico_sabores_rodada_rodada_id_fkey"
-            columns: ["rodada_id"]
-            isOneToOne: false
-            referencedRelation: "rodadas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "historico_sabores_rodada_sabor_id_fkey"
-            columns: ["sabor_id"]
-            isOneToOne: false
-            referencedRelation: "sabores_pizza"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pedidos_rodada: {
         Row: {
           ativado_em: string | null
