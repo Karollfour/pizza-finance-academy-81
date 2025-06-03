@@ -409,32 +409,13 @@ const ProducaoScreen = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Timer e Estatísticas */}
+              {/* Timer */}
               <div className="space-y-4">
                 <div className="text-center">
                   <div className={`text-4xl font-bold mb-2 ${timeColor}`}>
                     {formattedTime}
                   </div>
                   <Progress value={progressPercentage} className="w-full mb-4" />
-                </div>
-                
-                <div className="grid grid-cols-4 gap-4 text-center">
-                  <div className="bg-blue-100 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{equipes.length}</div>
-                    <div className="text-sm text-blue-700">Equipes</div>
-                  </div>
-                  <div className="bg-yellow-100 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">{pizzasProntas.length}</div>
-                    <div className="text-sm text-yellow-700">Aguardando Avaliação</div>
-                  </div>
-                  <div className="bg-green-100 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{pizzasAprovadas.length}</div>
-                    <div className="text-sm text-green-700">Aprovadas</div>
-                  </div>
-                  <div className="bg-red-100 p-3 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{pizzasReprovadas.length}</div>
-                    <div className="text-sm text-red-700">Reprovadas</div>
-                  </div>
                 </div>
               </div>
 
@@ -660,6 +641,27 @@ const ProducaoScreen = () => {
             <CardTitle className="text-purple-600">👥 Status por Equipe</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Cards de Estatísticas Gerais */}
+            <div className="grid grid-cols-4 gap-4 text-center mb-6">
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{equipes.length}</div>
+                <div className="text-sm text-blue-700">Equipes</div>
+              </div>
+              <div className="bg-yellow-100 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">{pizzasProntas.length}</div>
+                <div className="text-sm text-yellow-700">Aguardando Avaliação</div>
+              </div>
+              <div className="bg-green-100 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{pizzasAprovadas.length}</div>
+                <div className="text-sm text-green-700">Aprovadas</div>
+              </div>
+              <div className="bg-red-100 p-3 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{pizzasReprovadas.length}</div>
+                <div className="text-sm text-red-700">Reprovadas</div>
+              </div>
+            </div>
+
+            {/* Status Individual por Equipe */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {estatisticasPorEquipe.map(stats => <div key={stats.equipe.id} className="p-4 bg-white rounded-lg border border-purple-200">
                   <h3 className="font-bold text-purple-600 mb-2">{stats.equipe.nome}</h3>
