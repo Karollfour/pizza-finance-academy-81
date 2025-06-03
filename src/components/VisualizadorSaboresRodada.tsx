@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { useSabores } from '@/hooks/useSabores';
-import { useEffect, useState } from 'react';
 
 interface VisualizadorSaboresRodadaProps {
   rodadaId?: string;
@@ -12,16 +11,6 @@ interface VisualizadorSaboresRodadaProps {
 const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps) => {
   const { historico } = useHistoricoSaboresRodada(rodadaId);
   const { sabores } = useSabores();
-  const [indiceAtual, setIndiceAtual] = useState(0);
-
-  // Encontrar o índice do sabor atual baseado no número de pizzas enviadas
-  useEffect(() => {
-    // Aqui você pode implementar a lógica para determinar qual sabor está ativo
-    // Por enquanto, vamos usar o último sabor adicionado
-    if (historico.length > 0) {
-      setIndiceAtual(historico.length - 1);
-    }
-  }, [historico]);
 
   if (!rodadaId || historico.length === 0) {
     return (
@@ -34,13 +23,14 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
     );
   }
 
-  const saborAtual = historico[indiceAtual];
-  const proximoSabor2 = historico[indiceAtual + 1];
-  const proximoSabor3 = historico[indiceAtual + 2];
+  // Sempre mostrar os 3 primeiros sabores da sequência
+  const saborAtual = historico[0]; // Primeiro sabor (atual)
+  const proximoSabor2 = historico[1]; // Segundo sabor
+  const proximoSabor3 = historico[2]; // Terceiro sabor
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Sabor Atual - Ocupa mais espaço */}
+      {/* Sabor Atual - Ocupa mais espaço e em verde */}
       <div className="lg:col-span-2">
         <Card className="shadow-xl border-4 border-green-400 bg-green-50">
           <CardContent className="p-8 text-center">
@@ -57,27 +47,27 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
               </p>
             )}
             <div className="text-lg text-green-600">
-              Ordem: {saborAtual?.ordem || 1}
+              Pizza #{saborAtual?.ordem || 1}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Próximos Sabores */}
+      {/* Próximos Sabores - Em azul, um em cima do outro */}
       <div className="space-y-4">
         {/* Próximo Sabor 2 */}
         {proximoSabor2 && (
           <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
             <CardContent className="p-4 text-center">
               <Badge className="bg-blue-500 text-white text-sm px-3 py-1 mb-2">
-                PRÓXIMO 2
+                PRÓXIMO
               </Badge>
               <div className="text-3xl mb-2">🍕</div>
               <h3 className="text-xl font-bold text-blue-700">
                 {proximoSabor2.sabor?.nome || 'Sabor não encontrado'}
               </h3>
               <div className="text-sm text-blue-600">
-                Ordem: {proximoSabor2.ordem}
+                Pizza #{proximoSabor2.ordem}
               </div>
             </CardContent>
           </Card>
@@ -88,14 +78,14 @@ const VisualizadorSaboresRodada = ({ rodadaId }: VisualizadorSaboresRodadaProps)
           <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
             <CardContent className="p-4 text-center">
               <Badge className="bg-blue-500 text-white text-sm px-3 py-1 mb-2">
-                PRÓXIMO 3
+                DEPOIS
               </Badge>
               <div className="text-3xl mb-2">🍕</div>
               <h3 className="text-xl font-bold text-blue-700">
                 {proximoSabor3.sabor?.nome || 'Sabor não encontrado'}
               </h3>
               <div className="text-sm text-blue-600">
-                Ordem: {proximoSabor3.ordem}
+                Pizza #{proximoSabor3.ordem}
               </div>
             </CardContent>
           </Card>
