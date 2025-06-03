@@ -29,8 +29,8 @@ const Index = () => {
     silent: true
   });
 
-  // Inicializar sistema global de refresh automático
-  useGlobalRefresh({
+  // Inicializar sistema global de refresh automático com sincronização entre dispositivos
+  const { forceRefresh } = useGlobalRefresh({
     enabled: isLoggedIn, // Só ativar quando logado
     interval: 1000, // 1 segundo
     silent: true // Completamente silencioso
@@ -69,6 +69,18 @@ const Index = () => {
 
   return <GlobalRealtimeContext.Provider value={contextValue}>
       <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100">
+        {/* Botão invisível para forçar refresh em todos os dispositivos */}
+        <button
+          onClick={forceRefresh}
+          className="fixed top-0 left-0 w-1 h-1 opacity-0 pointer-events-auto z-[9999]"
+          style={{ 
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'default'
+          }}
+          title="Sincronizar dispositivos"
+        />
+
         {/* Botão de Logout fixo */}
         <div className="fixed top-4 right-4 z-50">
           
