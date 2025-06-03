@@ -646,40 +646,8 @@ const ProducaoScreen = () => {
 
         {/* Histórico de Pizzas */}
         <Card className="shadow-lg border-2 border-green-200 mb-8">
-          <CardHeader>
-            <CardTitle className="text-green-600">
-              📝 Histórico de Pizzas - Rodada {numeroRodadaDisplay}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pizzas.length > 0 ? <div className="space-y-3 max-h-96 overflow-y-auto">
-                {pizzas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((pizza, index) => <div key={pizza.id} className="p-4 bg-white rounded-lg border border-green-200 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-green-600">
-                          {getEquipeNome(pizza.equipe_id)} - Pizza #{pizzas.length - index}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {new Date(pizza.created_at).toLocaleString('pt-BR')}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={pizza.status === 'pronta' ? 'secondary' : pizza.resultado === 'aprovada' ? 'default' : pizza.resultado === 'reprovada' ? 'destructive' : 'outline'} className={pizza.status === 'pronta' ? 'bg-yellow-500' : pizza.resultado === 'aprovada' ? 'bg-green-500' : pizza.resultado === 'reprovada' ? 'bg-red-500' : ''}>
-                          {pizza.status === 'pronta' && '🟡 Aguardando Avaliação'}
-                          {pizza.resultado === 'aprovada' && '✅ Aprovada'}
-                          {pizza.resultado === 'reprovada' && '❌ Reprovada'}
-                          {pizza.status === 'em_producao' && '🔄 Em Produção'}
-                        </Badge>
-                        {pizza.resultado === 'reprovada' && pizza.justificativa_reprovacao && <div className="text-xs text-red-500 mt-1 max-w-xs">
-                            {pizza.justificativa_reprovacao}
-                          </div>}
-                      </div>
-                    </div>)}
-              </div> : <div className="text-center text-gray-500 py-12">
-                <div className="text-6xl mb-4">🍕</div>
-                <p className="text-xl">Nenhuma pizza produzida ainda</p>
-                <p className="text-gray-400">As pizzas produzidas aparecerão aqui</p>
-              </div>}
-          </CardContent>
+          
+          
         </Card>
 
         {/* Botão de Reset no final da tela */}
