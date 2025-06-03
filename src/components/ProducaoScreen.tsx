@@ -363,7 +363,7 @@ const ProducaoScreen = () => {
 
               {/* Sabores da Rodada Integrados */}
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-orange-600 mb-4 text-center">🍕 Sabores da Rodada</h3>
+                  <h3 className="font-semibold text-orange-600 mb-4 text-center text-3xl">🍕 Sabores da Rodada</h3>
                   
                   {rodadaAtual.status === 'ativa' && saborAtual ? (/* Rodada Ativa - Sistema Automático */
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
