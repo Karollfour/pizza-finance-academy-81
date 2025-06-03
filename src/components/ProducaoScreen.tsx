@@ -419,7 +419,7 @@ const ProducaoScreen = () => {
                                 DEPOIS
                               </Badge>
                               <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="font-bold text-purple-700 text-lg">
+                              <h4 className="font-bold text-purple-700 text-3xl">
                                 {getSaborNome(segundoProximoSabor)}
                               </h4>
                               <div className="text-xs text-purple-600">
