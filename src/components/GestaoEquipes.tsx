@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 const GestaoEquipes = () => {
   const { equipes, criarEquipe, atualizarEquipe, removerEquipe } = useEquipes();
-  const { compras } = useCompras();
+  const { compras, loading: loadingCompras } = useCompras();
   const [novaEquipe, setNovaEquipe] = useState({
     nome: '',
     saldoInicial: 100,
@@ -18,11 +18,23 @@ const GestaoEquipes = () => {
   });
   const [editandoEquipe, setEditandoEquipe] = useState<string | null>(null);
 
+  // Debug: verificar se as compras estão sendo carregadas
+  useEffect(() => {
+    console.log('Compras carregadas:', compras.length, compras);
+    console.log('Loading compras:', loadingCompras);
+  }, [compras, loadingCompras]);
+
   // Função para calcular o gasto total de uma equipe baseado nas compras do banco
   const calcularGastoTotalEquipe = (equipeId: string) => {
-    return compras
-      .filter(compra => compra.equipe_id === equipeId)
-      .reduce((total, compra) => total + compra.valor_total, 0);
+    const comprasEquipe = compras.filter(compra => compra.equipe_id === equipeId);
+    const total = comprasEquipe.reduce((total, compra) => total + compra.valor_total, 0);
+    
+    console.log(`Calculando gasto para equipe ${equipeId}:`, {
+      comprasEquipe,
+      totalCalculado: total
+    });
+    
+    return total;
   };
 
   const handleCriarEquipe = async () => {
@@ -70,6 +82,19 @@ const GestaoEquipes = () => {
       }
     }
   };
+
+  // Mostrar loading se as compras ainda estão carregando
+  if (loadingCompras) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">Carregando dados das equipes...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,7 +145,7 @@ const GestaoEquipes = () => {
                 const gastoTotalCalculado = calcularGastoTotalEquipe(equipe.id);
                 const saldoDisponivel = equipe.saldo_inicial - gastoTotalCalculado;
                 
-                console.log(`Equipe ${equipe.nome}:`, {
+                console.log(`Equipe ${equipe.nome} - ID: ${equipe.id}:`, {
                   saldoInicial: equipe.saldo_inicial,
                   gastoTotalBanco: equipe.gasto_total,
                   gastoTotalCalculado,
@@ -151,6 +176,9 @@ const GestaoEquipes = () => {
                           <span className={`font-bold ${saldoDisponivel >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                             <strong>Disponível:</strong> R$ {saldoDisponivel.toFixed(2)}
                           </span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          ID da Equipe: {equipe.id} | Compras encontradas: {compras.filter(c => c.equipe_id === equipe.id).length}
                         </div>
                       </div>
                       <div className="flex space-x-2">
