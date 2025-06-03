@@ -58,12 +58,14 @@ const ProducaoScreen = () => {
   } = useSynchronizedTimer(rodadaAtual, {
     onTimeUp: () => {
       if (rodadaAtual) {
+        console.log('Tempo esgotado, finalizando rodada automaticamente');
         handleFinalizarRodada();
       }
     },
     onWarning: secondsLeft => {
       toast.warning(`⚠️ Atenção: ${secondsLeft} segundos restantes!`, {
-        duration: 3000
+        duration: 3000,
+        position: 'top-center'
       });
     },
     warningThreshold: 30
@@ -73,26 +75,28 @@ const ProducaoScreen = () => {
   const [numeroPizzas, setNumeroPizzas] = useState(10);
 
   const handleIniciarRodada = async () => {
-    if (!rodadaAtual) {
-      // Criar nova rodada se não existe uma aguardando
-      try {
+    try {
+      if (!rodadaAtual) {
+        // Criar nova rodada se não existe uma aguardando
+        console.log('Criando nova rodada...');
         const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
         
         // Criar sequência automática de sabores
         if (novaRodada?.id) {
+          console.log('Criando sequência de sabores...');
           await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
         }
         
         await refetchCounter();
-      } catch (error) {
-        toast.error('Erro ao criar nova rodada');
+        toast.success(`🎯 Rodada ${proximoNumero} criada com ${numeroPizzas} pizzas!`, {
+          duration: 3000,
+          position: 'top-center'
+        });
+        return;
       }
-      return;
-    }
-    
-    if (rodadaAtual.status === 'aguardando') {
-      try {
-        // Se não há sequência de sabores, criar uma
+      
+      if (rodadaAtual.status === 'aguardando') {
+        // Verificar se já existe sequência de sabores
         const { data: historicoExistente } = await supabase
           .from('historico_sabores_rodada')
           .select('id')
@@ -100,23 +104,44 @@ const ProducaoScreen = () => {
           .limit(1);
 
         if (!historicoExistente || historicoExistente.length === 0) {
+          console.log('Criando sequência de sabores para rodada existente...');
           await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
         }
         
+        console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
-      } catch (error) {
-        toast.error('Erro ao iniciar rodada');
+        
+        toast.success(`🚀 Rodada ${rodadaAtual.numero} iniciada!`, {
+          duration: 3000,
+          position: 'top-center'
+        });
       }
+    } catch (error) {
+      console.error('Erro ao iniciar rodada:', error);
+      toast.error('Erro ao iniciar rodada. Tente novamente.', {
+        duration: 4000,
+        position: 'top-center'
+      });
     }
   };
 
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
+      console.log('Finalizando rodada...');
       await finalizarRodada(rodadaAtual.id);
       await refetchCounter();
+      
+      toast.success(`🏁 Rodada ${rodadaAtual.numero} finalizada!`, {
+        duration: 3000,
+        position: 'top-center'
+      });
     } catch (error) {
-      toast.error('Erro ao finalizar rodada');
+      console.error('Erro ao finalizar rodada:', error);
+      toast.error('Erro ao finalizar rodada. Tente novamente.', {
+        duration: 4000,
+        position: 'top-center'
+      });
     }
   };
 
@@ -125,11 +150,11 @@ const ProducaoScreen = () => {
     try {
       const novoTempoLimite = rodadaAtual.tempo_limite + minutos * 60;
       console.log(`Alterando tempo limite de ${rodadaAtual.tempo_limite}s para ${novoTempoLimite}s`);
-      const {
-        error
-      } = await supabase.from('rodadas').update({
+      
+      const { error } = await supabase.from('rodadas').update({
         tempo_limite: novoTempoLimite
       }).eq('id', rodadaAtual.id);
+      
       if (error) throw error;
 
       // Disparar evento customizado para notificar o timer
@@ -143,28 +168,43 @@ const ProducaoScreen = () => {
           }
         }));
       }
+      
       toast.success(`${minutos > 0 ? 'Adicionados' : 'Removidos'} ${Math.abs(minutos)} minuto(s)`, {
-        duration: 2000
+        duration: 2000,
+        position: 'top-center'
       });
     } catch (error) {
       console.error('Erro ao ajustar tempo da rodada:', error);
-      toast.error('Erro ao ajustar tempo da rodada');
+      toast.error('Erro ao ajustar tempo da rodada', {
+        duration: 3000,
+        position: 'top-center'
+      });
     }
   };
 
   const handleResetarJogo = async () => {
-    if (!confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?')) {
-      return;
-    }
-    if (!confirm('🚨 CONFIRMAÇÃO FINAL: Tem certeza absoluta de que deseja resetar todo o jogo? Todos os dados serão perdidos permanentemente!')) {
-      return;
-    }
+    const confirmar1 = window.confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?');
+    if (!confirmar1) return;
+    
+    const confirmar2 = window.confirm('🚨 CONFIRMAÇÃO FINAL: Tem certeza absoluta de que deseja resetar todo o jogo? Todos os dados serão perdidos permanentemente!');
+    if (!confirmar2) return;
+    
     try {
+      console.log('Resetando jogo...');
       await resetarJogo();
       // Atualizar todos os dados após o reset
       await Promise.all([refetchCounter(), refetchPizzas()]);
+      
+      toast.success('🔄 Jogo resetado com sucesso!', {
+        duration: 3000,
+        position: 'top-center'
+      });
     } catch (error) {
       console.error('Erro ao resetar jogo:', error);
+      toast.error('Erro ao resetar jogo. Tente novamente.', {
+        duration: 4000,
+        position: 'top-center'
+      });
     }
   };
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { HistoricoSaborRodada, SaborPizza } from '@/types/database';
+import { HistoricoSaborRodada } from '@/types/database';
 
 export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   const [historico, setHistorico] = useState<HistoricoSaborRodada[]>([]);
@@ -19,6 +19,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
 
     try {
       setLoading(true);
+      console.log('Buscando histórico de sabores para rodada:', rodadaId);
       
       const { data, error } = await supabase
         .from('historico_sabores_rodada')
@@ -29,11 +30,18 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
         .eq('rodada_id', rodadaId)
         .order('ordem', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar histórico:', error);
+        throw error;
+      }
 
+      console.log('Histórico carregado:', data);
       setHistorico((data || []) as HistoricoSaborRodada[]);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar histórico');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar histórico';
+      console.error('Erro no fetchHistorico:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -52,7 +60,8 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
           rodada_id: rodadaId,
           sabor_id: saborId,
           ordem: proximaOrdem,
-          definido_por: 'Professor'
+          definido_por: 'Professor',
+          definido_em: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -60,7 +69,8 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
       // Refetch para atualizar o estado local
       await fetchHistorico();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao adicionar sabor');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao adicionar sabor';
+      setError(errorMessage);
       throw err;
     }
   };
@@ -92,7 +102,8 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
           table: 'historico_sabores_rodada',
           filter: `rodada_id=eq.${rodadaId}`
         },
-        () => {
+        (payload) => {
+          console.log('Mudança detectada no histórico de sabores:', payload);
           fetchHistorico();
         }
       );
@@ -101,6 +112,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+          console.log('Subscrito às mudanças do histórico de sabores');
         }
       });
       channelRef.current = channel;

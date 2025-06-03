@@ -28,18 +28,23 @@ export const useSynchronizedTimer = (
       return 0;
     }
 
-    // Usar UTC para evitar problemas de timezone em dispositivos móveis
-    const now = new Date().getTime();
-    const startTime = new Date(rodada.iniciou_em).getTime();
-    const duration = rodada.tempo_limite * 1000; // converter para millisegundos
-    const elapsed = now - startTime;
-    const remaining = Math.max(0, duration - elapsed);
-    
-    // Converter de volta para segundos e garantir que seja um número inteiro
-    return Math.floor(remaining / 1000);
-  }, [rodada]);
+    try {
+      // Usar UTC para evitar problemas de timezone
+      const now = new Date().getTime();
+      const startTime = new Date(rodada.iniciou_em).getTime();
+      const duration = rodada.tempo_limite * 1000; // converter para millisegundos
+      const elapsed = now - startTime;
+      const remaining = Math.max(0, duration - elapsed);
+      
+      // Converter de volta para segundos
+      return Math.floor(remaining / 1000);
+    } catch (error) {
+      console.error('Erro ao calcular tempo restante:', error);
+      return 0;
+    }
+  }, [rodada?.id, rodada?.status, rodada?.iniciou_em, rodada?.tempo_limite]);
 
-  // Timer principal com correção para dispositivos móveis
+  // Timer principal com melhor precisão
   useEffect(() => {
     if (!rodada || rodada.status !== 'ativa' || !rodada.iniciou_em) {
       setTimeRemaining(0);
@@ -54,44 +59,32 @@ export const useSynchronizedTimer = (
     const remaining = calculateTimeRemaining();
     setTimeRemaining(remaining);
     
-    // Resetar warning quando o tempo limite muda
+    // Resetar warning quando o tempo muda
     if (remaining > warningThreshold) {
       setHasWarned(false);
     }
 
-    // Usar requestAnimationFrame para melhor performance em mobile
-    let intervalId: number;
-    let rafId: number;
-
-    const updateTimer = () => {
-      const remaining = calculateTimeRemaining();
-      setTimeRemaining(remaining);
+    // Timer com interval mais preciso
+    const intervalId = setInterval(() => {
+      const currentRemaining = calculateTimeRemaining();
+      setTimeRemaining(currentRemaining);
 
       // Warning threshold
-      if (!hasWarned && remaining <= warningThreshold && remaining > 0) {
+      if (!hasWarned && currentRemaining <= warningThreshold && currentRemaining > 0) {
         setHasWarned(true);
-        onWarning?.(remaining);
+        onWarning?.(currentRemaining);
       }
 
       // Time up
-      if (remaining <= 0) {
+      if (currentRemaining <= 0) {
         setIsActive(false);
+        clearInterval(intervalId);
         onTimeUp?.();
-        return;
       }
-
-      // Continuar atualizando
-      rafId = requestAnimationFrame(() => {
-        setTimeout(updateTimer, 1000);
-      });
-    };
-
-    // Iniciar timer
-    intervalId = window.setTimeout(updateTimer, 1000);
+    }, 1000);
 
     return () => {
-      if (intervalId) clearTimeout(intervalId);
-      if (rafId) cancelAnimationFrame(rafId);
+      clearInterval(intervalId);
     };
   }, [rodada?.id, rodada?.status, rodada?.tempo_limite, rodada?.iniciou_em, calculateTimeRemaining, onTimeUp, onWarning, warningThreshold, hasWarned]);
 
@@ -100,11 +93,14 @@ export const useSynchronizedTimer = (
     const handleRodadaEvent = (event: CustomEvent) => {
       console.log('Timer recebeu evento de rodada:', event.type);
       // Recalcular imediatamente quando houver mudança de rodada
-      setTimeout(() => {
-        const remaining = calculateTimeRemaining();
-        setTimeRemaining(remaining);
-        console.log('Timer atualizado para:', remaining, 'segundos');
-      }, 100);
+      const remaining = calculateTimeRemaining();
+      setTimeRemaining(remaining);
+      console.log('Timer atualizado para:', remaining, 'segundos');
+      
+      // Resetar warning se o tempo mudou
+      if (remaining > warningThreshold) {
+        setHasWarned(false);
+      }
     };
 
     window.addEventListener('rodada-iniciada', handleRodadaEvent as EventListener);
@@ -118,9 +114,9 @@ export const useSynchronizedTimer = (
       window.removeEventListener('rodada-updated', handleRodadaEvent as EventListener);
       window.removeEventListener('rodada-tempo-alterado', handleRodadaEvent as EventListener);
     };
-  }, [calculateTimeRemaining]);
+  }, [calculateTimeRemaining, warningThreshold]);
 
-  // Sincronização quando a página volta ao foco (importante para mobile)
+  // Sincronização quando a página volta ao foco
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isActive) {

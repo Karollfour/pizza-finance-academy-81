@@ -31,6 +31,8 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('Pizzas carregadas:', data?.length || 0);
       setPizzas((data || []) as unknown as Pizza[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar pizzas');
@@ -41,13 +43,17 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
 
   const marcarPizzaPronta = async (equipeId: string, rodadaId: string, saborId?: string) => {
     try {
+      console.log('Marcando pizza como pronta:', { equipeId, rodadaId, saborId });
+      
       const { data, error } = await supabase
         .from('pizzas')
         .insert({
           equipe_id: equipeId,
           rodada_id: rodadaId,
           sabor_id: saborId || null,
-          status: 'pronta'
+          status: 'pronta',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select(`
           *,
@@ -55,8 +61,12 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir pizza:', error);
+        throw error;
+      }
       
+      console.log('Pizza criada com sucesso:', data);
       const novaPizza = data as unknown as Pizza;
       
       // Disparar evento global com informação completa da pizza
@@ -72,7 +82,8 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
         }));
       }
       
-      await fetchPizzas();
+      // Atualizar lista local imediatamente
+      setPizzas(prev => [novaPizza, ...prev]);
       
       return novaPizza;
     } catch (err) {
@@ -83,6 +94,8 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
 
   const avaliarPizza = async (pizzaId: string, resultado: 'aprovada' | 'reprovada', justificativa?: string, avaliador?: string) => {
     try {
+      console.log('Avaliando pizza:', { pizzaId, resultado, justificativa });
+      
       const { error } = await supabase
         .from('pizzas')
         .update({
@@ -94,7 +107,12 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
         })
         .eq('id', pizzaId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao avaliar pizza:', error);
+        throw error;
+      }
+      
+      console.log('Pizza avaliada com sucesso');
       
       // Disparar evento global
       if (typeof window !== 'undefined') {
@@ -109,7 +127,20 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
         }));
       }
       
-      await fetchPizzas();
+      // Atualizar estado local
+      setPizzas(prev => prev.map(pizza => 
+        pizza.id === pizzaId 
+          ? { 
+              ...pizza, 
+              status: 'avaliada' as const, 
+              resultado, 
+              justificativa_reprovacao: justificativa,
+              avaliado_por: avaliador,
+              updated_at: new Date().toISOString()
+            }
+          : pizza
+      ));
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao avaliar pizza');
       throw err;
@@ -146,7 +177,7 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
           ...(equipeId && { filter: `equipe_id=eq.${equipeId}` })
         },
         async (payload) => {
-          console.log('Pizza atualizada:', payload);
+          console.log('Pizza atualizada via realtime:', payload);
           
           if (payload.eventType === 'INSERT') {
             const novaPizza = payload.new as Pizza;
@@ -162,7 +193,12 @@ export const usePizzas = (equipeId?: string, rodadaId?: string) => {
               .single();
             
             if (pizzaCompleta) {
-              setPizzas(prev => [pizzaCompleta as unknown as Pizza, ...prev]);
+              setPizzas(prev => {
+                // Evitar duplicatas
+                const exists = prev.find(p => p.id === pizzaCompleta.id);
+                if (exists) return prev;
+                return [pizzaCompleta as unknown as Pizza, ...prev];
+              });
               
               // Disparar evento para notificar outras telas
               if (typeof window !== 'undefined') {
