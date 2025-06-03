@@ -142,6 +142,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pedidos_rodada: {
+        Row: {
+          ativado_em: string | null
+          concluido_em: string | null
+          created_at: string
+          criado_em: string
+          equipes_que_entregaram: string[] | null
+          id: string
+          ordem: number
+          pizzas_entregues: number
+          rodada_id: string
+          sabor_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ativado_em?: string | null
+          concluido_em?: string | null
+          created_at?: string
+          criado_em?: string
+          equipes_que_entregaram?: string[] | null
+          id?: string
+          ordem: number
+          pizzas_entregues?: number
+          rodada_id: string
+          sabor_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ativado_em?: string | null
+          concluido_em?: string | null
+          created_at?: string
+          criado_em?: string
+          equipes_que_entregaram?: string[] | null
+          id?: string
+          ordem?: number
+          pizzas_entregues?: number
+          rodada_id?: string
+          sabor_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_rodada_rodada_id_fkey"
+            columns: ["rodada_id"]
+            isOneToOne: false
+            referencedRelation: "rodadas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_rodada_sabor_id_fkey"
+            columns: ["sabor_id"]
+            isOneToOne: false
+            referencedRelation: "sabores_pizza"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pizzas: {
         Row: {
           avaliado_por: string | null
