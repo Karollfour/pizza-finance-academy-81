@@ -137,18 +137,26 @@ const LojinhaScreen = () => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 6 Abas */}
+        {/* Conteúdo Principal com 10 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5 md:grid-cols-10">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
+            <TabsTrigger value="gestao2">👥 Gestão2</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
+            <TabsTrigger value="itens2">📦 Itens2</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
+            <TabsTrigger value="sabores2">🍕 Sabores2</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
+            <TabsTrigger value="vendas2">💰 Vendas2</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
-            <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
+            <TabsTrigger value="dashboard2">📊 Dashboard2</TabsTrigger>
           </TabsList>
           
           <TabsContent value="gestao" className="mt-6">
+            <GestaoEquipes />
+          </TabsContent>
+          
+          <TabsContent value="gestao2" className="mt-6">
             <GestaoEquipes />
           </TabsContent>
           
@@ -156,7 +164,15 @@ const LojinhaScreen = () => {
             <GerenciadorItens />
           </TabsContent>
           
+          <TabsContent value="itens2" className="mt-6">
+            <GerenciadorItens />
+          </TabsContent>
+          
           <TabsContent value="sabores" className="mt-6">
+            <GerenciadorSabores />
+          </TabsContent>
+          
+          <TabsContent value="sabores2" className="mt-6">
             <GerenciadorSabores />
           </TabsContent>
           
@@ -164,12 +180,16 @@ const LojinhaScreen = () => {
             <VendasLoja />
           </TabsContent>
           
+          <TabsContent value="vendas2" className="mt-6">
+            <VendasLoja />
+          </TabsContent>
+          
           <TabsContent value="dashboard" className="mt-6">
             <DashboardLojinha />
           </TabsContent>
           
-          <TabsContent value="historico" className="mt-6">
-            <HistoricoLoja />
+          <TabsContent value="dashboard2" className="mt-6">
+            <DashboardLojinha />
           </TabsContent>
         </Tabs>
 
