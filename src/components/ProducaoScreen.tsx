@@ -53,6 +53,9 @@ const ProducaoScreen = () => {
     loading: loadingSequencia
   } = useSequenciaSabores();
 
+  // Estado para controle do modo fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Sincronização global ativa
   const {
     forceGlobalSync
@@ -84,6 +87,37 @@ const ProducaoScreen = () => {
   });
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
+
+  // Controle do modo fullscreen
+  const enterFullscreen = () => {
+    setIsFullscreen(true);
+  };
+
+  const exitFullscreen = () => {
+    setIsFullscreen(false);
+  };
+
+  // Listener para tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        exitFullscreen();
+      }
+    };
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isFullscreen]);
+
   const handleIniciarRodada = async () => {
     try {
       if (!rodadaAtual) {
@@ -358,6 +392,240 @@ const ProducaoScreen = () => {
       return '#6b7280'; // cinza padrão
     }
   };
+
+  // Componente Fullscreen Overlay
+  const FullscreenOverlay = () => {
+    if (!isFullscreen || !rodadaAtual) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8">
+        {/* Botão para sair do fullscreen */}
+        <button
+          onClick={exitFullscreen}
+          className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition-colors"
+          title="Sair do modo tela cheia (ESC)"
+        >
+          ✕
+        </button>
+
+        {/* Timer Fullscreen */}
+        <div className="text-center mb-8">
+          <div className={`text-8xl lg:text-9xl font-bold mb-4 ${timeColor}`}>
+            {formattedTime}
+          </div>
+          <div className="w-96 lg:w-[500px]">
+            <Progress value={progressPercentage} className="h-4" />
+          </div>
+        </div>
+
+        {/* Sabores Fullscreen */}
+        {historico.length > 0 && (
+          <div className="w-full max-w-7xl">
+            {/* Rodada Ativa - Sistema Automático */}
+            {rodadaAtual.status === 'ativa' && saborAtual ? (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                {/* Sabor Atual */}
+                <div className="xl:col-span-2">
+                  <Card className="shadow-xl border-4 border-green-400 bg-green-50">
+                    <CardContent className="p-8 text-center">
+                      <Badge className="bg-green-500 text-white text-lg px-6 py-3 mb-6">
+                        🍕 EM PRODUÇÃO
+                      </Badge>
+                      <div className="text-8xl mb-6">🍕</div>
+                      <h3 className="font-bold text-green-700 mb-4 text-5xl lg:text-6xl">
+                        {getSaborNome(saborAtual)}
+                      </h3>
+                      {getSaborDescricao(saborAtual) && (
+                        <p className="text-xl text-green-600 mb-4">
+                          {getSaborDescricao(saborAtual)}
+                        </p>
+                      )}
+                      <div className="text-xl text-green-600 mb-4">
+                        Pizza #{saborAtualIndex + 1} de {historico.length}
+                      </div>
+                      <div className="bg-green-100 p-4 rounded-lg">
+                        <div className="text-lg text-green-600 font-medium">
+                          Próxima troca: {formatarTempo(tempoProximaTroca)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Próximos Sabores */}
+                <div className="space-y-6">
+                  {proximoSabor ? (
+                    <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
+                      <CardContent className="p-6 text-center">
+                        <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4">
+                          PRÓXIMO 1
+                        </Badge>
+                        <div className="text-6xl mb-4">🍕</div>
+                        <h4 className="font-bold text-blue-700 text-3xl lg:text-4xl">
+                          {getSaborNome(proximoSabor)}
+                        </h4>
+                        <div className="text-lg text-blue-600">
+                          Pizza #{saborAtualIndex + 2}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="shadow-xl border-4 border-gray-200">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-6xl mb-4">🏁</div>
+                        <p className="text-lg text-gray-500">Último sabor</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {segundoProximoSabor && (
+                    <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
+                      <CardContent className="p-6 text-center">
+                        <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4">
+                          PRÓXIMO 2
+                        </Badge>
+                        <div className="text-6xl mb-4">🍕</div>
+                        <h4 className="font-bold text-purple-700 text-3xl lg:text-4xl">
+                          {getSaborNome(segundoProximoSabor)}
+                        </h4>
+                        <div className="text-lg text-purple-600">
+                          Pizza #{saborAtualIndex + 3}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Rodada Aguardando - Primeiros 3 Sabores */
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="xl:col-span-2">
+                  <Card className="shadow-xl border-4 border-yellow-400 bg-yellow-50">
+                    <CardContent className="p-8 text-center">
+                      <Badge className="bg-yellow-500 text-white text-lg px-6 py-3 mb-6">
+                        🍕 PRIMEIRO SABOR
+                      </Badge>
+                      <div className="text-8xl mb-6">🍕</div>
+                      <h3 className="font-bold text-yellow-700 mb-4 text-5xl lg:text-6xl">
+                        {getSaborNome(historico[0])}
+                      </h3>
+                      {getSaborDescricao(historico[0]) && (
+                        <p className="text-xl text-yellow-600 mb-4">
+                          {getSaborDescricao(historico[0])}
+                        </p>
+                      )}
+                      <div className="text-xl text-yellow-600">
+                        Pizza #{historico[0]?.ordem || 1}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-6">
+                  {historico[1] && (
+                    <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
+                      <CardContent className="p-6 text-center">
+                        <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4">
+                          PRÓXIMO 2
+                        </Badge>
+                        <div className="text-6xl mb-4">🍕</div>
+                        <h4 className="font-bold text-blue-700 text-3xl lg:text-4xl">
+                          {getSaborNome(historico[1])}
+                        </h4>
+                        <div className="text-lg text-blue-600">
+                          Pizza #{historico[1].ordem}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {historico[2] && (
+                    <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
+                      <CardContent className="p-6 text-center">
+                        <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4">
+                          PRÓXIMO 3
+                        </Badge>
+                        <div className="text-6xl mb-4">🍕</div>
+                        <h4 className="font-bold text-purple-700 text-3xl lg:text-4xl">
+                          {getSaborNome(historico[2])}
+                        </h4>
+                        <div className="text-lg text-purple-600">
+                          Pizza #{historico[2].ordem}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Histórico Visual Fullscreen */}
+            {rodadaAtual.status === 'ativa' && historico.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-orange-200">
+                <div className="grid grid-cols-8 md:grid-cols-12 lg:grid-cols-16 gap-4">
+                  {historico.map((sabor, index) => {
+                    const saborNome = getSaborNome(sabor);
+                    const cor = getSaborCorRodadaAtual(saborNome);
+                    const isAtual = index === saborAtualIndex;
+                    const isPassado = index < saborAtualIndex;
+
+                    if (!isPassado && !isAtual) {
+                      return null;
+                    }
+
+                    return (
+                      <div
+                        key={sabor.id}
+                        className={`relative group cursor-pointer transition-all duration-200 ${
+                          isAtual ? 'scale-125 z-10' : ''
+                        }`}
+                        title={`Pizza #${index + 1}: ${saborNome}`}
+                      >
+                        <div
+                          className={`w-12 h-12 rounded-full border-4 flex items-center justify-center text-lg font-bold text-white shadow-lg ${
+                            isAtual 
+                              ? 'border-yellow-600 animate-pulse' 
+                              : 'border-gray-400 opacity-60'
+                          }`}
+                          style={{ backgroundColor: cor }}
+                        >
+                          {index + 1}
+                        </div>
+                        
+                        {isAtual && (
+                          <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white animate-pulse bg-orange-400"></div>
+                        )}
+                        {isPassado && (
+                          <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-500 rounded-full border-2 border-white">
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Botão Encerrar Rodada no Fullscreen */}
+        {rodadaAtual.status === 'ativa' && (
+          <div className="absolute bottom-8 right-8">
+            <Button 
+              onClick={handleFinalizarRodada}
+              className="bg-red-500 hover:bg-red-600 text-white text-lg px-6 py-3"
+            >
+              ⏹️ Encerrar Rodada
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -449,9 +717,18 @@ const ProducaoScreen = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-orange-600 text-center text-2xl">🍕 Sabores da Rodada</h3>
                     
-                    {/* Botões de controle da rodada */}
+                    {/* Botões de controle da rodada - MODIFICADO */}
                     {rodadaAtual.status === 'ativa' && (
                       <div className="flex gap-2">
+                        <Button 
+                          onClick={enterFullscreen}
+                          size="sm" 
+                          variant="outline"
+                          className="text-sm px-3 py-2 h-9 text-blue-600 hover:text-blue-700"
+                          title="Modo tela cheia"
+                        >
+                          ⛶
+                        </Button>
                         <Button 
                           onClick={handleFinalizarRodada}
                           size="sm" 
@@ -558,8 +835,7 @@ const ProducaoScreen = () => {
 
                         {historico[2] && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                             <CardContent className="p-3 text-center">
-                              <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 3
-                      </Badge>
+                              <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 3</Badge>
                               <div className="text-2xl mb-2 my-0">🍕</div>
                               <h4 className="font-bold text-purple-700 text-4xl my-[12px]">
                                 {getSaborNome(historico[2])}
@@ -712,6 +988,9 @@ const ProducaoScreen = () => {
           </Button>
         </div>
       </div>
+
+      {/* Overlay Fullscreen */}
+      <FullscreenOverlay />
     </div>;
 };
 export default ProducaoScreen;
