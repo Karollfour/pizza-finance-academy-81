@@ -685,7 +685,7 @@ const ProducaoScreen = () => {
                             <CardContent className="p-3 text-center bg-orange-100">
                               <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 1</Badge>
                               <div className="text-2xl mb-2">🍕</div>
-                              <h4 className="font-bold text-blue-700 text-3xl">
+                              <h4 className="font-bold text-3xl text-sky-700">
                                 {getSaborNome(proximoSabor)}
                               </h4>
                               <div className="text-xs text-blue-600">
