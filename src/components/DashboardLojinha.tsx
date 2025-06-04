@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -9,6 +8,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useTodasRodadas } from '@/hooks/useTodasRodadas';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TaktTimeChart from './TaktTimeChart';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -127,29 +127,27 @@ const DashboardLojinha = () => {
       {/* Seletor de Rodada para Análise de Pizzas */}
       <Card>
         <CardHeader>
-          <CardTitle>🍕 Análise de Pizzas por Rodada</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>🍕 Análise de Pizzas por Rodada</span>
+            <Select 
+              value={rodadaSelecionada?.toString() || "todas"} 
+              onValueChange={(value) => setRodadaSelecionada(value === "todas" ? null : parseInt(value))}
+            >
+              <SelectTrigger className="w-48 bg-white">
+                <SelectValue placeholder="Selecione uma rodada" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="todas">Todas as Rodadas</SelectItem>
+                {rodadasDisponiveis.map(numeroRodada => (
+                  <SelectItem key={numeroRodada} value={numeroRodada.toString()}>
+                    Rodada {numeroRodada}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Button
-              variant={rodadaSelecionada === null ? "default" : "outline"}
-              onClick={() => setRodadaSelecionada(null)}
-              size="sm"
-            >
-              Todas as Rodadas
-            </Button>
-            {rodadasDisponiveis.map(numeroRodada => (
-              <Button
-                key={numeroRodada}
-                variant={rodadaSelecionada === numeroRodada ? "default" : "outline"}
-                onClick={() => setRodadaSelecionada(numeroRodada)}
-                size="sm"
-              >
-                Rodada {numeroRodada}
-              </Button>
-            ))}
-          </div>
-
           {/* Gráfico de Pizzas por Equipe */}
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={rodadaSelecionada ? dadosPizzasPorRodada(rodadaSelecionada) : dadosGeraisPorEquipe}>
