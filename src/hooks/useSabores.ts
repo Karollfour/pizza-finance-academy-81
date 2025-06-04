@@ -250,6 +250,7 @@ export const useSabores = () => {
 
   const cleanupChannel = () => {
     if (channelRef.current && isSubscribedRef.current) {
+      console.log('Removendo canal de sabores');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
       isSubscribedRef.current = false;
@@ -305,14 +306,18 @@ export const useSabores = () => {
         }
       );
 
+    channelRef.current = channel;
+
     // Subscribe only once
     if (!isSubscribedRef.current) {
       channel.subscribe((status) => {
+        console.log('Status da subscrição de sabores:', status);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
         }
       });
-      channelRef.current = channel;
     }
 
     return () => {

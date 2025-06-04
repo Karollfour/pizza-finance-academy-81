@@ -46,6 +46,7 @@ export const usePizzasParaAvaliacao = (equipeId?: string) => {
 
   const cleanupChannel = () => {
     if (channelRef.current && isSubscribedRef.current) {
+      console.log('Removendo canal de pizzas para avaliação');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
       isSubscribedRef.current = false;
@@ -103,13 +104,18 @@ export const usePizzasParaAvaliacao = (equipeId?: string) => {
         }
       );
 
+    channelRef.current = channel;
+
+    // Subscribe only once
     if (!isSubscribedRef.current) {
       channel.subscribe((status) => {
+        console.log('Status da subscrição de pizzas para avaliação:', status);
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
         }
       });
-      channelRef.current = channel;
     }
 
     return () => {
