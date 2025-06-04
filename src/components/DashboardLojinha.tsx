@@ -9,6 +9,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useTodasRodadas } from '@/hooks/useTodasRodadas';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import TaktTimeChart from './TaktTimeChart';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -120,6 +121,9 @@ const DashboardLojinha = () => {
 
   return (
     <div className="space-y-6">
+      {/* Novo gráfico de Takt Time */}
+      <TaktTimeChart />
+
       {/* Seletor de Rodada para Análise de Pizzas */}
       <Card>
         <CardHeader>
