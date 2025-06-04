@@ -198,11 +198,22 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       console.log('Pausando rodada...');
-      await pausarRodada(rodadaAtual.id);
+      const { error } = await supabase
+        .from('rodadas')
+        .update({ status: 'pausada' })
+        .eq('id', rodadaAtual.id);
+      
+      if (error) throw error;
+      
       setTimeout(() => {
         forceGlobalSync();
         refetchRodadas();
       }, 500);
+      
+      toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
+        duration: 3000,
+        position: 'top-center'
+      });
     } catch (error) {
       console.error('Erro ao pausar rodada:', error);
       toast.error('Erro ao pausar rodada. Tente novamente.', {
