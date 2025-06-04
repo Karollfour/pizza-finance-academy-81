@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipe } from '@/types/database';
 import { toast } from 'sonner';
@@ -7,7 +7,9 @@ import { toast } from 'sonner';
 export const useEquipes = () => {
   const [equipes, setEquipes] = useState<Equipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   const fetchEquipes = async () => {
     try {
@@ -15,62 +17,64 @@ export const useEquipes = () => {
       const { data, error } = await supabase
         .from('equipes')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at');
 
       if (error) throw error;
-
-      // Mapear os dados para incluir propriedades opcionais com valores padrão
-      const equipesComPropriedades = (data || []).map(equipe => ({
-        ...equipe,
-        cor_tema: (equipe as any).cor_tema || '#3B82F6',
-        emblema: (equipe as any).emblema || '🏆',
-        ordem: (equipe as any).ordem || 0
-      }));
-
-      setEquipes(equipesComPropriedades);
-    } catch (error) {
-      console.error('Erro ao buscar equipes:', error);
-      setError('Erro ao carregar equipes');
+      setEquipes((data || []) as Equipe[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar equipes');
     } finally {
       setLoading(false);
     }
   };
 
-  const criarEquipe = async (novaEquipe: Omit<Equipe, 'id' | 'created_at'>) => {
+  const criarEquipe = async (nome: string, saldoInicial: number, professorResponsavel: string) => {
     try {
+      const cores = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+      const emblemas = ['⚡', '🔥', '🌟', '🚀', '💎', '🎯'];
+      
+      const corTema = cores[Math.floor(Math.random() * cores.length)];
+      const emblema = emblemas[Math.floor(Math.random() * emblemas.length)];
+
       const { data, error } = await supabase
         .from('equipes')
-        .insert([novaEquipe])
+        .insert({
+          nome,
+          saldo_inicial: saldoInicial,
+          professor_responsavel: professorResponsavel,
+          cor_tema: corTema,
+          emblema
+        })
         .select()
         .single();
 
       if (error) throw error;
-
-      await fetchEquipes();
-      toast.success('Equipe criada com sucesso!');
-      return data;
-    } catch (error) {
-      console.error('Erro ao criar equipe:', error);
-      toast.error('Erro ao criar equipe');
-      throw error;
+      
+      const novaEquipe = data as Equipe;
+      setEquipes(prev => [...prev, novaEquipe]);
+      
+      return novaEquipe;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar equipe');
+      throw err;
     }
   };
 
-  const atualizarEquipe = async (id: string, dadosAtualizados: Partial<Equipe>) => {
+  const atualizarEquipe = async (id: string, dados: Partial<Equipe>) => {
     try {
       const { error } = await supabase
         .from('equipes')
-        .update(dadosAtualizados)
+        .update(dados)
         .eq('id', id);
 
       if (error) throw error;
-
-      await fetchEquipes();
-      toast.success('Equipe atualizada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao atualizar equipe:', error);
-      toast.error('Erro ao atualizar equipe');
-      throw error;
+      
+      setEquipes(prev => prev.map(equipe => 
+        equipe.id === id ? { ...equipe, ...dados } : equipe
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar equipe');
+      throw err;
     }
   };
 
@@ -82,58 +86,89 @@ export const useEquipes = () => {
         .eq('id', id);
 
       if (error) throw error;
-
-      await fetchEquipes();
-      toast.success('Equipe removida com sucesso!');
-    } catch (error) {
-      console.error('Erro ao remover equipe:', error);
-      toast.error('Erro ao remover equipe');
-      throw error;
+      
+      setEquipes(prev => prev.filter(equipe => equipe.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao remover equipe');
+      throw err;
     }
   };
 
-  useEffect(() => {
-    fetchEquipes();
+  const cleanupChannel = () => {
+    if (channelRef.current && isSubscribedRef.current) {
+      console.log('Removendo canal de equipes');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+      isSubscribedRef.current = false;
+    }
+  };
 
-    // Escutar mudanças em tempo real
+  // Escutar mudanças em tempo real
+  useEffect(() => {
+    // Cleanup any existing subscription
+    cleanupChannel();
+
+    // Create unique channel name
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channelName = `equipes-realtime-${uniqueId}`;
+    
     const channel = supabase
-      .channel('equipes-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'equipes' },
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'equipes'
+        },
         (payload) => {
-          console.log('Mudança detectada nas equipes:', payload);
+          console.log('Equipe atualizada:', payload);
           
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            // Notificar ganho se ganho_total aumentou
-            const oldGanho = payload.old?.ganho_total || 0;
-            const newGanho = payload.new?.ganho_total || 0;
-            
-            if (newGanho > oldGanho) {
-              const equipeNome = payload.new.nome;
-              const ganhoAdicionado = newGanho - oldGanho;
-              toast.success(`🎉 ${equipeNome} ganhou R$ ${ganhoAdicionado.toFixed(2)}!`);
-            }
+          if (payload.eventType === 'INSERT') {
+            const novaEquipe = payload.new as Equipe;
+            setEquipes(prev => [...prev, novaEquipe]);
+          } else if (payload.eventType === 'UPDATE') {
+            const equipeAtualizada = payload.new as Equipe;
+            setEquipes(prev => prev.map(equipe => 
+              equipe.id === equipeAtualizada.id ? equipeAtualizada : equipe
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const equipeRemovida = payload.old as Equipe;
+            setEquipes(prev => prev.filter(equipe => equipe.id !== equipeRemovida.id));
           }
-          
-          fetchEquipes();
         }
-      )
-      .subscribe();
+      );
+
+    channelRef.current = channel;
+
+    // Subscribe only once
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        console.log('Status da subscrição de equipes:', status);
+        if (status === 'SUBSCRIBED') {
+          isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+        }
+      });
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanupChannel();
     };
   }, []);
 
-  const refetch = fetchEquipes;
+  useEffect(() => {
+    fetchEquipes();
+  }, []);
 
   return {
     equipes,
     loading,
     error,
-    refetch,
     criarEquipe,
     atualizarEquipe,
-    removerEquipe
+    removerEquipe,
+    refetch: fetchEquipes
   };
 };

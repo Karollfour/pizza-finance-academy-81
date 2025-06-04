@@ -7,7 +7,7 @@ interface RealtimeSyncOptions {
 }
 
 export const useRealtimeSync = (options: RealtimeSyncOptions = {}) => {
-  // Usar o sistema centralizado de realtime
+  // Use the centralized realtime system
   const { isConnected, connectionQuality, forceReconnect } = useGlobalRealtime({
     onConnectionChange: options.onConnectionChange,
     enableHeartbeat: true,
