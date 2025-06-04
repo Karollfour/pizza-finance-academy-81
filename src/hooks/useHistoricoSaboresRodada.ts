@@ -20,6 +20,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
+  const lastFetchRef = useRef<number>(0);
 
   const fetchHistorico = async (silent = false) => {
     if (!rodadaId) {
@@ -27,6 +28,13 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
       setLoading(false);
       return;
     }
+
+    // Evitar múltiplas requisições muito próximas
+    const now = Date.now();
+    if (now - lastFetchRef.current < 1000) {
+      return;
+    }
+    lastFetchRef.current = now;
 
     try {
       if (!silent) setLoading(true);
@@ -47,7 +55,11 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
         sabor: item.sabor
       })) as HistoricoSaborRodada[];
       
-      setHistorico(historicoFormatado);
+      // Só atualizar se realmente mudou
+      setHistorico(prev => {
+        const changed = JSON.stringify(prev) !== JSON.stringify(historicoFormatado);
+        return changed ? historicoFormatado : prev;
+      });
       setError(null);
       
     } catch (err) {
@@ -66,7 +78,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
     }
   };
 
-  // Escutar mudanças em tempo real
+  // Escutar mudanças em tempo real com debounce
   useEffect(() => {
     if (!rodadaId) return;
 
@@ -76,6 +88,8 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
     // Create unique channel name
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channelName = `historico-sabores-${rodadaId}-${uniqueId}`;
+    
+    let timeoutId: NodeJS.Timeout;
     
     const channel = supabase
       .channel(channelName)
@@ -89,8 +103,12 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
         },
         (payload) => {
           console.log('Histórico de sabores atualizado:', payload);
-          // Refetch imediato para garantir dados atualizados
-          fetchHistorico(true);
+          
+          // Debounce para evitar atualizações muito frequentes
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            fetchHistorico(true);
+          }, 500);
         }
       );
 
@@ -104,24 +122,29 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
     }
 
     return () => {
+      clearTimeout(timeoutId);
       cleanupChannel();
     };
   }, [rodadaId]);
 
-  // Escutar eventos globais para atualização imediata
+  // Escutar eventos globais com debounce
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const handleGlobalDataChange = (event: CustomEvent) => {
       const { table } = event.detail;
       if (table === 'historico_sabores_rodada' && rodadaId) {
-        setTimeout(() => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
           fetchHistorico(true);
-        }, 100);
+        }, 300);
       }
     };
 
     window.addEventListener('global-data-changed', handleGlobalDataChange as EventListener);
 
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
   }, [rodadaId]);

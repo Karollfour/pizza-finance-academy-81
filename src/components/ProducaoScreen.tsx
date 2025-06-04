@@ -197,26 +197,11 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       console.log('Pausando rodada...');
-      const {
-        error
-      } = await supabase.from('rodadas').update({
-        status: 'pausada'
-      }).eq('id', rodadaAtual.id);
-      if (error) throw error;
-
-      // Disparar evento customizado para sincronização
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('rodada-pausada', {
-          detail: {
-            rodadaId: rodadaAtual.id,
-            timestamp: new Date().toISOString()
-          }
-        }));
-      }
-      toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
-        duration: 3000,
-        position: 'top-center'
-      });
+      await pausarRodada(rodadaAtual.id);
+      setTimeout(() => {
+        forceGlobalSync();
+        refetchRodadas();
+      }, 500);
     } catch (error) {
       console.error('Erro ao pausar rodada:', error);
       toast.error('Erro ao pausar rodada. Tente novamente.', {
