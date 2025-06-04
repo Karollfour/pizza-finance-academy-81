@@ -656,8 +656,7 @@ const ProducaoScreen = () => {
                   
 
                   {/* Rodada Ativa - Sistema Automático */}
-                  {rodadaAtual.status === 'ativa' && saborAtual ? 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2 my-[5px]">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
@@ -783,7 +782,7 @@ const ProducaoScreen = () => {
                                   <Badge className="bg-white/20 text-white text-xs px-2 py-1 mb-2">
                                     #{index + 1}
                                   </Badge>
-                                  <div className="text-3xl mb-2">🍕</div>
+                                  
                                   <h4 className="font-bold text-white text-lg">
                                     {saborNome.length > 12 ? saborNome.substring(0, 12) + '...' : saborNome}
                                   </h4>
