@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +38,18 @@ const AvaliadorScreen = () => {
 
   const pizzasPendentes = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
+
+  // Função para obter o número do pedido baseado na ordem cronológica
+  const getNumeroPedido = (pizza: any) => {
+    // Ordenar todas as pizzas da equipe na rodada por data de criação
+    const todasPizzasOrdenadas = pizzas
+      .filter(p => p.equipe_id === pizza.equipe_id && p.rodada_id === pizza.rodada_id)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    // Encontrar o índice da pizza atual na lista ordenada
+    const indice = todasPizzasOrdenadas.findIndex(p => p.id === pizza.id);
+    return indice + 1;
+  };
 
   const handleEvaluation = async (pizzaId: string, approved: boolean) => {
     try {
@@ -214,7 +225,7 @@ const AvaliadorScreen = () => {
           <TabsContent value="pending" className="space-y-6">
             {pizzasPendentes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pizzasPendentes.map((pizza, index) => (
+                {pizzasPendentes.map((pizza) => (
                   <Card key={pizza.id} className="shadow-lg border-2 border-yellow-200">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
@@ -224,7 +235,7 @@ const AvaliadorScreen = () => {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        <span className="font-bold text-lg text-gray-800">Pedido #{index + 1}</span> • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
+                        <span className="font-bold text-lg text-gray-800">Pedido #{getNumeroPedido(pizza)}</span> • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -305,7 +316,7 @@ const AvaliadorScreen = () => {
               <div className="space-y-4">
                 {pizzasAvaliadas
                   .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                  .map((pizza, index) => (
+                  .map((pizza) => (
                     <Card key={pizza.id} className="shadow-lg border-2 border-blue-200">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -314,7 +325,7 @@ const AvaliadorScreen = () => {
                             <div>
                               <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
                               <p className="text-sm text-gray-600">
-                                Pedido #{index + 1} • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
+                                Pedido #{getNumeroPedido(pizza)} • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
                               </p>
                               <p className="text-xs text-gray-500">
                                 Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
