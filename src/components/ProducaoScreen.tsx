@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -669,7 +668,7 @@ const ProducaoScreen = () => {
                   {/* Rodada Ativa - Sistema Automático */}
                   {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
-                      <div className="lg:col-span-2">
+                      <div className="lg:col-span-2 my-[5px]">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
                           <CardContent className="p-6 text-center my-[10px]">
                             <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
@@ -917,5 +916,4 @@ const ProducaoScreen = () => {
       <FullscreenOverlay />
     </div>;
 };
-
 export default ProducaoScreen;
