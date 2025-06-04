@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -139,7 +140,8 @@ const TaktTimeChart = () => {
           corEquipe: equipe.cor_tema || '#3b82f6',
           tempoMedioRodada: tempoMedioPorPizza,
           dentroDoTempo: false,
-          desempenho: 'Sem dados'
+          desempenho: 'Sem dados',
+          ordem: equipe.ordem || 999 // Usar ordem da equipe ou valor alto para equipes sem ordem definida
         });
         return;
       }
@@ -184,9 +186,18 @@ const TaktTimeChart = () => {
         corEquipe: equipe.cor_tema || '#3b82f6',
         tempoMedioRodada: tempoMedioPorPizza,
         dentroDoTempo: dentroDoTempo,
-        desempenho: desempenho
+        desempenho: desempenho,
+        ordem: equipe.ordem || 999 // Usar ordem da equipe ou valor alto para equipes sem ordem definida
       });
     });
+
+    // Ordenar dados pelo campo "ordem" (identificador da ordem de equipe)
+    dadosProcessados.sort((a, b) => a.ordem - b.ordem);
+    
+    console.log('Dados ordenados por ordem da equipe:', dadosProcessados.map(d => ({
+      equipe: d.equipeNome,
+      ordem: d.ordem
+    })));
 
     return { 
       dados: dadosProcessados, 
@@ -291,14 +302,13 @@ const TaktTimeChart = () => {
                   strokeDasharray="4 4"
                   label={{ 
                     value: `Tempo Médio da Rodada: ${dadosTaktTimePorEquipe.tempoMedioRodada.toFixed(1)}s`, 
-                    position: 'topRight',
+                    position: 'top',
                     fontSize: 12
                   }}
                 />
                 
                 <Bar 
                   dataKey="taktTimeMedio" 
-                  fill={(entry: any) => obterCorBarra(entry)}
                   name="Takt Time Médio"
                   shape={(props: any) => {
                     const { fill, ...rest } = props;
@@ -341,7 +351,6 @@ const TaktTimeChart = () => {
               <h4 className="font-semibold text-gray-800 mb-3">📈 Ranking de Desempenho das Equipes</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 {dadosTaktTimePorEquipe.dados
-                  .sort((a, b) => a.taktTimeMedio - b.taktTimeMedio)
                   .map((equipe, index) => (
                   <div key={equipe.equipeNome} className="bg-white border border-gray-200 p-3 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
