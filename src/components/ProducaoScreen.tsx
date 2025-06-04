@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import VisualizadorSaboresRodada from './VisualizadorSaboresRodada';
 import HistoricoTodasRodadas from './HistoricoTodasRodadas';
 import HistoricoSaboresAutomatico from './HistoricoSaboresAutomatico';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -566,7 +567,7 @@ const ProducaoScreen = () => {
       </div>;
   };
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-red-600 mb-2">💻ADMINISTRAÇÃO</h1>
           <p className="text-gray-600">Acompanhe o status das pizzas em tempo real</p>
@@ -916,4 +917,5 @@ const ProducaoScreen = () => {
       <FullscreenOverlay />
     </div>;
 };
+
 export default ProducaoScreen;
