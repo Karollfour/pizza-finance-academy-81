@@ -19,7 +19,6 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
   const lastFetchRef = useRef<number>(0);
 
   const fetchHistorico = async (silent = false) => {
@@ -71,18 +70,21 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   };
 
   const cleanupChannel = () => {
-    if (channelRef.current && isSubscribedRef.current) {
+    if (channelRef.current) {
+      console.log('Removendo canal do histórico de sabores');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
-      isSubscribedRef.current = false;
     }
   };
 
-  // Escutar mudanças em tempo real com debounce
+  // Escutar mudanças em tempo real com debounce - CORRIGIDO
   useEffect(() => {
-    if (!rodadaId) return;
+    if (!rodadaId) {
+      cleanupChannel();
+      return;
+    }
 
-    // Cleanup any existing subscription
+    // Cleanup any existing subscription first
     cleanupChannel();
 
     // Create unique channel name
@@ -112,14 +114,15 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
         }
       );
 
-    if (!isSubscribedRef.current) {
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          isSubscribedRef.current = true;
-        }
-      });
-      channelRef.current = channel;
-    }
+    // Subscribe apenas uma vez
+    channel.subscribe((status) => {
+      console.log('Status da subscrição do histórico:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('Canal do histórico subscrito com sucesso');
+      }
+    });
+    
+    channelRef.current = channel;
 
     return () => {
       clearTimeout(timeoutId);

@@ -19,12 +19,12 @@ export const useEquipes = () => {
 
       if (error) throw error;
 
-      // Mapear os dados para incluir propriedades opcionais
+      // Mapear os dados para incluir propriedades opcionais com valores padrão
       const equipesComPropriedades = (data || []).map(equipe => ({
         ...equipe,
-        cor_tema: equipe.cor_tema || '#3B82F6',
-        emblema: equipe.emblema || '🏆',
-        ordem: equipe.ordem || 0
+        cor_tema: (equipe as any).cor_tema || '#3B82F6',
+        emblema: (equipe as any).emblema || '🏆',
+        ordem: (equipe as any).ordem || 0
       }));
 
       setEquipes(equipesComPropriedades);
