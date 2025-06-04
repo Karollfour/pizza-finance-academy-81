@@ -660,7 +660,7 @@ const ProducaoScreen = () => {
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2 my-[5px]">
                         <Card className="shadow-lg border-2 border-green-400 bg-green-50">
-                          <CardContent className="p-6 text-center my-[10px]">
+                          <CardContent className="p-6 text-center my-[10px] bg-green-100">
                             <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
                             <h3 className="font-bold text-green-700 mb-2 text-4xl">
