@@ -734,14 +734,12 @@ const ProducaoScreen = () => {
 
         </div>
 
-        {/* Conteúdo Principal com 6 Abas */}
+        {/* Conteúdo Principal com 4 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="controle">🎮 Controle</TabsTrigger>
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
-            <TabsTrigger value="itens">📦 Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
-            <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
           </TabsList>
           
@@ -753,16 +751,8 @@ const ProducaoScreen = () => {
             <GestaoEquipes />
           </TabsContent>
           
-          <TabsContent value="itens" className="mt-6">
-            <GerenciadorItens />
-          </TabsContent>
-          
           <TabsContent value="sabores" className="mt-6">
             <GerenciadorSabores />
-          </TabsContent>
-          
-          <TabsContent value="vendas" className="mt-6">
-            <VendasLoja />
           </TabsContent>
           
           <TabsContent value="dashboard" className="mt-6">
