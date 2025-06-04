@@ -1,17 +1,18 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useTodasRodadas } from '@/hooks/useTodasRodadas';
+import { obterConfigRodada, RodadaConfig } from '@/utils/rodadaConfig';
 
 const TaktTimeChart = () => {
   const { pizzas } = usePizzas();
   const { equipes } = useEquipes();
   const { rodadas } = useTodasRodadas();
   const [rodadaSelecionada, setRodadaSelecionada] = useState<string>('');
+  const [configRodada, setConfigRodada] = useState<RodadaConfig | null>(null);
 
   console.log('TaktTimeChart - Dados carregados:', {
     totalPizzas: pizzas.length,
@@ -53,14 +54,31 @@ const TaktTimeChart = () => {
     return rodadaEncontrada;
   }, [rodadaSelecionada, rodadasDisponiveis]);
 
+  // Carregar configuração da rodada quando ela muda
+  useEffect(() => {
+    const carregarConfig = async () => {
+      if (rodadaAtual) {
+        console.log('Carregando configuração para rodada:', rodadaAtual.numero);
+        const config = await obterConfigRodada(rodadaAtual.id);
+        setConfigRodada(config);
+        console.log('Configuração carregada:', config);
+      } else {
+        setConfigRodada(null);
+      }
+    };
+
+    carregarConfig();
+  }, [rodadaAtual]);
+
   // Calcular dados do Takt Time por equipe
   const dadosTaktTime = useMemo(() => {
-    if (!rodadaAtual) {
-      console.log('Sem rodada atual para calcular Takt Time');
+    if (!rodadaAtual || !configRodada) {
+      console.log('Sem rodada atual ou configuração para calcular Takt Time');
       return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
     }
 
     console.log('Calculando Takt Time por equipe para rodada:', rodadaAtual.numero);
+    console.log('Configuração da rodada:', configRodada);
 
     // Filtrar pizzas da rodada específica que foram enviadas para avaliação
     const pizzasDaRodada = pizzas.filter(pizza => 
@@ -69,11 +87,6 @@ const TaktTimeChart = () => {
     );
 
     console.log(`Pizzas enviadas para avaliação na rodada ${rodadaAtual.numero}:`, pizzasDaRodada.length);
-
-    if (pizzasDaRodada.length === 0) {
-      console.log('Nenhuma pizza encontrada para a rodada');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
-    }
 
     // Obter horário de início da rodada
     const inicioRodada = rodadaAtual.iniciou_em ? new Date(rodadaAtual.iniciou_em).getTime() : null;
@@ -85,14 +98,14 @@ const TaktTimeChart = () => {
 
     console.log('Início da rodada:', new Date(inicioRodada).toISOString());
 
-    // MUDANÇA PRINCIPAL: Calcular o total de pizzas da rodada baseado no que foi realmente enviado
-    // Este é o número total de pizzas que deveriam ser feitas na rodada (definido implicitamente pelo admin)
-    const totalPizzasRodada = pizzasDaRodada.length;
+    // CORREÇÃO PRINCIPAL: Usar o número de pizzas planejadas pelo administrador
+    const totalPizzasRodada = configRodada.numeroPizzasPlanejadas;
     
-    // Calcular o tempo médio esperado por pizza baseado no TOTAL da rodada
+    // Calcular o tempo médio esperado por pizza baseado na configuração do administrador
     const tempoMedioPorPizza = rodadaAtual.tempo_limite / totalPizzasRodada;
     
-    console.log(`Tempo médio esperado por pizza: ${tempoMedioPorPizza.toFixed(1)}s (${rodadaAtual.tempo_limite}s ÷ ${totalPizzasRodada} pizzas total da rodada)`);
+    console.log(`CONFIGURAÇÃO CORRETA: ${totalPizzasRodada} pizzas planejadas pelo administrador`);
+    console.log(`Tempo médio esperado por pizza: ${tempoMedioPorPizza.toFixed(1)}s (${rodadaAtual.tempo_limite}s ÷ ${totalPizzasRodada} pizzas planejadas)`);
 
     // Agrupar pizzas por equipe e calcular dados
     const pizzasPorEquipe: { [equipeId: string]: any[] } = {};
@@ -133,7 +146,7 @@ const TaktTimeChart = () => {
       // Calcular Takt Time médio da equipe
       const taktTimeEquipe = intervalos.length > 0 ? intervalos.reduce((sum, int) => sum + int, 0) / intervalos.length : 0;
       
-      console.log(`Equipe ${equipe.nome}: ${pizzasEquipe.length} pizzas entregues, Takt Time médio: ${taktTimeEquipe.toFixed(1)}s`);
+      console.log(`Equipe ${equipe.nome}: ${pizzasEquipe.length} pizzas entregues de ${totalPizzasRodada} planejadas, Takt Time médio: ${taktTimeEquipe.toFixed(1)}s`);
       
       // Criar entradas para TODAS as posições de pizza (1 até totalPizzasRodada)
       for (let numeroPizza = 1; numeroPizza <= totalPizzasRodada; numeroPizza++) {
@@ -196,7 +209,7 @@ const TaktTimeChart = () => {
       linhasReferencia,
       totalPizzasRodada
     };
-  }, [rodadaAtual, pizzas, equipes]);
+  }, [rodadaAtual, pizzas, equipes, configRodada]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -289,13 +302,13 @@ const TaktTimeChart = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {dadosTaktTime.dados.length > 0 ? (
+        {dadosTaktTime.dados.length > 0 && configRodada ? (
           <>
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
               <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Takt Time por Pizza da Rodada</h4>
               <p className="text-sm text-blue-700 mb-2">
-                Total de <strong>{dadosTaktTime.totalPizzasRodada} pizzas</strong> na rodada. O tempo médio ideal por pizza é de{' '}
-                <strong>{dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s</strong>.
+                <strong>{configRodada.numeroPizzasPlanejadas} pizzas planejadas</strong> pelo administrador para esta rodada. 
+                O tempo médio ideal por pizza é de <strong>{dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s</strong>.
               </p>
               <p className="text-xs text-blue-600">
                 As linhas verticais mostram os tempos ideais para cada pizza. Pizzas entregues à esquerda da linha estão dentro do Takt Time.
@@ -337,7 +350,7 @@ const TaktTimeChart = () => {
                   <Scatter
                     key={equipe}
                     name={equipe}
-                    data={dados.filter(d => d.foiEntregue)} // Mostrar apenas pizzas entregues
+                    data={dados.filter(d => d.foiEntregue)}
                     fill={coresEquipes[index % coresEquipes.length]}
                     shape={(props: any) => {
                       const { cx, cy, payload } = props;
@@ -444,7 +457,8 @@ const TaktTimeChart = () => {
             <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
               <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico:</h4>
               <div className="text-sm text-yellow-700 space-y-1">
-                <p><strong>Takt Time:</strong> Ritmo ideal de produção calculado como tempo total ÷ número total de pizzas da rodada</p>
+                <p><strong>Takt Time:</strong> Ritmo ideal de produção calculado como tempo total ÷ número de pizzas planejadas pelo administrador</p>
+                <p><strong>Configuração:</strong> {configRodada.numeroPizzasPlanejadas} pizzas planejadas para esta rodada</p>
                 <p><strong>Linhas verdes verticais:</strong> Momentos ideais para entrega de cada pizza (Pizza 1, Pizza 2...)</p>
                 <p><strong>Eixo Y:</strong> Cada linha representa uma posição de pizza (1 a {dadosTaktTime.totalPizzasRodada})</p>
                 <p><strong>Círculos cheios:</strong> Pizzas aprovadas | <strong>Círculos vazios:</strong> Pizzas reprovadas</p>
@@ -459,6 +473,8 @@ const TaktTimeChart = () => {
             <p className="text-sm">
               {rodadasDisponiveis.length === 0 
                 ? "Nenhuma rodada finalizada com pizzas encontrada" 
+                : configRodada === null 
+                ? "Carregando configuração da rodada..."
                 : "Selecione uma rodada para visualizar a análise Takt Time"}
             </p>
           </div>
