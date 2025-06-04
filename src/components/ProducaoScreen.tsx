@@ -372,17 +372,17 @@ const ProducaoScreen = () => {
   const getSaborCorRodadaAtual = (saborNome: string) => {
     const nome = saborNome?.toLowerCase() || '';
     if (nome.includes('mussarela') || nome.includes('queijo')) {
-      return '#eab308'; // amarelo
+      return 'rgba(234, 179, 8, 0.15)'; // amarelo transparente
     } else if (nome.includes('pepperoni') || nome.includes('calabresa')) {
-      return '#ea580c'; // laranja
+      return 'rgba(234, 88, 12, 0.15)'; // laranja transparente
     } else if (nome.includes('margherita') || nome.includes('tomate')) {
-      return '#16a34a'; // verde
+      return 'rgba(22, 163, 74, 0.15)'; // verde transparente
     } else if (nome.includes('frango') || nome.includes('chicken')) {
-      return '#dc2626'; // vermelho
+      return 'rgba(220, 38, 38, 0.15)'; // vermelho transparente
     } else if (nome.includes('portuguesa')) {
-      return '#7c3aed'; // roxo
+      return 'rgba(124, 58, 237, 0.15)'; // roxo transparente
     } else {
-      return '#6b7280'; // cinza padrão
+      return 'rgba(107, 114, 128, 0.15)'; // cinza transparente
     }
   };
 
@@ -653,8 +653,6 @@ const ProducaoScreen = () => {
 
               {/* Sabores da Rodada Integrados */}
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
-                  
-
                   {/* Rodada Ativa - Sistema Automático */}
                   {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
@@ -737,7 +735,7 @@ const ProducaoScreen = () => {
                             <CardContent className="p-3 text-center">
                               <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
                               <div className="text-2xl mb-2 my-[4px]">🍕</div>
-                              <h4 className="font-bold text-blue-700 text-4xl py-0 my-[13px] mx-0">
+                              <h4 className="font-bold text-4xl text-sky-700 py-0 my-[13px] mx-0">
                                 {getSaborNome(historico[1])}
                               </h4>
                               <div className="text-xs text-blue-600">
@@ -775,15 +773,15 @@ const ProducaoScreen = () => {
                       return null;
                     }
                     return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-105 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
-                              <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
+                              <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-300 opacity-80'}`} style={{
                         backgroundColor: cor
                       }}>
                                 <CardContent className="p-4 text-center mx-0 my-0 px-[18px] py-0">
-                                  <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-950">
+                                  <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-800">
                                     #{index + 1}
                                   </Badge>
                                   
-                                  <h4 className="text-2xl font-bold text-zinc-950">
+                                  <h4 className="text-2xl font-bold text-zinc-700">
                                     {saborNome.length > 12 ? saborNome.substring(0, 12) + '...' : saborNome}
                                   </h4>
                                 </CardContent>
@@ -808,27 +806,27 @@ const ProducaoScreen = () => {
                       {/* Legenda específica para rodada atual */}
                       <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-yellow-500 bg-opacity-30 border border-yellow-500 rounded-full"></div>
                           <span>Mussarela/Queijo</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-orange-600 bg-opacity-30 border border-orange-600 rounded-full"></div>
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-green-600 bg-opacity-30 border border-green-600 rounded-full"></div>
                           <span>Margherita/Tomate</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-red-600 bg-opacity-30 border border-red-600 rounded-full"></div>
                           <span>Frango/Chicken</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-purple-600 bg-opacity-30 border border-purple-600 rounded-full"></div>
                           <span>Portuguesa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+                          <div className="w-3 h-3 bg-gray-600 bg-opacity-30 border border-gray-600 rounded-full"></div>
                           <span>Outros</span>
                         </div>
                       </div>
