@@ -624,41 +624,8 @@ const ProducaoScreen = () => {
 
       {/* Status por Equipe */}
       <Card className="shadow-lg border-2 border-purple-200 mb-8">
-        <CardHeader>
-          <CardTitle className="text-purple-600">👥 Status por Equipe</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4 text-center mb-6">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{equipes.length}</div>
-              <div className="text-sm text-blue-700">Equipes</div>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{pizzasProntas.length}</div>
-              
-            </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{pizzasAprovadas.length}</div>
-              
-            </div>
-            <div className="bg-red-100 p-3 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{pizzasReprovadas.length}</div>
-              <div className="text-sm text-red-700">Reprovadas</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {estatisticasPorEquipe.map(stats => <div key={stats.equipe.id} className="p-4 bg-white rounded-lg border border-purple-200">
-                <h3 className="font-bold text-purple-600 mb-2">{stats.equipe.nome}</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-gray-600">Total: <span className="font-medium">{stats.total}</span></div>
-                  <div className="text-yellow-600">Prontas: <span className="font-medium">{stats.prontas}</span></div>
-                  <div className="text-green-600">Aprovadas: <span className="font-medium">{stats.aprovadas}</span></div>
-                  <div className="text-red-600">Reprovadas: <span className="font-medium">{stats.reprovadas}</span></div>
-                </div>
-              </div>)}
-          </div>
-        </CardContent>
+        
+        
       </Card>
 
       {/* Botão de Reset no final da tela */}
