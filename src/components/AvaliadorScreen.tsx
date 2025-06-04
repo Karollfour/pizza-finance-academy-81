@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -213,7 +214,7 @@ const AvaliadorScreen = () => {
           <TabsContent value="pending" className="space-y-6">
             {pizzasPendentes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pizzasPendentes.map((pizza) => (
+                {pizzasPendentes.map((pizza, index) => (
                   <Card key={pizza.id} className="shadow-lg border-2 border-yellow-200">
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
@@ -223,7 +224,7 @@ const AvaliadorScreen = () => {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
+                        <span className="font-bold text-lg text-gray-800">Pedido #{index + 1}</span> • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Enviada: {new Date(pizza.created_at).toLocaleTimeString('pt-BR')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
