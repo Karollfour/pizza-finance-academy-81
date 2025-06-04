@@ -193,6 +193,49 @@ export const useOptimizedRodadas = () => {
     }
   };
 
+  const pausarRodada = async (rodadaId: string) => {
+    try {
+      const { error } = await supabase
+        .from('rodadas')
+        .update({
+          status: 'pausada'
+        })
+        .eq('id', rodadaId);
+
+      if (error) throw error;
+      
+      // Fetch imediato para atualizar estado local
+      await fetchRodadaAtual(true);
+      
+      // Forçar atualização global imediata
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-pausada', { 
+          detail: { 
+            rodadaId,
+            timestamp: new Date().toISOString() 
+          } 
+        }));
+        
+        // Forçar refresh global para todas as telas
+        window.dispatchEvent(new CustomEvent('global-data-changed', { 
+          detail: { 
+            table: 'rodadas',
+            action: 'pausada',
+            timestamp: Date.now() 
+          } 
+        }));
+      }
+      
+      toast.success('⏸️ Rodada pausada!', {
+        duration: 2000,
+      });
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao pausar rodada');
+      throw err;
+    }
+  };
+
   const finalizarRodada = async (rodadaId: string) => {
     try {
       const { error } = await supabase
@@ -488,6 +531,7 @@ export const useOptimizedRodadas = () => {
     error,
     lastUpdate,
     iniciarRodada,
+    pausarRodada,
     finalizarRodada,
     criarNovaRodada,
     obterProximoNumeroRodada,

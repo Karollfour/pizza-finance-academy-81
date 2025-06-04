@@ -1,9 +1,9 @@
-
 export interface Equipe {
   id: string;
   nome: string;
   saldo_inicial: number;
   gasto_total: number;
+  ganho_total: number;
   professor_responsavel: string | null;
   cor_tema: string;
   emblema: string;
@@ -37,7 +37,7 @@ export interface Rodada {
   tempo_limite: number;
   iniciou_em: string | null;
   finalizou_em: string | null;
-  status: 'aguardando' | 'ativa' | 'finalizada';
+  status: 'aguardando' | 'ativa' | 'pausada' | 'finalizada';
   created_at: string;
 }
 
