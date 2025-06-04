@@ -814,20 +814,20 @@ const ProducaoScreen = () => {
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-green-600 bg-opacity-30 border border-green-600 rounded-full"></div>
-                          <span>Margherita/Tomate</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-red-600 bg-opacity-30 border border-red-600 rounded-full"></div>
-                          <span>Frango/Chicken</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-purple-600 bg-opacity-30 border border-purple-600 rounded-full"></div>
-                          <span>Portuguesa</span>
+                          
+                          
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-600 bg-opacity-30 border border-gray-600 rounded-full"></div>
-                          <span>Outros</span>
+                          
+                          
                         </div>
                       </div>
                     </div>}
