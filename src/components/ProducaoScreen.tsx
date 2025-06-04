@@ -633,7 +633,7 @@ const ProducaoScreen = () => {
         <Card className="shadow-lg border-2 border-orange-200 mb-8">
           <CardHeader className="my-0 mx-0">
             <CardTitle className="flex items-center justify-between">
-              <span className="text-2xl">Rodada {numeroRodadaDisplay}</span>
+              <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
               </Badge>
@@ -653,17 +653,7 @@ const ProducaoScreen = () => {
 
               {/* Sabores da Rodada Integrados */}
               {rodadaAtual && historico.length > 0 && <div className="border-t pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-orange-600 text-center text-2xl">🍕 Sabores da Rodada</h3>
-                    
-                    {/* Botões de controle da rodada - MODIFICADO */}
-                    {rodadaAtual.status === 'ativa' && <div className="flex gap-2">
-                        
-                        <Button onClick={handleFinalizarRodada} size="sm" variant="outline" className="text-sm px-3 py-2 h-9 text-red-600 hover:text-red-700" title="Encerrar rodada">
-                          ⏹️
-                        </Button>
-                      </div>}
-                  </div>
+                  
 
                   {/* Rodada Ativa - Sistema Automático */}
                   {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
