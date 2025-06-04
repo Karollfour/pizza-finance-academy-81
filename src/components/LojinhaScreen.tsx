@@ -12,6 +12,8 @@ import { useSabores } from '@/hooks/useSabores';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import GerenciadorItens from './GerenciadorItens';
 import VendasLoja from './VendasLoja';
+import DashboardLojinha from './DashboardLojinha';
+import HistoricoLoja from './HistoricoLoja';
 import { toast } from 'sonner';
 
 const LojinhaScreen = () => {
@@ -31,8 +33,8 @@ const LojinhaScreen = () => {
     sabores
   } = useSabores();
 
-  // Persistir estado da tela ativa - alterado para itens como padrão
-  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'itens');
+  // Persistir estado da tela ativa - alterado para dashboard como padrão
+  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'dashboard');
 
   // Estados para estatísticas
   const [estatisticasGerais, setEstatisticasGerais] = useState({
@@ -41,6 +43,7 @@ const LojinhaScreen = () => {
     pizzasReprovadas: 0,
     pizzasPendentes: 0,
     totalGastos: 0,
+    totalGanhos: 0,
     equipesAtivas: 0
   });
 
@@ -51,13 +54,16 @@ const LojinhaScreen = () => {
     const pizzasReprovadas = pizzas.filter(p => p.resultado === 'reprovada').length;
     const pizzasPendentes = pizzas.filter(p => p.status === 'pronta').length;
     const totalGastos = compras.reduce((sum, c) => sum + c.valor_total, 0);
+    const totalGanhos = equipes.reduce((sum, e) => sum + (e.ganho_total || 0), 0);
     const equipesAtivas = equipes.length;
+    
     setEstatisticasGerais({
       totalPizzas,
       pizzasAprovadas,
       pizzasReprovadas,
       pizzasPendentes,
       totalGastos,
+      totalGanhos,
       equipesAtivas
     });
   }, [pizzas, compras, equipes]);
@@ -98,10 +104,12 @@ const LojinhaScreen = () => {
       window.removeEventListener('compra-realizada', handleCompraRealizada as EventListener);
     };
   }, []);
+  
   const getSaborNome = (saborId: string) => {
     const sabor = sabores.find(s => s.id === saborId);
     return sabor?.nome || 'Sabor não informado';
   };
+  
   return <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -112,7 +120,7 @@ const LojinhaScreen = () => {
           {/* Status da Rodada */}
           <Card className="mt-4 shadow-lg border-2 border-blue-200">
             <CardContent className="p-4">
-              {rodadaAtual ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              {rodadaAtual ? <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                   <div>
                     <div className="text-xl font-bold text-blue-600">Rodada {rodadaAtual.numero}</div>
                     <div className="text-sm text-gray-600 capitalize">{rodadaAtual.status}</div>
@@ -129,17 +137,27 @@ const LojinhaScreen = () => {
                     <div className="text-xl font-bold text-purple-600">R$ {estatisticasGerais.totalGastos.toFixed(2)}</div>
                     <div className="text-sm text-gray-600">Total Gastos</div>
                   </div>
+                  <div>
+                    <div className="text-xl font-bold text-emerald-600">R$ {estatisticasGerais.totalGanhos.toFixed(2)}</div>
+                    <div className="text-sm text-gray-600">Total Ganhos</div>
+                  </div>
                 </div> : <div className="text-lg text-gray-600">Nenhuma rodada ativa</div>}
             </CardContent>
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 2 Abas */}
+        {/* Conteúdo Principal com 4 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
+            <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="dashboard" className="mt-6">
+            <DashboardLojinha />
+          </TabsContent>
           
           <TabsContent value="itens" className="mt-6">
             <GerenciadorItens />
@@ -148,10 +166,14 @@ const LojinhaScreen = () => {
           <TabsContent value="vendas" className="mt-6">
             <VendasLoja />
           </TabsContent>
+          
+          <TabsContent value="historico" className="mt-6">
+            <HistoricoLoja />
+          </TabsContent>
         </Tabs>
 
         {/* Estatísticas Rápidas */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="text-center p-4 bg-white shadow-lg">
             <div className="text-2xl font-bold text-blue-600">{estatisticasGerais.totalPizzas}</div>
             <div className="text-sm text-gray-600">Total de Pizzas</div>
@@ -168,14 +190,13 @@ const LojinhaScreen = () => {
             <div className="text-2xl font-bold text-purple-600">{estatisticasGerais.equipesAtivas}</div>
             <div className="text-sm text-gray-600">Equipes Ativas</div>
           </Card>
+          <Card className="text-center p-4 bg-white shadow-lg">
+            <div className="text-2xl font-bold text-emerald-600">R$ {estatisticasGerais.totalGanhos.toFixed(2)}</div>
+            <div className="text-sm text-gray-600">Total Ganhos</div>
+          </Card>
         </div>
-
-        {/* Lista de Pizzas Recentes - Atualização em Tempo Real */}
-        <Card className="mt-6 shadow-lg">
-          
-          
-        </Card>
       </div>
     </div>;
 };
+
 export default LojinhaScreen;

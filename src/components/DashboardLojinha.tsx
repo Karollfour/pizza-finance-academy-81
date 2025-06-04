@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -83,8 +84,8 @@ const DashboardLojinha = () => {
     };
   }).filter(dados => dados.total > 0);
 
-  // Dados por equipe
-  const dadosPorEquipe = equipes.map(equipe => {
+  // Dados por equipe para gastos
+  const dadosGastosPorEquipe = equipes.map(equipe => {
     const comprasEquipe = compras.filter(c => c.equipe_id === equipe.id);
     const totalGasto = comprasEquipe.reduce((sum, c) => sum + c.valor_total, 0);
     const viagens = comprasEquipe.filter(c => c.tipo === 'viagem').length;
@@ -95,6 +96,13 @@ const DashboardLojinha = () => {
       viagens
     };
   });
+
+  // Dados de ganhos por equipe
+  const dadosGanhosPorEquipe = equipes.map(equipe => ({
+    nome: equipe.nome,
+    ganho: equipe.ganho_total || 0,
+    corEquipe: equipe.cor_tema || '#3b82f6'
+  })).filter(dados => dados.ganho > 0);
 
   // Produtos mais comprados
   const produtosMaisComprados = produtos.map(produto => {
@@ -198,7 +206,7 @@ const DashboardLojinha = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dadosPorEquipe}>
+              <BarChart data={dadosGastosPorEquipe}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="nome" />
                 <YAxis />
@@ -206,6 +214,31 @@ const DashboardLojinha = () => {
                 <Bar dataKey="gasto" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Ganhos por Equipe - NOVO GRÁFICO */}
+        <Card>
+          <CardHeader>
+            <CardTitle>🎉 Ganhos por Equipe (Pizzas Aprovadas)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dadosGanhosPorEquipe.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dadosGanhosPorEquipe}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="nome" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Ganho Total']} />
+                  <Bar dataKey="ganho" fill="#22c55e" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-lg mb-2">🏆 Nenhum ganho ainda</p>
+                <p className="text-sm">As equipes ganham R$ 10,00 para cada pizza aprovada!</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -254,46 +287,46 @@ const DashboardLojinha = () => {
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Resumo Geral */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📈 Resumo Geral</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-100 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    R$ {compras.reduce((sum, c) => sum + c.valor_total, 0).toFixed(2)}
-                  </div>
-                  <div className="text-sm text-blue-700">Total Gasto</div>
+      {/* Resumo Geral Atualizado */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📈 Resumo Geral</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-100 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  R$ {compras.reduce((sum, c) => sum + c.valor_total, 0).toFixed(2)}
                 </div>
-                <div className="bg-green-100 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {compras.filter(c => c.tipo === 'viagem').length}
-                  </div>
-                  <div className="text-sm text-green-700">Total Viagens</div>
-                </div>
+                <div className="text-sm text-blue-700">Total Gasto</div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-orange-100 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {produtos.length}
-                  </div>
-                  <div className="text-sm text-orange-700">Produtos Cadastrados</div>
+              <div className="bg-green-100 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  R$ {equipes.reduce((sum, e) => sum + (e.ganho_total || 0), 0).toFixed(2)}
                 </div>
-                <div className="bg-purple-100 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {rodadaAtual?.numero || 0}
-                  </div>
-                  <div className="text-sm text-purple-700">Rodada Atual</div>
-                </div>
+                <div className="text-sm text-green-700">Total Ganho (Pizzas)</div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-orange-100 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {produtos.length}
+                </div>
+                <div className="text-sm text-orange-700">Produtos Cadastrados</div>
+              </div>
+              <div className="bg-purple-100 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {pizzas.filter(p => p.status === 'avaliada' && p.resultado === 'aprovada').length}
+                </div>
+                <div className="text-sm text-purple-700">Pizzas Aprovadas</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

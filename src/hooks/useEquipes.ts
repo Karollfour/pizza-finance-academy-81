@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 export interface EquipeExtended extends Equipe {
   cor_tema: string;
   emblema: string;
+  ganho_total: number;
 }
 
 // Sistema local para cores e emblemas até serem adicionados ao banco
@@ -38,7 +39,8 @@ export const useEquipes = () => {
         return {
           ...equipe,
           cor_tema: extras.cor_tema,
-          emblema: extras.emblema
+          emblema: extras.emblema,
+          ganho_total: equipe.ganho_total || 0
         };
       });
       
@@ -64,7 +66,8 @@ export const useEquipes = () => {
           nome,
           saldo_inicial: saldoInicial,
           professor_responsavel: professorResponsavel,
-          gasto_total: 0
+          gasto_total: 0,
+          ganho_total: 0
         })
         .select()
         .single();
@@ -184,7 +187,8 @@ export const useEquipes = () => {
                 return {
                   ...equipeAtualizada,
                   cor_tema: extras.cor_tema,
-                  emblema: extras.emblema
+                  emblema: extras.emblema,
+                  ganho_total: equipeAtualizada.ganho_total || 0
                 };
               }
               return equipe;
@@ -193,6 +197,12 @@ export const useEquipes = () => {
             // Notificar sobre atualizações importantes
             if (payload.old?.gasto_total !== equipeAtualizada.gasto_total) {
               console.log(`Saldo da equipe ${equipeAtualizada.nome} atualizado para R$ ${equipeAtualizada.gasto_total}`);
+            }
+            
+            if (payload.old?.ganho_total !== equipeAtualizada.ganho_total) {
+              toast.success(`🎉 Equipe ${equipeAtualizada.nome} ganhou R$ 10,00 por pizza aprovada!`, {
+                duration: 4000,
+              });
             }
           } else if (payload.eventType === 'INSERT') {
             // Nova equipe criada

@@ -118,6 +118,7 @@ export type Database = {
       equipes: {
         Row: {
           created_at: string
+          ganho_total: number
           gasto_total: number
           id: string
           nome: string
@@ -126,6 +127,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          ganho_total?: number
           gasto_total?: number
           id?: string
           nome: string
@@ -134,6 +136,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          ganho_total?: number
           gasto_total?: number
           id?: string
           nome?: string
