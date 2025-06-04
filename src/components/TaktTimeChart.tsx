@@ -14,27 +14,54 @@ const TaktTimeChart = () => {
   const { rodadas } = useTodasRodadas();
   const [rodadaSelecionada, setRodadaSelecionada] = useState<string>('');
 
+  console.log('TaktTimeChart - Dados carregados:', {
+    totalPizzas: pizzas.length,
+    totalEquipes: equipes.length,
+    totalRodadas: rodadas.length,
+    pizzasComStatus: pizzas.filter(p => p.status === 'avaliada').length,
+    pizzasAprovadas: pizzas.filter(p => p.resultado === 'aprovada').length
+  });
+
   // Filtrar apenas rodadas finalizadas que têm pizzas
   const rodadasDisponiveis = useMemo(() => {
-    return rodadas
+    const rodadasComPizzas = rodadas
       .filter(rodada => {
         const temPizzas = pizzas.some(pizza => pizza.rodada_id === rodada.id);
-        return temPizzas && rodada.status === 'finalizada';
+        const estaFinalizada = rodada.status === 'finalizada';
+        console.log(`Rodada ${rodada.numero}: temPizzas=${temPizzas}, finalizada=${estaFinalizada}`);
+        return temPizzas && estaFinalizada;
       })
       .sort((a, b) => b.numero - a.numero);
+    
+    console.log('Rodadas disponíveis para Takt Time:', rodadasComPizzas.map(r => ({
+      id: r.id,
+      numero: r.numero,
+      status: r.status
+    })));
+    
+    return rodadasComPizzas;
   }, [rodadas, pizzas]);
 
   // Usar a rodada mais recente como padrão
   const rodadaAtual = useMemo(() => {
     if (!rodadaSelecionada && rodadasDisponiveis.length > 0) {
-      return rodadasDisponiveis[0];
+      const rodadaPadrao = rodadasDisponiveis[0];
+      console.log('Usando rodada padrão:', rodadaPadrao.numero);
+      return rodadaPadrao;
     }
-    return rodadasDisponiveis.find(r => r.id === rodadaSelecionada) || null;
+    const rodadaEncontrada = rodadasDisponiveis.find(r => r.id === rodadaSelecionada) || null;
+    console.log('Rodada selecionada:', rodadaEncontrada?.numero || 'nenhuma');
+    return rodadaEncontrada;
   }, [rodadaSelecionada, rodadasDisponiveis]);
 
   // Calcular dados do Takt Time
   const dadosTaktTime = useMemo(() => {
-    if (!rodadaAtual) return [];
+    if (!rodadaAtual) {
+      console.log('Sem rodada atual para calcular Takt Time');
+      return [];
+    }
+
+    console.log('Calculando Takt Time para rodada:', rodadaAtual.numero);
 
     const dadosRodada = obterDadosRodadaParaTakt(
       rodadaAtual.id,
@@ -43,9 +70,21 @@ const TaktTimeChart = () => {
       10 // Pizzas planejadas padrão - pode ser configurável
     );
 
-    if (!dadosRodada) return [];
+    if (!dadosRodada) {
+      console.log('Não foi possível obter dados da rodada');
+      return [];
+    }
 
-    return calcularTaktTime(dadosRodada, equipes);
+    console.log('Dados da rodada obtidos:', {
+      pizzasPlanejadas: dadosRodada.pizzasPlanejadas,
+      tempoTotal: dadosRodada.tempoTotalSegundos,
+      pizzasEntreguesPorEquipe: dadosRodada.pizzasEntreguesPorEquipe
+    });
+
+    const resultados = calcularTaktTime(dadosRodada, equipes);
+    console.log('Resultados do Takt Time:', resultados);
+    
+    return resultados;
   }, [rodadaAtual, pizzas, equipes]);
 
   // Preparar dados para o gráfico
@@ -55,6 +94,8 @@ const TaktTimeChart = () => {
     pizzasEntregues: data.pizzasEntregues,
     tempoMedioPorPizza: data.tempoMedioPorPizza
   }));
+
+  console.log('Dados preparados para o gráfico:', dadosGrafico);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -123,7 +164,7 @@ const TaktTimeChart = () => {
                   x={1.0} 
                   stroke="#ef4444" 
                   strokeDasharray="5 5" 
-                  label={{ value: "Ideal (1.0)", position: "topRight" }}
+                  label={{ value: "Ideal (1.0)", position: "top" }}
                 />
                 <Bar 
                   dataKey="taktTime" 
@@ -157,15 +198,42 @@ const TaktTimeChart = () => {
                 <div className="text-sm text-green-600">Total de Pizzas Entregues</div>
               </div>
             </div>
+
+            {/* Debug: Mostrar dados brutos se não houver pizzas */}
+            {dadosTaktTime.every(d => d.pizzasEntregues === 0) && (
+              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Debug Info</h4>
+                <p className="text-sm text-yellow-700 mb-2">
+                  Nenhuma pizza entregue encontrada. Verificando dados:
+                </p>
+                <div className="text-xs text-yellow-600 space-y-1">
+                  <div>Total de pizzas no sistema: {pizzas.length}</div>
+                  <div>Pizzas da rodada {rodadaAtual?.numero}: {pizzas.filter(p => p.rodada_id === rodadaAtual?.id).length}</div>
+                  <div>Pizzas avaliadas: {pizzas.filter(p => p.rodada_id === rodadaAtual?.id && p.status === 'avaliada').length}</div>
+                  <div>Pizzas aprovadas: {pizzas.filter(p => p.rodada_id === rodadaAtual?.id && p.status === 'avaliada' && p.resultado === 'aprovada').length}</div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p className="text-lg mb-2">📊 Sem dados disponíveis</p>
             <p className="text-sm">
               {rodadasDisponiveis.length === 0 
-                ? "Nenhuma rodada finalizada encontrada" 
+                ? "Nenhuma rodada finalizada com pizzas encontrada" 
                 : "Selecione uma rodada para visualizar o Takt Time"}
             </p>
+            
+            {/* Debug adicional quando não há dados */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg text-left">
+              <h4 className="font-semibold text-gray-700 mb-2">🔍 Status do Sistema:</h4>
+              <div className="text-xs text-gray-600 space-y-1">
+                <div>Total de rodadas: {rodadas.length}</div>
+                <div>Rodadas finalizadas: {rodadas.filter(r => r.status === 'finalizada').length}</div>
+                <div>Total de pizzas: {pizzas.length}</div>
+                <div>Equipes cadastradas: {equipes.length}</div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
