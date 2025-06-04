@@ -1,4 +1,5 @@
 
+import { memo, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSaborAutomatico } from '@/hooks/useSaborAutomatico';
@@ -9,24 +10,32 @@ interface HistoricoSaboresAutomaticoProps {
   numeroPizzas: number;
 }
 
-const HistoricoSaboresAutomatico = ({ rodada, numeroPizzas }: HistoricoSaboresAutomaticoProps) => {
+const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSaboresAutomaticoProps) => {
   const {
-    saborAtual,
     saboresPassados,
     saborAtualIndex,
     intervaloTroca,
     totalSabores
   } = useSaborAutomatico({ rodada, numeroPizzas });
 
-  if (!rodada || saboresPassados.length === 0) {
-    return null;
-  }
-
-  const formatarTempo = (segundos: number) => {
+  // Memoizar função de formatação
+  const formatarTempo = useMemo(() => (segundos: number) => {
     const mins = Math.floor(segundos / 60);
     const secs = segundos % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
+
+  // Memoizar estatísticas para evitar recálculos
+  const estatisticas = useMemo(() => ({
+    totalSabores,
+    finalizadas: saboresPassados.length,
+    atual: saborAtualIndex + 1,
+    intervaloFormatado: formatarTempo(intervaloTroca)
+  }), [totalSabores, saboresPassados.length, saborAtualIndex, intervaloTroca, formatarTempo]);
+
+  if (!rodada || saboresPassados.length === 0) {
+    return null;
+  }
 
   return (
     <Card className="shadow-lg border-2 border-amber-200 mb-8">
@@ -41,28 +50,28 @@ const HistoricoSaboresAutomatico = ({ rodada, numeroPizzas }: HistoricoSaboresAu
           <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-amber-600">{totalSabores}</div>
+                <div className="text-2xl font-bold text-amber-600">{estatisticas.totalSabores}</div>
                 <div className="text-sm text-amber-700">Total de Pizzas</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600">{saboresPassados.length}</div>
+                <div className="text-2xl font-bold text-green-600">{estatisticas.finalizadas}</div>
                 <div className="text-sm text-green-700">Finalizadas</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600">{saborAtualIndex + 1}</div>
+                <div className="text-2xl font-bold text-blue-600">{estatisticas.atual}</div>
                 <div className="text-sm text-blue-700">Atual</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">{formatarTempo(intervaloTroca)}</div>
+                <div className="text-2xl font-bold text-purple-600">{estatisticas.intervaloFormatado}</div>
                 <div className="text-sm text-purple-700">Intervalo</div>
               </div>
             </div>
           </div>
 
-          {/* Lista de sabores passados */}
+          {/* Lista de sabores passados - estável */}
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {saboresPassados.map((sabor, index) => (
-              <div key={sabor.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-amber-200 shadow-sm">
+              <div key={`${sabor.id}-${index}`} className="flex items-center justify-between p-4 bg-white rounded-lg border border-amber-200 shadow-sm">
                 <div className="flex items-center space-x-4">
                   <Badge variant="outline" className="bg-amber-100 text-amber-700 min-w-fit">
                     Pizza #{index + 1}
@@ -105,6 +114,8 @@ const HistoricoSaboresAutomatico = ({ rodada, numeroPizzas }: HistoricoSaboresAu
       </CardContent>
     </Card>
   );
-};
+});
+
+HistoricoSaboresAutomatico.displayName = 'HistoricoSaboresAutomatico';
 
 export default HistoricoSaboresAutomatico;

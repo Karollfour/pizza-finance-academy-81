@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
 import { Rodada } from '@/types/database';
@@ -13,16 +13,19 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   const { historico, refetch } = useHistoricoSaboresRodada(rodada?.id);
   const [saborAtualIndex, setSaborAtualIndex] = useState(0);
   const [saboresPassados, setSaboresPassados] = useState<any[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateRef = useRef<number>(0);
+  const lastIndexRef = useRef<number>(0);
+  const saboresPassadosRef = useRef<any[]>([]);
   
-  // Calcular intervalo de troca (tempo total ÷ número de pizzas)
-  const intervaloTroca = rodada && numeroPizzas > 0 ? Math.floor(rodada.tempo_limite / numeroPizzas) : 0;
+  // Calcular intervalo de troca (tempo total ÷ número de pizzas) - memoizado
+  const intervaloTroca = useMemo(() => {
+    return rodada && numeroPizzas > 0 ? Math.floor(rodada.tempo_limite / numeroPizzas) : 0;
+  }, [rodada?.tempo_limite, numeroPizzas]);
   
   // Timer sincronizado para obter tempo restante
   const { timeRemaining } = useSynchronizedTimer(rodada, {});
   
-  // Escutar eventos globais para atualização imediata
+  // Escutar eventos globais para atualização imediata - apenas quando necessário
   useEffect(() => {
     const handleGlobalDataChange = (event: CustomEvent) => {
       const { table } = event.detail;
@@ -52,14 +55,15 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
     };
   }, [rodada?.id, refetch]);
   
+  // Atualizar índice do sabor atual apenas quando necessário
   useEffect(() => {
     if (!rodada || rodada.status !== 'ativa' || !historico.length || intervaloTroca <= 0) {
       return;
     }
     
     const now = Date.now();
-    // Evitar atualizações muito frequentes
-    if (now - lastUpdateRef.current < 500) {
+    // Evitar atualizações muito frequentes - aumentar para 2 segundos
+    if (now - lastUpdateRef.current < 2000) {
       return;
     }
     lastUpdateRef.current = now;
@@ -71,58 +75,68 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
       historico.length - 1
     );
     
-    // Se mudou de sabor, atualizar
-    if (novoIndex !== saborAtualIndex && novoIndex >= 0) {
-      // Adicionar sabor anterior aos passados se não for o primeiro
-      if (saborAtualIndex < novoIndex) {
-        const saboresParaAdicionar = historico.slice(saborAtualIndex, novoIndex);
-        setSaboresPassados(prev => {
-          const novosPassados = [...prev];
-          saboresParaAdicionar.forEach(sabor => {
-            if (!novosPassados.find(s => s.id === sabor.id)) {
-              novosPassados.push({
-                ...sabor,
-                tempoFinalizado: new Date().toISOString()
-              });
-            }
-          });
-          return novosPassados;
+    // Só atualizar se realmente mudou o índice
+    if (novoIndex !== lastIndexRef.current && novoIndex >= 0) {
+      // Adicionar sabores anteriores aos passados se não for o primeiro
+      if (lastIndexRef.current < novoIndex) {
+        const saboresParaAdicionar = historico.slice(lastIndexRef.current, novoIndex);
+        const novosPassados = [...saboresPassadosRef.current];
+        
+        saboresParaAdicionar.forEach(sabor => {
+          if (!novosPassados.find(s => s.id === sabor.id)) {
+            novosPassados.push({
+              ...sabor,
+              tempoFinalizado: new Date().toISOString()
+            });
+          }
         });
+        
+        // Só atualizar se realmente mudou
+        if (JSON.stringify(novosPassados) !== JSON.stringify(saboresPassadosRef.current)) {
+          saboresPassadosRef.current = novosPassados;
+          setSaboresPassados(novosPassados);
+        }
       }
       
+      lastIndexRef.current = novoIndex;
       setSaborAtualIndex(novoIndex);
       
-      // Disparar evento global para notificar outras telas
+      // Disparar evento global apenas quando muda o índice
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('sabor-automatico-alterado', {
           detail: {
             rodadaId: rodada.id,
             saborAtual: historico[novoIndex],
             saborIndex: novoIndex,
-            saboresPassados: saboresPassados,
+            saboresPassados: saboresPassadosRef.current,
             timestamp: new Date().toISOString()
           }
         }));
       }
     }
-  }, [timeRemaining, rodada, historico, intervaloTroca, saborAtualIndex, saboresPassados]);
+  }, [timeRemaining, rodada, historico, intervaloTroca]);
   
   // Reset quando rodada muda ou finaliza
   useEffect(() => {
     if (!rodada || rodada.status !== 'ativa') {
       setSaborAtualIndex(0);
       setSaboresPassados([]);
+      lastIndexRef.current = 0;
+      saboresPassadosRef.current = [];
     }
   }, [rodada?.id, rodada?.status]);
   
-  const saborAtual = historico[saborAtualIndex];
-  const proximoSabor = historico[saborAtualIndex + 1];
-  const segundoProximoSabor = historico[saborAtualIndex + 2];
+  // Memoizar valores para evitar re-renderizações
+  const saborAtual = useMemo(() => historico[saborAtualIndex], [historico, saborAtualIndex]);
+  const proximoSabor = useMemo(() => historico[saborAtualIndex + 1], [historico, saborAtualIndex]);
+  const segundoProximoSabor = useMemo(() => historico[saborAtualIndex + 2], [historico, saborAtualIndex]);
   
-  // Calcular tempo restante para próxima troca
-  const tempoDecorrido = rodada ? rodada.tempo_limite - timeRemaining : 0;
-  const tempoProximaTroca = intervaloTroca > 0 ? 
-    Math.max(0, ((saborAtualIndex + 1) * intervaloTroca) - tempoDecorrido) : 0;
+  // Calcular tempo restante para próxima troca - memoizado
+  const tempoProximaTroca = useMemo(() => {
+    if (!rodada || intervaloTroca <= 0) return 0;
+    const tempoDecorrido = rodada.tempo_limite - timeRemaining;
+    return Math.max(0, ((saborAtualIndex + 1) * intervaloTroca) - tempoDecorrido);
+  }, [rodada, intervaloTroca, timeRemaining, saborAtualIndex]);
   
   return {
     saborAtual,
