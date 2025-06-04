@@ -31,7 +31,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -198,22 +197,11 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       console.log('Pausando rodada...');
-      const { error } = await supabase
-        .from('rodadas')
-        .update({ status: 'pausada' })
-        .eq('id', rodadaAtual.id);
-      
-      if (error) throw error;
-      
+      await pausarRodada(rodadaAtual.id);
       setTimeout(() => {
         forceGlobalSync();
         refetchRodadas();
       }, 500);
-      
-      toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
-        duration: 3000,
-        position: 'top-center'
-      });
     } catch (error) {
       console.error('Erro ao pausar rodada:', error);
       toast.error('Erro ao pausar rodada. Tente novamente.', {
@@ -428,8 +416,7 @@ const ProducaoScreen = () => {
               <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'}>
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
               </Badge>
-              {rodadaAtual?.status === 'ativa' && (
-                <div className="flex gap-2">
+              {rodadaAtual?.status === 'ativa' && <div className="flex gap-2">
                   <Button onClick={handlePausarRodada} className="bg-yellow-500 hover:bg-yellow-600" size="sm">
                     <Pause className="w-4 h-4 mr-1" />
                     Pausar
@@ -438,8 +425,7 @@ const ProducaoScreen = () => {
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div>
-              )}
+                </div>}
             </div>
           </CardTitle>
         </CardHeader>
@@ -649,11 +635,11 @@ const ProducaoScreen = () => {
             </div>
             <div className="bg-yellow-100 p-3 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">{pizzasProntas.length}</div>
-              <div className="text-sm text-yellow-700">Aguardando Avaliação</div>
+              
             </div>
             <div className="bg-green-100 p-3 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{pizzasAprovadas.length}</div>
-              <div className="text-sm text-green-700">Aprovadas</div>
+              
             </div>
             <div className="bg-red-100 p-3 rounded-lg">
               <div className="text-2xl font-bold text-red-600">{pizzasReprovadas.length}</div>
@@ -766,5 +752,4 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
-
 export default ProducaoScreen;
