@@ -764,7 +764,7 @@ const ProducaoScreen = () => {
 
                   {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
                   {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
-                      <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-3">
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {historico.map((sabor, index) => {
                     const saborNome = getSaborNome(sabor);
                     const cor = getSaborCorRodadaAtual(saborNome);
@@ -775,15 +775,20 @@ const ProducaoScreen = () => {
                     if (!isPassado && !isAtual) {
                       return null;
                     }
-                    return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-110 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
-                              <div className={`w-16 h-16 rounded-lg border-2 flex flex-col items-center justify-center text-white shadow-md ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
+                    return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-105 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
+                              <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
                         backgroundColor: cor
                       }}>
-                                <div className="text-xs font-bold mb-1">#{index + 1}</div>
-                                <div className="text-xs font-medium text-center px-1 leading-tight">
-                                  {saborNome.length > 8 ? saborNome.substring(0, 8) + '...' : saborNome}
-                                </div>
-                              </div>
+                                <CardContent className="p-4 text-center">
+                                  <Badge className="bg-white/20 text-white text-xs px-2 py-1 mb-2">
+                                    #{index + 1}
+                                  </Badge>
+                                  <div className="text-3xl mb-2">🍕</div>
+                                  <h4 className="font-bold text-white text-lg">
+                                    {saborNome.length > 12 ? saborNome.substring(0, 12) + '...' : saborNome}
+                                  </h4>
+                                </CardContent>
+                              </Card>
                               
                               {/* Tooltip */}
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
@@ -791,10 +796,10 @@ const ProducaoScreen = () => {
                               </div>
                               
                               {/* Indicador de status */}
-                              {isAtual && <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white animate-pulse bg-orange-400"></div>}
-                              {isPassado && <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-500 rounded-full border border-white">
+                              {isAtual && <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white animate-pulse bg-orange-400"></div>}
+                              {isPassado && <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-500 rounded-full border-2 border-white">
                                   <div className="w-full h-full flex items-center justify-center">
-                                    <div className="w-1 h-1 bg-white rounded-full"></div>
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
                                   </div>
                                 </div>}
                             </div>;
