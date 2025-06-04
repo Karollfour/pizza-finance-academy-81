@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo, useEffect } from 'react';
 import { usePizzas } from '@/hooks/usePizzas';
@@ -70,17 +71,17 @@ const TaktTimeChart = () => {
     carregarConfig();
   }, [rodadaAtual]);
 
-  // Calcular dados do Takt Time por equipe
-  const dadosTaktTime = useMemo(() => {
+  // Calcular dados do Takt Time por equipe para gráfico de barras
+  const dadosTaktTimePorEquipe = useMemo(() => {
     if (!rodadaAtual || !configRodada) {
       console.log('Sem rodada atual ou configuração para calcular Takt Time');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
+      return { dados: [], tempoMedioPorPizza: 0, tempoMedioRodada: 0 };
     }
 
     console.log('Calculando Takt Time por equipe para rodada:', rodadaAtual.numero);
     console.log('Configuração da rodada:', configRodada);
 
-    // Filtrar pizzas da rodada que foram ENVIADAS para avaliação (status pronta ou avaliada)
+    // Filtrar pizzas da rodada que foram ENVIADAS para avaliação
     const pizzasDaRodada = pizzas.filter(pizza => 
       pizza.rodada_id === rodadaAtual.id && 
       (pizza.status === 'pronta' || pizza.status === 'avaliada')
@@ -93,33 +94,28 @@ const TaktTimeChart = () => {
     
     if (!inicioRodada) {
       console.log('Rodada não tem horário de início registrado');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
+      return { dados: [], tempoMedioPorPizza: 0, tempoMedioRodada: 0 };
     }
-
-    console.log('Início da rodada:', new Date(inicioRodada).toISOString());
 
     // Usar o número de pizzas planejadas pelo administrador
     const totalPizzasRodada = configRodada.numeroPizzasPlanejadas;
     
-    // Calcular o tempo médio esperado por pizza baseado na configuração do administrador
+    // Calcular o tempo médio esperado por pizza (referência da rodada)
     const tempoMedioPorPizza = rodadaAtual.tempo_limite / totalPizzasRodada;
     
-    console.log(`CONFIGURAÇÃO CORRETA: ${totalPizzasRodada} pizzas planejadas pelo administrador`);
-    console.log(`Tempo médio esperado por pizza: ${tempoMedioPorPizza.toFixed(1)}s (${rodadaAtual.tempo_limite}s ÷ ${totalPizzasRodada} pizzas planejadas)`);
+    console.log(`Tempo médio de referência da rodada: ${tempoMedioPorPizza.toFixed(1)}s por pizza`);
 
-    // Agrupar pizzas por equipe e calcular dados
+    // Agrupar pizzas por equipe e calcular Takt Time médio
     const pizzasPorEquipe: { [equipeId: string]: any[] } = {};
     const dadosProcessados: any[] = [];
 
-    // Primeiro, agrupar todas as pizzas por equipe
+    // Agrupar pizzas por equipe
     pizzasDaRodada.forEach(pizza => {
       if (!pizzasPorEquipe[pizza.equipe_id]) {
         pizzasPorEquipe[pizza.equipe_id] = [];
       }
       
       const equipe = equipes.find(e => e.id === pizza.equipe_id);
-      
-      // Usar created_at para o momento de envio para avaliação
       const tempoEnvio = new Date(pizza.created_at).getTime();
       const tempoDecorrido = Math.max(0, (tempoEnvio - inicioRodada) / 1000);
       
@@ -131,103 +127,72 @@ const TaktTimeChart = () => {
       });
     });
 
-    // Processar cada equipe e criar todas as posições de pizza (1 até totalPizzasRodada)
+    // Processar cada equipe
     equipes.forEach(equipe => {
       const pizzasEquipe = pizzasPorEquipe[equipe.id] || [];
       
-      // Ordenar pizzas da equipe por tempo de envio para avaliação
+      if (pizzasEquipe.length === 0) {
+        // Equipe sem pizzas enviadas
+        dadosProcessados.push({
+          equipeNome: equipe.nome,
+          taktTimeMedio: 0,
+          pizzasEnviadas: 0,
+          corEquipe: equipe.cor_tema || '#3b82f6',
+          tempoMedioRodada: tempoMedioPorPizza,
+          dentroDoTempo: false,
+          desempenho: 'Sem dados'
+        });
+        return;
+      }
+      
+      // Ordenar pizzas por tempo de envio
       pizzasEquipe.sort((a, b) => a.tempoDecorrido - b.tempoDecorrido);
       
-      // NOVO CÁLCULO: Calcular Takt Time baseado no tempo relativo de cada pizza
+      // Calcular Takt Time relativo para cada pizza
       const taktTimes: number[] = [];
       
       pizzasEquipe.forEach((pizzaAtual, index) => {
         const numeroPizza = index + 1;
-        const tempoIdealInicio = (numeroPizza - 1) * tempoMedioPorPizza; // Início ideal desta pizza
-        const tempoRelativo = pizzaAtual.tempoDecorrido - tempoIdealInicio; // Tempo relativo ao início ideal
-        
-        console.log(`Equipe ${equipe.nome} - Pizza ${numeroPizza}:`);
-        console.log(`  Tempo de envio: ${pizzaAtual.tempoDecorrido.toFixed(1)}s`);
-        console.log(`  Tempo ideal de início: ${tempoIdealInicio.toFixed(1)}s`);
-        console.log(`  Tempo relativo (Takt Time): ${tempoRelativo.toFixed(1)}s`);
-        
+        const tempoIdealInicio = (numeroPizza - 1) * tempoMedioPorPizza;
+        const tempoRelativo = pizzaAtual.tempoDecorrido - tempoIdealInicio;
         taktTimes.push(tempoRelativo);
       });
       
       // Calcular Takt Time médio da equipe
-      const taktTimeEquipe = taktTimes.length > 0 ? taktTimes.reduce((sum, t) => sum + t, 0) / taktTimes.length : 0;
+      const taktTimeMedio = taktTimes.reduce((sum, t) => sum + t, 0) / taktTimes.length;
       
-      console.log(`Equipe ${equipe.nome}: ${pizzasEquipe.length} pizzas enviadas, Takt Time médio: ${taktTimeEquipe.toFixed(1)}s`);
-      console.log(`Takt Times individuais da equipe ${equipe.nome}:`, taktTimes.map(t => t.toFixed(1) + 's'));
+      // Verificar se está dentro do tempo médio da rodada
+      const dentroDoTempo = taktTimeMedio <= tempoMedioPorPizza;
       
-      // Criar entradas para TODAS as posições de pizza (1 até totalPizzasRodada)
-      for (let numeroPizza = 1; numeroPizza <= totalPizzasRodada; numeroPizza++) {
-        const tempoIdealPizza = numeroPizza * tempoMedioPorPizza;
-        const tempoIdealInicio = (numeroPizza - 1) * tempoMedioPorPizza;
-        const pizzaEnviada = pizzasEquipe[numeroPizza - 1]; // Arrays são 0-indexed
-        
-        if (pizzaEnviada) {
-          // Pizza foi enviada - calcular Takt Time relativo
-          const tempoRelativo = pizzaEnviada.tempoDecorrido - tempoIdealInicio;
-          const estaDentroDoTakt = tempoRelativo <= tempoMedioPorPizza; // Dentro do tempo esperado para esta pizza
-          
-          dadosProcessados.push({
-            equipeId: equipe.id,
-            equipeNome: equipe.nome,
-            numeroPizzaEquipe: numeroPizza,
-            tempo: Number(pizzaEnviada.tempoDecorrido.toFixed(1)),
-            tempoAbsoluto: Number(pizzaEnviada.tempoDecorrido.toFixed(1)), // Tempo desde início da rodada
-            tempoRelativo: Number(tempoRelativo.toFixed(1)), // Tempo relativo ao início ideal desta pizza
-            tempoIdealInicio: Number(tempoIdealInicio.toFixed(1)), // Quando esta pizza deveria ter começado
-            resultado: pizzaEnviada.pizza.resultado,
-            corEquipe: equipe.cor_tema || '#3b82f6',
-            pizzaId: pizzaEnviada.pizza.id,
-            y: `Pizza ${numeroPizza}`,
-            tempoIdeal: tempoIdealPizza,
-            estaDentroDoTakt: estaDentroDoTakt,
-            taktTimeEquipe: taktTimeEquipe,
-            taktTimesIndividuais: taktTimes,
-            foiEnviada: true
-          });
-        } else {
-          // Pizza não foi enviada - mostrar posição vazia
-          dadosProcessados.push({
-            equipeId: equipe.id,
-            equipeNome: equipe.nome,
-            numeroPizzaEquipe: numeroPizza,
-            tempo: null, // Sem tempo pois não foi enviada
-            tempoAbsoluto: null,
-            tempoRelativo: null,
-            tempoIdealInicio: Number(tempoIdealInicio.toFixed(1)),
-            resultado: null,
-            corEquipe: equipe.cor_tema || '#3b82f6',
-            pizzaId: null,
-            y: `Pizza ${numeroPizza}`,
-            tempoIdeal: tempoIdealPizza,
-            estaDentroDoTakt: false,
-            taktTimeEquipe: taktTimeEquipe,
-            taktTimesIndividuais: taktTimes,
-            foiEnviada: false
-          });
-        }
+      // Classificar desempenho
+      let desempenho = '';
+      if (taktTimeMedio <= tempoMedioPorPizza * 0.8) {
+        desempenho = 'Excelente';
+      } else if (taktTimeMedio <= tempoMedioPorPizza) {
+        desempenho = 'Bom';
+      } else if (taktTimeMedio <= tempoMedioPorPizza * 1.2) {
+        desempenho = 'Regular';
+      } else {
+        desempenho = 'Crítico';
       }
+      
+      console.log(`Equipe ${equipe.nome}: Takt Time médio = ${taktTimeMedio.toFixed(1)}s, Desempenho = ${desempenho}`);
+      
+      dadosProcessados.push({
+        equipeNome: equipe.nome,
+        taktTimeMedio: Number(taktTimeMedio.toFixed(1)),
+        pizzasEnviadas: pizzasEquipe.length,
+        corEquipe: equipe.cor_tema || '#3b82f6',
+        tempoMedioRodada: tempoMedioPorPizza,
+        dentroDoTempo: dentroDoTempo,
+        desempenho: desempenho
+      });
     });
 
-    // Criar linhas de referência para o Takt Time ideal
-    const linhasReferencia = [];
-    for (let i = 1; i <= totalPizzasRodada; i++) {
-      linhasReferencia.push({
-        tempo: i * tempoMedioPorPizza,
-        label: `Pizza ${i}`
-      });
-    }
-
-    console.log('Dados processados para o Takt Time:', dadosProcessados.length, 'entradas (incluindo posições vazias)');
     return { 
       dados: dadosProcessados, 
       tempoMedioPorPizza,
-      linhasReferencia,
-      totalPizzasRodada
+      tempoMedioRodada: tempoMedioPorPizza
     };
   }, [rodadaAtual, pizzas, equipes, configRodada]);
 
@@ -235,66 +200,45 @@ const TaktTimeChart = () => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
-      if (!data.foiEnviada) {
+      if (data.pizzasEnviadas === 0) {
         return (
           <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
-            <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
-            <p className="text-red-600">Pizza não enviada</p>
+            <p className="font-semibold">{data.equipeNome}</p>
+            <p className="text-red-600">Nenhuma pizza enviada</p>
           </div>
         );
       }
       
       return (
         <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
-          <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
-          <p className="text-blue-600">{`Tempo de Envio: ${data.tempoAbsoluto}s`}</p>
-          <p className="text-orange-600">{`Takt Time relativo: ${data.tempoRelativo}s`}</p>
-          <p className="text-purple-600">{`Takt Time médio da Equipe: ${data.taktTimeEquipe.toFixed(1)}s`}</p>
+          <p className="font-semibold">{data.equipeNome}</p>
+          <p className="text-blue-600">{`Takt Time Médio: ${data.taktTimeMedio}s`}</p>
+          <p className="text-orange-600">{`Tempo Médio da Rodada: ${data.tempoMedioRodada.toFixed(1)}s`}</p>
+          <p className="text-purple-600">{`Pizzas Enviadas: ${data.pizzasEnviadas}`}</p>
+          <p className={`font-medium ${data.dentroDoTempo ? 'text-green-600' : 'text-red-600'}`}>
+            {data.dentroDoTempo ? '✓ Dentro do tempo médio' : '✗ Acima do tempo médio'}
+          </p>
+          <p className="text-gray-600">{`Desempenho: ${data.desempenho}`}</p>
         </div>
       );
     }
     return null;
   };
 
-  // Agrupar dados por equipe para múltiplas séries
-  const dadosPorEquipe = useMemo(() => {
-    const grupos: { [key: string]: any[] } = {};
-    
-    dadosTaktTime.dados.forEach(item => {
-      if (!grupos[item.equipeNome]) {
-        grupos[item.equipeNome] = [];
-      }
-      grupos[item.equipeNome].push(item);
-    });
-    
-    return grupos;
-  }, [dadosTaktTime.dados]);
-
-  // Criar array de posições Y únicas para todas as pizzas da rodada
-  const posicoesY = useMemo(() => {
-    const posicoes = [];
-    for (let i = 1; i <= dadosTaktTime.totalPizzasRodada; i++) {
-      posicoes.push(`Pizza ${i}`);
-    }
-    return posicoes;
-  }, [dadosTaktTime.totalPizzasRodada]);
-
-  // Criar ticks personalizados para o eixo X baseados no tempo médio por pizza
-  const ticksTempoIdeal = useMemo(() => {
-    const ticks = [0];
-    for (let i = 1; i <= dadosTaktTime.totalPizzasRodada; i++) {
-      ticks.push(i * dadosTaktTime.tempoMedioPorPizza);
-    }
-    return ticks;
-  }, [dadosTaktTime.tempoMedioPorPizza, dadosTaktTime.totalPizzasRodada]);
-
-  const coresEquipes = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'];
+  // Função para determinar a cor da barra baseada no desempenho
+  const obterCorBarra = (data: any) => {
+    if (data.pizzasEnviadas === 0) return '#d1d5db'; // Cinza para sem dados
+    if (data.desempenho === 'Excelente') return '#10b981'; // Verde
+    if (data.desempenho === 'Bom') return '#3b82f6'; // Azul
+    if (data.desempenho === 'Regular') return '#f59e0b'; // Amarelo
+    return '#ef4444'; // Vermelho para crítico
+  };
 
   return (
     <Card className="mt-6">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>⏱️ Análise Takt Time por Equipe</span>
+          <span>📊 Takt Time Médio por Equipe</span>
           <Select value={rodadaSelecionada} onValueChange={setRodadaSelecionada}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder={rodadaAtual ? `Rodada ${rodadaAtual.numero}` : "Selecione uma rodada"} />
@@ -310,177 +254,145 @@ const TaktTimeChart = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {dadosTaktTime.dados.length > 0 && configRodada ? (
+        {dadosTaktTimePorEquipe.dados.length > 0 && configRodada ? (
           <>
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Takt Time Corrigida por Pizza da Rodada</h4>
+              <h4 className="font-semibold text-blue-800 mb-2">📊 Análise de Desempenho por Equipe</h4>
               <p className="text-sm text-blue-700 mb-2">
-                <strong>{configRodada.numeroPizzasPlanejadas} pizzas planejadas</strong> pelo administrador para esta rodada. 
-                O tempo médio ideal por pizza é de <strong>{dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s</strong>.
+                <strong>Tempo médio de referência da rodada:</strong> {dadosTaktTimePorEquipe.tempoMedioRodada.toFixed(1)}s por pizza
               </p>
               <p className="text-xs text-blue-600">
-                <strong>Takt Time Corrigido:</strong> Medido como tempo relativo ao início ideal de cada pizza.
-                Pizza 1 inicia em 0s, Pizza 2 em {dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s, etc.
+                Equipes com Takt Time médio <strong>abaixo</strong> da linha de referência estão entregando dentro do tempo esperado da rodada.
               </p>
             </div>
             
-            <ResponsiveContainer width="100%" height={Math.max(400, posicoesY.length * 40)}>
-              <ScatterChart margin={{ top: 20, right: 30, left: 100, bottom: 60 }}>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart 
+                data={dadosTaktTimePorEquipe.dados} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
-                  type="number" 
-                  dataKey="tempo"
-                  domain={[0, rodadaAtual?.tempo_limite || 300]}
-                  ticks={ticksTempoIdeal}
-                  label={{ value: 'Tempo (segundos)', position: 'insideBottom', offset: -5 }}
+                  dataKey="equipeNome"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  fontSize={12}
                 />
                 <YAxis 
-                  type="category" 
-                  dataKey="y"
-                  domain={posicoesY}
-                  width={80}
-                  tick={{ fontSize: 10 }}
+                  label={{ value: 'Takt Time Médio (segundos)', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
                 
-                {/* Linhas de referência do Takt Time ideal */}
-                {dadosTaktTime.linhasReferencia.map((linha, index) => (
-                  <ReferenceLine 
-                    key={index}
-                    x={linha.tempo} 
-                    stroke="#10b981" 
-                    strokeDasharray="2 2"
-                    label={{ value: `${linha.tempo.toFixed(0)}s`, position: 'top', fontSize: 10 }}
-                  />
-                ))}
+                {/* Linha de referência do tempo médio da rodada */}
+                <ReferenceLine 
+                  y={dadosTaktTimePorEquipe.tempoMedioRodada} 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  label={{ 
+                    value: `Tempo Médio da Rodada: ${dadosTaktTimePorEquipe.tempoMedioRodada.toFixed(1)}s`, 
+                    position: 'topRight',
+                    fontSize: 12
+                  }}
+                />
                 
-                {Object.entries(dadosPorEquipe).map(([equipe, dados], index) => (
-                  <Scatter
-                    key={equipe}
-                    name={equipe}
-                    data={dados.filter(d => d.foiEnviada)}
-                    fill={coresEquipes[index % coresEquipes.length]}
-                    shape={(props: any) => {
-                      const { cx, cy, payload } = props;
-                      const dentroDoTakt = payload.estaDentroDoTakt;
-                      return (
-                        <circle
-                          cx={cx}
-                          cy={cy}
-                          r={6}
-                          fill={payload.resultado === 'aprovada' ? coresEquipes[index % coresEquipes.length] : 'transparent'}
-                          stroke={dentroDoTakt ? coresEquipes[index % coresEquipes.length] : '#ef4444'}
-                          strokeWidth={dentroDoTakt ? 2 : 3}
-                        />
-                      );
-                    }}
-                  />
-                ))}
-              </ScatterChart>
+                <Bar 
+                  dataKey="taktTimeMedio" 
+                  fill={(entry: any) => obterCorBarra(entry)}
+                  name="Takt Time Médio"
+                  shape={(props: any) => {
+                    const { fill, ...rest } = props;
+                    return <rect {...rest} fill={obterCorBarra(props.payload)} />;
+                  }}
+                />
+              </BarChart>
             </ResponsiveContainer>
 
             {/* Resumo dos dados */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 p-3 rounded-lg text-center">
                 <div className="text-lg font-bold text-gray-700">
-                  {dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s
+                  {dadosTaktTimePorEquipe.tempoMedioRodada.toFixed(1)}s
                 </div>
-                <div className="text-sm text-gray-600">Tempo Médio Ideal por Pizza</div>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg text-center">
-                <div className="text-lg font-bold text-blue-700">
-                  {dadosTaktTime.dados.filter(d => d.foiEnviada).length}
-                </div>
-                <div className="text-sm text-blue-600">Pizzas Enviadas</div>
+                <div className="text-sm text-gray-600">Tempo Médio de Referência</div>
               </div>
               <div className="bg-green-50 p-3 rounded-lg text-center">
                 <div className="text-lg font-bold text-green-700">
-                  {dadosTaktTime.dados.filter(d => d.foiEnviada && d.estaDentroDoTakt).length}
+                  {dadosTaktTimePorEquipe.dados.filter(d => d.dentroDoTempo && d.pizzasEnviadas > 0).length}
                 </div>
-                <div className="text-sm text-green-600">Dentro do Takt Time</div>
+                <div className="text-sm text-green-600">Equipes Dentro do Tempo</div>
               </div>
               <div className="bg-red-50 p-3 rounded-lg text-center">
                 <div className="text-lg font-bold text-red-700">
-                  {dadosTaktTime.dados.filter(d => d.foiEnviada && !d.estaDentroDoTakt).length}
+                  {dadosTaktTimePorEquipe.dados.filter(d => !d.dentroDoTempo && d.pizzasEnviadas > 0).length}
                 </div>
-                <div className="text-sm text-red-600">Fora do Takt Time</div>
+                <div className="text-sm text-red-600">Equipes Acima do Tempo</div>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg text-center">
+                <div className="text-lg font-bold text-blue-700">
+                  {dadosTaktTimePorEquipe.dados.reduce((sum, d) => sum + d.pizzasEnviadas, 0)}
+                </div>
+                <div className="text-sm text-blue-600">Total de Pizzas Enviadas</div>
               </div>
             </div>
 
             {/* Análise detalhada por equipe */}
             <div className="mt-6">
-              <h4 className="font-semibold text-gray-800 mb-3">📈 Performance Takt Time Corrigida por Equipe</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(dadosPorEquipe).map(([equipe, dados]) => {
-                  const pizzasEnviadas = dados.filter(d => d.foiEnviada);
-                  const dentroDoTakt = pizzasEnviadas.filter(d => d.estaDentroDoTakt).length;
-                  const foraDoTakt = pizzasEnviadas.filter(d => !d.estaDentroDoTakt).length;
-                  const taktTimeEquipe = pizzasEnviadas[0]?.taktTimeEquipe || 0;
-                  const eficienciaTakt = pizzasEnviadas.length > 0 ? (dentroDoTakt / pizzasEnviadas.length) * 100 : 0;
-                  const taktTimesIndividuais = pizzasEnviadas[0]?.taktTimesIndividuais || [];
-                  
-                  return (
-                    <div key={equipe} className="bg-white border border-gray-200 p-4 rounded-lg">
-                      <h5 className="font-semibold text-sm mb-3 text-blue-700">{equipe}</h5>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span>Pizzas enviadas:</span>
-                          <span className="font-medium">{pizzasEnviadas.length}/{dadosTaktTime.totalPizzasRodada}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Dentro do Takt:</span>
-                          <span className="font-medium text-green-600">{dentroDoTakt}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Fora do Takt:</span>
-                          <span className="font-medium text-red-600">{foraDoTakt}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Takt Time médio:</span>
-                          <span className="font-medium">{taktTimeEquipe.toFixed(1)}s</span>
-                        </div>
-                        {taktTimesIndividuais.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-100">
-                            <span className="text-xs text-gray-500">Takt Times relativos:</span>
-                            <div className="text-xs text-gray-600 mt-1">
-                              {taktTimesIndividuais.map((takt, idx) => `P${idx+1}: ${takt.toFixed(1)}s`).join(', ')}
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span>Eficiência Takt:</span>
-                          <span className={`font-medium ${eficienciaTakt >= 70 ? 'text-green-600' : eficienciaTakt >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {eficienciaTakt.toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-gray-100">
-                          <div className={`text-xs px-2 py-1 rounded text-center ${
-                            eficienciaTakt >= 70 ? 'bg-green-100 text-green-700' :
-                            eficienciaTakt >= 50 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {eficienciaTakt >= 70 ? '🎯 Excelente' :
-                             eficienciaTakt >= 50 ? '⚠️ Moderado' : '❌ Crítico'}
-                          </div>
+              <h4 className="font-semibold text-gray-800 mb-3">📈 Ranking de Desempenho das Equipes</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {dadosTaktTimePorEquipe.dados
+                  .sort((a, b) => a.taktTimeMedio - b.taktTimeMedio)
+                  .map((equipe, index) => (
+                  <div key={equipe.equipeNome} className="bg-white border border-gray-200 p-3 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="font-semibold text-sm text-blue-700">{equipe.equipeNome}</h5>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">#{index + 1}</span>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span>Takt Time médio:</span>
+                        <span className="font-medium">{equipe.pizzasEnviadas > 0 ? `${equipe.taktTimeMedio}s` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Pizzas enviadas:</span>
+                        <span className="font-medium">{equipe.pizzasEnviadas}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status:</span>
+                        <span className={`font-medium ${equipe.dentroDoTempo && equipe.pizzasEnviadas > 0 ? 'text-green-600' : equipe.pizzasEnviadas > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                          {equipe.pizzasEnviadas > 0 ? (equipe.dentroDoTempo ? 'No tempo' : 'Atrasado') : 'Sem dados'}
+                        </span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <div className={`text-xs px-2 py-1 rounded text-center ${
+                          equipe.desempenho === 'Excelente' ? 'bg-green-100 text-green-700' :
+                          equipe.desempenho === 'Bom' ? 'bg-blue-100 text-blue-700' :
+                          equipe.desempenho === 'Regular' ? 'bg-yellow-100 text-yellow-700' :
+                          equipe.desempenho === 'Crítico' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {equipe.desempenho === 'Excelente' ? '🏆 Excelente' :
+                           equipe.desempenho === 'Bom' ? '✅ Bom' :
+                           equipe.desempenho === 'Regular' ? '⚠️ Regular' :
+                           equipe.desempenho === 'Crítico' ? '❌ Crítico' : '📊 Sem dados'}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Legenda explicativa atualizada */}
+            {/* Legenda explicativa */}
             <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico (CORRIGIDO):</h4>
+              <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico:</h4>
               <div className="text-sm text-yellow-700 space-y-1">
-                <p><strong>Takt Time Corrigido:</strong> Tempo relativo ao início ideal de cada pizza</p>
-                <p><strong>Configuração:</strong> {configRodada.numeroPizzasPlanejadas} pizzas planejadas para esta rodada</p>
-                <p><strong>Cálculo correto:</strong> Pizza 1 inicia em 0s, Pizza 2 em {dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s, etc.</p>
-                <p><strong>Exemplo:</strong> Pizza 1 aos 12s (Takt = 12-0 = 12s), Pizza 2 aos 32s (Takt = 32-{dadosTaktTime.tempoMedioPorPizza.toFixed(1)} = {(32-dadosTaktTime.tempoMedioPorPizza).toFixed(1)}s)</p>
-                <p><strong>Interpretação:</strong> Takt Time positivo = atraso, negativo = adiantado</p>
-                <p><strong>Objetivo:</strong> Manter Takt Time próximo de 0 para cada pizza</p>
+                <p><strong>Linha verde (referência):</strong> Tempo médio esperado por pizza na rodada ({dadosTaktTimePorEquipe.tempoMedioRodada.toFixed(1)}s)</p>
+                <p><strong>Barras abaixo da linha:</strong> Equipes entregando dentro do tempo esperado</p>
+                <p><strong>Barras acima da linha:</strong> Equipes com atraso em relação ao tempo médio</p>
+                <p><strong>Cores das barras:</strong> 🟢 Excelente | 🔵 Bom | 🟡 Regular | 🔴 Crítico | ⚪ Sem dados</p>
+                <p><strong>Objetivo:</strong> Manter o Takt Time médio da equipe próximo ou abaixo da linha de referência</p>
               </div>
             </div>
           </>
