@@ -111,10 +111,7 @@ export const useEquipes = () => {
             if (newGanho > oldGanho) {
               const equipeNome = payload.new.nome;
               const ganhoAdicionado = newGanho - oldGanho;
-              toast.success(`🎉 ${equipeNome} ganhou R$ ${ganhoAdicionado.toFixed(2)}!`, {
-                duration: 4000,
-                position: 'top-center'
-              });
+              toast.success(`🎉 ${equipeNome} ganhou R$ ${ganhoAdicionado.toFixed(2)}!`);
             }
           }
           

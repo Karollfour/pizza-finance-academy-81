@@ -30,6 +30,7 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'poor' | 'disconnected'>('disconnected');
   const [lastHeartbeat, setLastHeartbeat] = useState<Date | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const isSubscribedRef = useRef(false);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 3;
   const baseReconnectDelay = 2000;
@@ -46,10 +47,11 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
   };
 
   const cleanupChannel = () => {
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       console.log('Limpando canal global realtime');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
   };
 
@@ -79,29 +81,34 @@ export const useGlobalRealtime = (options: UseGlobalRealtimeOptions = {}) => {
         // Silencioso - sem logs
       });
 
-    // Subscribe apenas uma vez
-    channel.subscribe((status) => {
-      console.log('Status do canal global:', status);
-      if (status === 'SUBSCRIBED') {
-        updateConnectionStatus(true, 'excellent');
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        updateConnectionStatus(false);
-        
-        // Reconexão silenciosa
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
-          reconnectAttemptsRef.current++;
-          
-          setTimeout(() => {
-            if (!isConnected) {
-              setupConnection();
-            }
-          }, delay);
-        }
-      }
-    });
-
     channelRef.current = channel;
+
+    // Subscribe only if not already subscribed
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        console.log('Status do canal global:', status);
+        if (status === 'SUBSCRIBED') {
+          updateConnectionStatus(true, 'excellent');
+          isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          updateConnectionStatus(false);
+          isSubscribedRef.current = false;
+          
+          // Reconexão silenciosa
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
+            reconnectAttemptsRef.current++;
+            
+            setTimeout(() => {
+              if (!isConnected) {
+                setupConnection();
+              }
+            }, delay);
+          }
+        }
+      });
+    }
+
     return channel;
   };
 

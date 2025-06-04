@@ -19,6 +19,7 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
   const lastFetchRef = useRef<number>(0);
 
   const fetchHistorico = async (silent = false) => {
@@ -70,10 +71,11 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
   };
 
   const cleanupChannel = () => {
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       console.log('Removendo canal do histórico de sabores');
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+      isSubscribedRef.current = false;
     }
   };
 
@@ -114,15 +116,20 @@ export const useHistoricoSaboresRodada = (rodadaId?: string) => {
         }
       );
 
-    // Subscribe apenas uma vez
-    channel.subscribe((status) => {
-      console.log('Status da subscrição do histórico:', status);
-      if (status === 'SUBSCRIBED') {
-        console.log('Canal do histórico subscrito com sucesso');
-      }
-    });
-    
     channelRef.current = channel;
+
+    // Subscribe apenas uma vez
+    if (!isSubscribedRef.current) {
+      channel.subscribe((status) => {
+        console.log('Status da subscrição do histórico:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Canal do histórico subscrito com sucesso');
+          isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
+        }
+      });
+    }
 
     return () => {
       clearTimeout(timeoutId);
