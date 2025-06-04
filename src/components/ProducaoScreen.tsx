@@ -779,7 +779,7 @@ const ProducaoScreen = () => {
                         backgroundColor: cor
                       }}>
                                 <CardContent className="p-4 text-center">
-                                  <Badge className="bg-white/20 text-white text-xs px-2 py-1 mb-2">
+                                  <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-950">
                                     #{index + 1}
                                   </Badge>
                                   
