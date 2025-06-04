@@ -138,37 +138,38 @@ const TaktTimeChart = () => {
       // Ordenar pizzas da equipe por tempo de envio para avaliação
       pizzasEquipe.sort((a, b) => a.tempoDecorrido - b.tempoDecorrido);
       
-      // CORREÇÃO: Calcular intervalos entre entregas consecutivas (Takt Time real)
-      const intervalos: number[] = [];
-      for (let i = 1; i < pizzasEquipe.length; i++) {
-        const intervalo = pizzasEquipe[i].tempoDecorrido - pizzasEquipe[i-1].tempoDecorrido;
-        intervalos.push(intervalo);
-        console.log(`Equipe ${equipe.nome} - Pizza ${i+1}: Intervalo de ${intervalo.toFixed(1)}s desde a pizza anterior`);
-      }
+      // NOVO CÁLCULO: Calcular Takt Time baseado no tempo relativo de cada pizza
+      const taktTimes: number[] = [];
       
-      // Calcular Takt Time médio da equipe baseado nos intervalos
-      const taktTimeEquipe = intervalos.length > 0 ? intervalos.reduce((sum, int) => sum + int, 0) / intervalos.length : 0;
+      pizzasEquipe.forEach((pizzaAtual, index) => {
+        const numeroPizza = index + 1;
+        const tempoIdealInicio = (numeroPizza - 1) * tempoMedioPorPizza; // Início ideal desta pizza
+        const tempoRelativo = pizzaAtual.tempoDecorrido - tempoIdealInicio; // Tempo relativo ao início ideal
+        
+        console.log(`Equipe ${equipe.nome} - Pizza ${numeroPizza}:`);
+        console.log(`  Tempo de envio: ${pizzaAtual.tempoDecorrido.toFixed(1)}s`);
+        console.log(`  Tempo ideal de início: ${tempoIdealInicio.toFixed(1)}s`);
+        console.log(`  Tempo relativo (Takt Time): ${tempoRelativo.toFixed(1)}s`);
+        
+        taktTimes.push(tempoRelativo);
+      });
+      
+      // Calcular Takt Time médio da equipe
+      const taktTimeEquipe = taktTimes.length > 0 ? taktTimes.reduce((sum, t) => sum + t, 0) / taktTimes.length : 0;
       
       console.log(`Equipe ${equipe.nome}: ${pizzasEquipe.length} pizzas enviadas, Takt Time médio: ${taktTimeEquipe.toFixed(1)}s`);
-      console.log(`Intervalos da equipe ${equipe.nome}:`, intervalos.map(i => i.toFixed(1) + 's'));
+      console.log(`Takt Times individuais da equipe ${equipe.nome}:`, taktTimes.map(t => t.toFixed(1) + 's'));
       
       // Criar entradas para TODAS as posições de pizza (1 até totalPizzasRodada)
       for (let numeroPizza = 1; numeroPizza <= totalPizzasRodada; numeroPizza++) {
         const tempoIdealPizza = numeroPizza * tempoMedioPorPizza;
+        const tempoIdealInicio = (numeroPizza - 1) * tempoMedioPorPizza;
         const pizzaEnviada = pizzasEquipe[numeroPizza - 1]; // Arrays são 0-indexed
         
         if (pizzaEnviada) {
-          // Pizza foi enviada - mostrar dados reais
-          const estaDentroDoTakt = pizzaEnviada.tempoDecorrido <= tempoIdealPizza;
-          
-          // CORREÇÃO: Para pizzas além da primeira, mostrar o intervalo desde a pizza anterior
-          let tempoParaExibir = pizzaEnviada.tempoDecorrido;
-          let intervaloDesdePizza = 0;
-          
-          if (numeroPizza > 1 && pizzasEquipe[numeroPizza - 2]) {
-            intervaloDesdePizza = pizzaEnviada.tempoDecorrido - pizzasEquipe[numeroPizza - 2].tempoDecorrido;
-            console.log(`Pizza ${numeroPizza} da equipe ${equipe.nome}: Intervalo desde pizza anterior = ${intervaloDesdePizza.toFixed(1)}s`);
-          }
+          // Pizza foi enviada - calcular Takt Time relativo
+          const tempoRelativo = pizzaEnviada.tempoDecorrido - tempoIdealInicio;
+          const estaDentroDoTakt = tempoRelativo <= tempoMedioPorPizza; // Dentro do tempo esperado para esta pizza
           
           dadosProcessados.push({
             equipeId: equipe.id,
@@ -176,7 +177,8 @@ const TaktTimeChart = () => {
             numeroPizzaEquipe: numeroPizza,
             tempo: Number(pizzaEnviada.tempoDecorrido.toFixed(1)),
             tempoAbsoluto: Number(pizzaEnviada.tempoDecorrido.toFixed(1)), // Tempo desde início da rodada
-            intervaloDesdePizza: Number(intervaloDesdePizza.toFixed(1)), // Intervalo desde pizza anterior
+            tempoRelativo: Number(tempoRelativo.toFixed(1)), // Tempo relativo ao início ideal desta pizza
+            tempoIdealInicio: Number(tempoIdealInicio.toFixed(1)), // Quando esta pizza deveria ter começado
             resultado: pizzaEnviada.pizza.resultado,
             corEquipe: equipe.cor_tema || '#3b82f6',
             pizzaId: pizzaEnviada.pizza.id,
@@ -184,7 +186,7 @@ const TaktTimeChart = () => {
             tempoIdeal: tempoIdealPizza,
             estaDentroDoTakt: estaDentroDoTakt,
             taktTimeEquipe: taktTimeEquipe,
-            intervalosEquipe: intervalos,
+            taktTimesIndividuais: taktTimes,
             foiEnviada: true
           });
         } else {
@@ -195,7 +197,8 @@ const TaktTimeChart = () => {
             numeroPizzaEquipe: numeroPizza,
             tempo: null, // Sem tempo pois não foi enviada
             tempoAbsoluto: null,
-            intervaloDesdePizza: null,
+            tempoRelativo: null,
+            tempoIdealInicio: Number(tempoIdealInicio.toFixed(1)),
             resultado: null,
             corEquipe: equipe.cor_tema || '#3b82f6',
             pizzaId: null,
@@ -203,7 +206,7 @@ const TaktTimeChart = () => {
             tempoIdeal: tempoIdealPizza,
             estaDentroDoTakt: false,
             taktTimeEquipe: taktTimeEquipe,
-            intervalosEquipe: intervalos,
+            taktTimesIndividuais: taktTimes,
             foiEnviada: false
           });
         }
@@ -238,6 +241,7 @@ const TaktTimeChart = () => {
             <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
             <p className="text-red-600">Pizza não enviada</p>
             <p className="text-gray-600">{`Tempo ideal: ${data.tempoIdeal.toFixed(1)}s`}</p>
+            <p className="text-gray-600">{`Início ideal: ${data.tempoIdealInicio}s`}</p>
           </div>
         );
       }
@@ -248,10 +252,9 @@ const TaktTimeChart = () => {
         <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
           <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
           <p className="text-blue-600">{`Tempo de envio: ${data.tempoAbsoluto}s`}</p>
-          {data.numeroPizzaEquipe > 1 && data.intervaloDesdePizza > 0 && (
-            <p className="text-purple-600">{`Intervalo desde pizza anterior: ${data.intervaloDesdePizza}s`}</p>
-          )}
-          <p className="text-gray-600">{`Tempo ideal: ${data.tempoIdeal.toFixed(1)}s`}</p>
+          <p className="text-purple-600">{`Início ideal desta pizza: ${data.tempoIdealInicio}s`}</p>
+          <p className="text-orange-600">{`Takt Time relativo: ${data.tempoRelativo}s`}</p>
+          <p className="text-gray-600">{`Tempo ideal total: ${data.tempoIdeal.toFixed(1)}s`}</p>
           <p className={`font-medium ${atraso <= 0 ? 'text-green-700' : 'text-red-700'}`}>
             {atraso <= 0 ? `Adiantado: ${Math.abs(atraso).toFixed(1)}s` : `Atrasado: ${atraso.toFixed(1)}s`}
           </p>
@@ -325,14 +328,14 @@ const TaktTimeChart = () => {
         {dadosTaktTime.dados.length > 0 && configRodada ? (
           <>
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Takt Time por Pizza da Rodada</h4>
+              <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Takt Time Corrigida por Pizza da Rodada</h4>
               <p className="text-sm text-blue-700 mb-2">
                 <strong>{configRodada.numeroPizzasPlanejadas} pizzas planejadas</strong> pelo administrador para esta rodada. 
                 O tempo médio ideal por pizza é de <strong>{dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s</strong>.
               </p>
               <p className="text-xs text-blue-600">
-                <strong>Takt Time:</strong> Medido como intervalo entre entregas consecutivas da mesma equipe.
-                As linhas verticais mostram os tempos ideais para cada pizza.
+                <strong>Takt Time Corrigido:</strong> Medido como tempo relativo ao início ideal de cada pizza.
+                Pizza 1 inicia em 0s, Pizza 2 em {dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s, etc.
               </p>
             </div>
             
@@ -422,7 +425,7 @@ const TaktTimeChart = () => {
 
             {/* Análise detalhada por equipe */}
             <div className="mt-6">
-              <h4 className="font-semibold text-gray-800 mb-3">📈 Performance Takt Time por Equipe</h4>
+              <h4 className="font-semibold text-gray-800 mb-3">📈 Performance Takt Time Corrigida por Equipe</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(dadosPorEquipe).map(([equipe, dados]) => {
                   const pizzasEnviadas = dados.filter(d => d.foiEnviada);
@@ -430,7 +433,7 @@ const TaktTimeChart = () => {
                   const foraDoTakt = pizzasEnviadas.filter(d => !d.estaDentroDoTakt).length;
                   const taktTimeEquipe = pizzasEnviadas[0]?.taktTimeEquipe || 0;
                   const eficienciaTakt = pizzasEnviadas.length > 0 ? (dentroDoTakt / pizzasEnviadas.length) * 100 : 0;
-                  const intervalos = pizzasEnviadas[0]?.intervalosEquipe || [];
+                  const taktTimesIndividuais = pizzasEnviadas[0]?.taktTimesIndividuais || [];
                   
                   return (
                     <div key={equipe} className="bg-white border border-gray-200 p-4 rounded-lg">
@@ -452,11 +455,11 @@ const TaktTimeChart = () => {
                           <span>Takt Time médio:</span>
                           <span className="font-medium">{taktTimeEquipe.toFixed(1)}s</span>
                         </div>
-                        {intervalos.length > 0 && (
+                        {taktTimesIndividuais.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-gray-100">
-                            <span className="text-xs text-gray-500">Intervalos entre pizzas:</span>
+                            <span className="text-xs text-gray-500">Takt Times relativos:</span>
                             <div className="text-xs text-gray-600 mt-1">
-                              {intervalos.map((int, idx) => `${int.toFixed(1)}s`).join(', ')}
+                              {taktTimesIndividuais.map((takt, idx) => `P${idx+1}: ${takt.toFixed(1)}s`).join(', ')}
                             </div>
                           </div>
                         )}
@@ -483,19 +486,16 @@ const TaktTimeChart = () => {
               </div>
             </div>
 
-            {/* Legenda explicativa */}
+            {/* Legenda explicativa atualizada */}
             <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico:</h4>
+              <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico (CORRIGIDO):</h4>
               <div className="text-sm text-yellow-700 space-y-1">
-                <p><strong>Takt Time:</strong> Ritmo ideal de produção calculado como tempo total ÷ número de pizzas planejadas pelo administrador</p>
+                <p><strong>Takt Time Corrigido:</strong> Tempo relativo ao início ideal de cada pizza</p>
                 <p><strong>Configuração:</strong> {configRodada.numeroPizzasPlanejadas} pizzas planejadas para esta rodada</p>
-                <p><strong>Medição correta:</strong> Takt Time = intervalo entre entregas consecutivas da mesma equipe</p>
-                <p><strong>Exemplo:</strong> Pizza 1 aos 12s, Pizza 2 aos 32s → Takt Time = 20s (32-12)</p>
-                <p><strong>Linhas verdes verticais:</strong> Momentos ideais para envio de cada pizza (Pizza 1, Pizza 2...)</p>
-                <p><strong>Eixo Y:</strong> Cada linha representa uma posição de pizza (1 a {dadosTaktTime.totalPizzasRodada})</p>
-                <p><strong>Círculos cheios:</strong> Pizzas aprovadas | <strong>Círculos vazios:</strong> Pizzas reprovadas</p>
-                <p><strong>Borda vermelha:</strong> Pizza enviada fora do Takt Time ideal</p>
-                <p><strong>Objetivo:</strong> Manter intervalos constantes entre entregas de cada equipe</p>
+                <p><strong>Cálculo correto:</strong> Pizza 1 inicia em 0s, Pizza 2 em {dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s, etc.</p>
+                <p><strong>Exemplo:</strong> Pizza 1 aos 12s (Takt = 12-0 = 12s), Pizza 2 aos 32s (Takt = 32-{dadosTaktTime.tempoMedioPorPizza.toFixed(1)} = {(32-dadosTaktTime.tempoMedioPorPizza).toFixed(1)}s)</p>
+                <p><strong>Interpretação:</strong> Takt Time positivo = atraso, negativo = adiantado</p>
+                <p><strong>Objetivo:</strong> Manter Takt Time próximo de 0 para cada pizza</p>
               </div>
             </div>
           </>
