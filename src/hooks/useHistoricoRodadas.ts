@@ -119,14 +119,17 @@ export const useHistoricoRodadas = (equipeId?: string) => {
         }
       );
 
+    channelRef.current = channel;
+
     // Subscribe only once
     if (!isSubscribedRef.current) {
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
         }
       });
-      channelRef.current = channel;
     }
 
     return () => {

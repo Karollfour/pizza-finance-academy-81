@@ -136,6 +136,23 @@ export const useRodadas = () => {
     }
   };
 
+  const pausarRodada = async (rodadaId: string) => {
+    try {
+      const { error } = await supabase
+        .from('rodadas')
+        .update({
+          status: 'pausada'
+        })
+        .eq('id', rodadaId);
+
+      if (error) throw error;
+      await fetchRodadaAtual();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao pausar rodada');
+      throw err;
+    }
+  };
+
   const finalizarRodada = async (rodadaId: string) => {
     try {
       const { error } = await supabase
@@ -250,14 +267,17 @@ export const useRodadas = () => {
         }
       );
 
+    channelRef.current = channel;
+
     // Subscribe only once
     if (!isSubscribedRef.current) {
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           isSubscribedRef.current = true;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          isSubscribedRef.current = false;
         }
       });
-      channelRef.current = channel;
     }
 
     return () => {
@@ -275,6 +295,7 @@ export const useRodadas = () => {
     loading,
     error,
     iniciarRodada,
+    pausarRodada,
     finalizarRodada,
     criarNovaRodada,
     obterProximoNumeroRodada,
