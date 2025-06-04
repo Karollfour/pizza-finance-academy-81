@@ -700,7 +700,7 @@ const ProducaoScreen = () => {
                           </Card>}
 
                         {segundoProximoSabor && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
-                            <CardContent className="p-3 text-center">
+                            <CardContent className="p-3 text-center bg-red-200">
                               <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
                               <div className="text-2xl mb-2">🍕</div>
                               <h4 className="font-bold text-purple-700 text-3xl">
