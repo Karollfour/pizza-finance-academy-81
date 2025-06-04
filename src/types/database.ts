@@ -1,13 +1,14 @@
 export interface Equipe {
   id: string;
   nome: string;
+  professor_responsavel: string;
+  created_at: string;
   saldo_inicial: number;
   gasto_total: number;
   ganho_total: number;
-  professor_responsavel: string | null;
-  cor_tema: string;
-  emblema: string;
-  created_at: string;
+  cor_tema?: string;
+  emblema?: string;
+  ordem?: number;
 }
 
 export interface ProdutoLoja {

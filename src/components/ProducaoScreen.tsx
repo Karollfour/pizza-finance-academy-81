@@ -388,7 +388,10 @@ const ProducaoScreen = () => {
 
             <div>
               {rodadaAtual?.status === 'ativa' ? <div className="flex gap-2">
-                  
+                  <Button onClick={handlePausarRodada} className="flex-1 bg-yellow-500 hover:bg-yellow-600" size="sm">
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
                   <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
@@ -424,9 +427,23 @@ const ProducaoScreen = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
-            <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : 'bg-gray-500'}>
-              {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : "Finalizada"}
-            </Badge>
+            <div className="flex items-center gap-4">
+              <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'}>
+                {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
+              </Badge>
+              {rodadaAtual?.status === 'ativa' && (
+                <div className="flex gap-2">
+                  <Button onClick={handlePausarRodada} className="bg-yellow-500 hover:bg-yellow-600" size="sm">
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
+                    <Square className="w-4 h-4 mr-1" />
+                    Encerrar
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
