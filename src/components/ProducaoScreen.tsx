@@ -659,7 +659,7 @@ const ProducaoScreen = () => {
                   {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                       {/* Sabor Atual */}
                       <div className="lg:col-span-2 my-[5px]">
-                        <Card className="shadow-lg border-2 border-green-400 bg-green-50">
+                        <Card className="shadow-lg border-2 border-green-400 bg-green-100">
                           <CardContent className="p-6 text-center my-[10px] bg-green-100">
                             <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
                             <div className="text-4xl mb-3">🍕</div>
