@@ -31,10 +31,12 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
     iniciarRodada,
+    pausarRodada,
     finalizarRodada,
     criarNovaRodada,
     lastUpdate,
@@ -719,4 +721,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;
