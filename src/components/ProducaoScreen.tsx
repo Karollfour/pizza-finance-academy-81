@@ -681,7 +681,7 @@ const ProducaoScreen = () => {
 
                       {/* Próximos Sabores */}
                       <div className="space-y-3">
-                        {proximoSabor ? <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+                        {proximoSabor ? <Card className="shadow-lg border-2 border-blue-400 bg-amber-50">
                             <CardContent className="p-3 text-center bg-orange-100">
                               <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 1</Badge>
                               <div className="text-2xl mb-2">🍕</div>
