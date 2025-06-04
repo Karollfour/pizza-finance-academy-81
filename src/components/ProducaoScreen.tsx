@@ -31,7 +31,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -375,10 +374,7 @@ const ProducaoScreen = () => {
 
             <div>
               {rodadaAtual?.status === 'ativa' ? <div className="flex gap-2">
-                  <Button onClick={handlePausarRodada} className="flex-1 bg-yellow-500 hover:bg-yellow-600" size="sm">
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pausar
-                  </Button>
+                  
                   <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
@@ -419,10 +415,7 @@ const ProducaoScreen = () => {
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
               </Badge>
               {rodadaAtual?.status === 'ativa' && <div className="flex gap-2">
-                  <Button onClick={handlePausarRodada} className="bg-yellow-500 hover:bg-yellow-600" size="sm">
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pausar
-                  </Button>
+                  
                   <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
@@ -721,5 +714,4 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
-
 export default ProducaoScreen;
