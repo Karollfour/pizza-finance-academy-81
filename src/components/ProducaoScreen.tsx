@@ -31,7 +31,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -196,28 +195,24 @@ const ProducaoScreen = () => {
   };
   const handlePausarRodada = async () => {
     if (!rodadaAtual) return;
-    
     try {
       console.log('Pausando rodada...');
-      const { error } = await supabase
-        .from('rodadas')
-        .update({ 
-          status: 'pausada'
-        })
-        .eq('id', rodadaAtual.id);
-
+      const {
+        error
+      } = await supabase.from('rodadas').update({
+        status: 'pausada'
+      }).eq('id', rodadaAtual.id);
       if (error) throw error;
 
       // Disparar evento customizado para sincronização
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('rodada-pausada', { 
-          detail: { 
+        window.dispatchEvent(new CustomEvent('rodada-pausada', {
+          detail: {
             rodadaId: rodadaAtual.id,
-            timestamp: new Date().toISOString() 
-          } 
+            timestamp: new Date().toISOString()
+          }
         }));
       }
-
       toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
         duration: 3000,
         position: 'top-center'
@@ -373,8 +368,7 @@ const ProducaoScreen = () => {
   };
 
   // Componente para o conteúdo atual de controle de rodadas
-  const ControleRodadasContent = () => (
-    <div className="space-y-8">
+  const ControleRodadasContent = () => <div className="space-y-8">
       {/* Controles da Rodada Simplificados */}
       <Card className="shadow-lg border-2 border-red-200">
         <CardHeader className="bg-red-50">
@@ -384,97 +378,40 @@ const ProducaoScreen = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-              <Input 
-                id="tempoLimite" 
-                type="number" 
-                value={tempoLimite} 
-                onChange={(e) => setTempoLimite(Number(e.target.value))} 
-                disabled={rodadaAtual?.status === 'ativa'} 
-              />
+              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa'} />
             </div>
 
             <div>
               <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
-              <Input 
-                id="numeroPizzas" 
-                type="number" 
-                value={numeroPizzas} 
-                onChange={(e) => setNumeroPizzas(Number(e.target.value))} 
-                disabled={rodadaAtual?.status === 'ativa'} 
-                min="1" 
-                max="50" 
-              />
+              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa'} min="1" max="50" />
             </div>
 
             <div>
-              {rodadaAtual?.status === 'ativa' ? (
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handlePausarRodada} 
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600"
-                    size="sm"
-                  >
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pausar
-                  </Button>
-                  <Button 
-                    onClick={handleFinalizarRodada} 
-                    className="flex-1 bg-red-500 hover:bg-red-600"
-                    size="sm"
-                  >
+              {rodadaAtual?.status === 'ativa' ? <div className="flex gap-2">
+                  
+                  <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div>
-              ) : (
-                <Button 
-                  onClick={handleIniciarRodada} 
-                  className="w-full bg-green-500 hover:bg-green-600" 
-                  disabled={loadingSequencia}
-                >
+                </div> : <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600" disabled={loadingSequencia}>
                   {loadingSequencia ? 'Criando Sequência...' : `Iniciar Rodada ${numeroRodadaDisplay}`}
-                </Button>
-              )}
+                </Button>}
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                onClick={() => adicionarMinutos(-1)} 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-              >
+              <Button onClick={() => adicionarMinutos(-1)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
                 -1 min
               </Button>
-              <Button 
-                onClick={() => adicionarMinutos(1)} 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-              >
+              <Button onClick={() => adicionarMinutos(1)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
                 +1 min
               </Button>
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                onClick={() => adicionarMinutos(-5)} 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-              >
+              <Button onClick={() => adicionarMinutos(-5)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
                 -5 min
               </Button>
-              <Button 
-                onClick={() => adicionarMinutos(5)} 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-              >
+              <Button onClick={() => adicionarMinutos(5)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
                 +5 min
               </Button>
             </div>
@@ -733,9 +670,7 @@ const ProducaoScreen = () => {
             </> : <>🔄 Resetar Jogo</>}
         </Button>
       </div>
-    </div>
-  );
-
+    </div>;
   return <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -817,5 +752,4 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
-
 export default ProducaoScreen;
