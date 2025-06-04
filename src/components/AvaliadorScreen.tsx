@@ -9,6 +9,7 @@ import { usePizzas } from '@/hooks/usePizzas';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useRodadas } from '@/hooks/useRodadas';
 import { toast } from 'sonner';
+import HistoricoAvaliador from './HistoricoAvaliador';
 
 const AvaliadorScreen = () => {
   const { rodadaAtual } = useRodadas();
@@ -213,12 +214,15 @@ const AvaliadorScreen = () => {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pending">
               🍕 Pendentes ({pizzasPendentes.length})
             </TabsTrigger>
             <TabsTrigger value="evaluated">
               ✅ Avaliadas ({pizzasAvaliadas.length})
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              📚 Histórico
             </TabsTrigger>
           </TabsList>
 
@@ -367,6 +371,10 @@ const AvaliadorScreen = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <HistoricoAvaliador />
           </TabsContent>
         </Tabs>
       </div>
