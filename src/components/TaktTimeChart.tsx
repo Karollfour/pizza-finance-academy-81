@@ -240,31 +240,16 @@ const TaktTimeChart = () => {
           <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
             <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
             <p className="text-red-600">Pizza não enviada</p>
-            <p className="text-gray-600">{`Tempo ideal: ${data.tempoIdeal.toFixed(1)}s`}</p>
-            <p className="text-gray-600">{`Início ideal: ${data.tempoIdealInicio}s`}</p>
           </div>
         );
       }
       
-      const atraso = data.tempoAbsoluto - data.tempoIdeal;
-      
       return (
         <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
           <p className="font-semibold">{data.equipeNome} - Pizza {data.numeroPizzaEquipe}</p>
-          <p className="text-blue-600">{`Tempo de envio: ${data.tempoAbsoluto}s`}</p>
-          <p className="text-purple-600">{`Início ideal desta pizza: ${data.tempoIdealInicio}s`}</p>
+          <p className="text-blue-600">{`Tempo de Envio: ${data.tempoAbsoluto}s`}</p>
           <p className="text-orange-600">{`Takt Time relativo: ${data.tempoRelativo}s`}</p>
-          <p className="text-gray-600">{`Tempo ideal total: ${data.tempoIdeal.toFixed(1)}s`}</p>
-          <p className={`font-medium ${atraso <= 0 ? 'text-green-700' : 'text-red-700'}`}>
-            {atraso <= 0 ? `Adiantado: ${Math.abs(atraso).toFixed(1)}s` : `Atrasado: ${atraso.toFixed(1)}s`}
-          </p>
-          <p className={`font-medium ${data.resultado === 'aprovada' ? 'text-green-700' : data.resultado === 'reprovada' ? 'text-red-700' : 'text-purple-700'}`}>
-            {`Resultado: ${data.resultado === 'aprovada' ? 'Aprovada' : data.resultado === 'reprovada' ? 'Reprovada' : 'Pendente'}`}
-          </p>
-          <p className="text-purple-600">{`Takt Time médio da equipe: ${data.taktTimeEquipe.toFixed(1)}s`}</p>
-          <p className={`text-sm ${data.estaDentroDoTakt ? 'text-green-600' : 'text-red-600'}`}>
-            {data.estaDentroDoTakt ? '✓ Dentro do Takt' : '✗ Fora do Takt'}
-          </p>
+          <p className="text-purple-600">{`Takt Time médio da Equipe: ${data.taktTimeEquipe.toFixed(1)}s`}</p>
         </div>
       );
     }
