@@ -606,6 +606,34 @@ const ProducaoScreen = () => {
                     );
                   })}
                 </div>
+
+                {/* Legenda específica para rodada atual em fullscreen */}
+                <div className="mt-8 flex flex-wrap justify-center gap-6 text-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-yellow-500 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Mussarela/Queijo</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-orange-600 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Pepperoni/Calabresa</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-600 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Margherita/Tomate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-red-600 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Frango/Chicken</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-purple-600 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Portuguesa</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-gray-600 rounded-full border-2 border-white"></div>
+                    <span className="text-white font-medium">Outros Sabores</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -895,20 +923,20 @@ const ProducaoScreen = () => {
                           <span>Pepperoni/Calabresa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                          <span>Margherita/Tomate</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                          <span>Frango/Chicken</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                          <span>Portuguesa</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          
-                          
+                          <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+                          <span>Outros Sabores</span>
                         </div>
                       </div>
                     </div>}
@@ -919,8 +947,7 @@ const ProducaoScreen = () => {
 
         {/* Visualizador de Sabores da Rodada - Agora com sistema automático */}
         {rodadaAtual && <Card className="shadow-lg border-2 border-blue-200 mb-8">
-            
-            
+            <VisualizadorSaboresRodada rodada={rodadaAtual} />
           </Card>}
 
         {/* Histórico de Sabores Automático */}
@@ -974,8 +1001,7 @@ const ProducaoScreen = () => {
 
         {/* Histórico de Pizzas */}
         <Card className="shadow-lg border-2 border-green-200 mb-8">
-          
-          
+          {/* Conteúdo do histórico de pizzas pode ser inserido aqui */}
         </Card>
 
         {/* Botão de Reset no final da tela */}
