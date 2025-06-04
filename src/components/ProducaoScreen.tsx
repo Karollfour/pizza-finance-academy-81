@@ -92,7 +92,6 @@ const ProducaoScreen = () => {
   const enterFullscreen = () => {
     setIsFullscreen(true);
   };
-
   const exitFullscreen = () => {
     setIsFullscreen(false);
   };
@@ -104,20 +103,17 @@ const ProducaoScreen = () => {
         exitFullscreen();
       }
     };
-
     if (isFullscreen) {
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
   }, [isFullscreen]);
-
   const handleIniciarRodada = async () => {
     try {
       if (!rodadaAtual) {
@@ -201,13 +197,11 @@ const ProducaoScreen = () => {
     if (!rodadaAtual) return;
     try {
       console.log('Pausando rodada...');
-      const { error } = await supabase
-        .from('rodadas')
-        .update({
-          status: 'pausada'
-        })
-        .eq('id', rodadaAtual.id);
-
+      const {
+        error
+      } = await supabase.from('rodadas').update({
+        status: 'pausada'
+      }).eq('id', rodadaAtual.id);
       if (error) throw error;
 
       // Disparar evento customizado para notificar outros componentes
@@ -219,7 +213,6 @@ const ProducaoScreen = () => {
           }
         }));
       }
-
       toast.success(`⏸️ Rodada ${rodadaAtual.numero} pausada!`, {
         duration: 3000,
         position: 'top-center'
@@ -396,15 +389,9 @@ const ProducaoScreen = () => {
   // Componente Fullscreen Overlay
   const FullscreenOverlay = () => {
     if (!isFullscreen || !rodadaAtual) return null;
-
-    return (
-      <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8">
+    return <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8">
         {/* Botão para sair do fullscreen */}
-        <button
-          onClick={exitFullscreen}
-          className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition-colors"
-          title="Sair do modo tela cheia (ESC)"
-        >
+        <button onClick={exitFullscreen} className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition-colors" title="Sair do modo tela cheia (ESC)">
           ✕
         </button>
 
@@ -419,11 +406,9 @@ const ProducaoScreen = () => {
         </div>
 
         {/* Sabores Fullscreen */}
-        {historico.length > 0 && (
-          <div className="w-full max-w-7xl">
+        {historico.length > 0 && <div className="w-full max-w-7xl">
             {/* Rodada Ativa - Sistema Automático */}
-            {rodadaAtual.status === 'ativa' && saborAtual ? (
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* Sabor Atual */}
                 <div className="xl:col-span-2">
                   <Card className="shadow-xl border-4 border-green-400 bg-green-50">
@@ -435,11 +420,9 @@ const ProducaoScreen = () => {
                       <h3 className="font-bold text-green-700 mb-4 text-5xl lg:text-6xl">
                         {getSaborNome(saborAtual)}
                       </h3>
-                      {getSaborDescricao(saborAtual) && (
-                        <p className="text-xl text-green-600 mb-4">
+                      {getSaborDescricao(saborAtual) && <p className="text-xl text-green-600 mb-4">
                           {getSaborDescricao(saborAtual)}
-                        </p>
-                      )}
+                        </p>}
                       <div className="text-xl text-green-600 mb-4">
                         Pizza #{saborAtualIndex + 1} de {historico.length}
                       </div>
@@ -454,8 +437,7 @@ const ProducaoScreen = () => {
 
                 {/* Próximos Sabores */}
                 <div className="space-y-6">
-                  {proximoSabor ? (
-                    <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
+                  {proximoSabor ? <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
                       <CardContent className="p-6 text-center">
                         <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4">
                           PRÓXIMO 1
@@ -468,18 +450,14 @@ const ProducaoScreen = () => {
                           Pizza #{saborAtualIndex + 2}
                         </div>
                       </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="shadow-xl border-4 border-gray-200">
+                    </Card> : <Card className="shadow-xl border-4 border-gray-200">
                       <CardContent className="p-6 text-center">
                         <div className="text-6xl mb-4">🏁</div>
                         <p className="text-lg text-gray-500">Último sabor</p>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
 
-                  {segundoProximoSabor && (
-                    <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
+                  {segundoProximoSabor && <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
                       <CardContent className="p-6 text-center">
                         <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4">
                           PRÓXIMO 2
@@ -492,13 +470,10 @@ const ProducaoScreen = () => {
                           Pizza #{saborAtualIndex + 3}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
                 </div>
-              </div>
-            ) : (
-              /* Rodada Aguardando - Primeiros 3 Sabores */
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              </div> : (/* Rodada Aguardando - Primeiros 3 Sabores */
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 <div className="xl:col-span-2">
                   <Card className="shadow-xl border-4 border-yellow-400 bg-yellow-50">
                     <CardContent className="p-8 text-center">
@@ -509,11 +484,9 @@ const ProducaoScreen = () => {
                       <h3 className="font-bold text-yellow-700 mb-4 text-5xl lg:text-6xl">
                         {getSaborNome(historico[0])}
                       </h3>
-                      {getSaborDescricao(historico[0]) && (
-                        <p className="text-xl text-yellow-600 mb-4">
+                      {getSaborDescricao(historico[0]) && <p className="text-xl text-yellow-600 mb-4">
                           {getSaborDescricao(historico[0])}
-                        </p>
-                      )}
+                        </p>}
                       <div className="text-xl text-yellow-600">
                         Pizza #{historico[0]?.ordem || 1}
                       </div>
@@ -522,8 +495,7 @@ const ProducaoScreen = () => {
                 </div>
 
                 <div className="space-y-6">
-                  {historico[1] && (
-                    <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
+                  {historico[1] && <Card className="shadow-xl border-4 border-blue-400 bg-blue-50">
                       <CardContent className="p-6 text-center">
                         <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4">
                           PRÓXIMO 2
@@ -536,11 +508,9 @@ const ProducaoScreen = () => {
                           Pizza #{historico[1].ordem}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
 
-                  {historico[2] && (
-                    <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
+                  {historico[2] && <Card className="shadow-xl border-4 border-purple-400 bg-purple-50">
                       <CardContent className="p-6 text-center">
                         <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4">
                           PRÓXIMO 3
@@ -553,79 +523,48 @@ const ProducaoScreen = () => {
                           Pizza #{historico[2].ordem}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
                 </div>
-              </div>
-            )}
+              </div>)}
 
             {/* Histórico Visual Fullscreen */}
-            {rodadaAtual.status === 'ativa' && historico.length > 0 && (
-              <div className="mt-12 pt-8 border-t border-orange-200">
+            {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-12 pt-8 border-t border-orange-200">
                 <div className="grid grid-cols-8 md:grid-cols-12 lg:grid-cols-16 gap-4">
                   {historico.map((sabor, index) => {
-                    const saborNome = getSaborNome(sabor);
-                    const cor = getSaborCorRodadaAtual(saborNome);
-                    const isAtual = index === saborAtualIndex;
-                    const isPassado = index < saborAtualIndex;
-
-                    if (!isPassado && !isAtual) {
-                      return null;
-                    }
-
-                    return (
-                      <div
-                        key={sabor.id}
-                        className={`relative group cursor-pointer transition-all duration-200 ${
-                          isAtual ? 'scale-125 z-10' : ''
-                        }`}
-                        title={`Pizza #${index + 1}: ${saborNome}`}
-                      >
-                        <div
-                          className={`w-12 h-12 rounded-full border-4 flex items-center justify-center text-lg font-bold text-white shadow-lg ${
-                            isAtual 
-                              ? 'border-yellow-600 animate-pulse' 
-                              : 'border-gray-400 opacity-60'
-                          }`}
-                          style={{ backgroundColor: cor }}
-                        >
+              const saborNome = getSaborNome(sabor);
+              const cor = getSaborCorRodadaAtual(saborNome);
+              const isAtual = index === saborAtualIndex;
+              const isPassado = index < saborAtualIndex;
+              if (!isPassado && !isAtual) {
+                return null;
+              }
+              return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-125 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
+                        <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center text-lg font-bold text-white shadow-lg ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
+                  backgroundColor: cor
+                }}>
                           {index + 1}
                         </div>
                         
-                        {isAtual && (
-                          <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white animate-pulse bg-orange-400"></div>
-                        )}
-                        {isPassado && (
-                          <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-500 rounded-full border-2 border-white">
+                        {isAtual && <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white animate-pulse bg-orange-400"></div>}
+                        {isPassado && <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-500 rounded-full border-2 border-white">
                             <div className="w-full h-full flex items-center justify-center">
                               <div className="w-2 h-2 bg-white rounded-full"></div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          </div>}
+                      </div>;
+            })}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              </div>}
+          </div>}
 
         {/* Botão Encerrar Rodada no Fullscreen */}
-        {rodadaAtual.status === 'ativa' && (
-          <div className="absolute bottom-8 right-8">
-            <Button 
-              onClick={handleFinalizarRodada}
-              className="bg-red-500 hover:bg-red-600 text-white text-lg px-6 py-3"
-            >
+        {rodadaAtual.status === 'ativa' && <div className="absolute bottom-8 right-8">
+            <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600 text-white text-lg px-6 py-3">
               ⏹️ Encerrar Rodada
             </Button>
-          </div>
-        )}
-      </div>
-    );
+          </div>}
+      </div>;
   };
-
   return <div className="relative min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -718,28 +657,12 @@ const ProducaoScreen = () => {
                     <h3 className="font-semibold text-orange-600 text-center text-2xl">🍕 Sabores da Rodada</h3>
                     
                     {/* Botões de controle da rodada - MODIFICADO */}
-                    {rodadaAtual.status === 'ativa' && (
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={enterFullscreen}
-                          size="sm" 
-                          variant="outline"
-                          className="text-sm px-3 py-2 h-9 text-blue-600 hover:text-blue-700"
-                          title="Modo tela cheia"
-                        >
-                          ⛶
-                        </Button>
-                        <Button 
-                          onClick={handleFinalizarRodada}
-                          size="sm" 
-                          variant="outline"
-                          className="text-sm px-3 py-2 h-9 text-red-600 hover:text-red-700"
-                          title="Encerrar rodada"
-                        >
+                    {rodadaAtual.status === 'ativa' && <div className="flex gap-2">
+                        
+                        <Button onClick={handleFinalizarRodada} size="sm" variant="outline" className="text-sm px-3 py-2 h-9 text-red-600 hover:text-red-700" title="Encerrar rodada">
                           ⏹️
                         </Button>
-                      </div>
-                    )}
+                      </div>}
                   </div>
 
                   {/* Rodada Ativa - Sistema Automático */}
