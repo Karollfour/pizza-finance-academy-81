@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,13 +10,8 @@ import { useEquipes } from '@/hooks/useEquipes';
 import { useCompras } from '@/hooks/useCompras';
 import { useSabores } from '@/hooks/useSabores';
 import { usePersistedState } from '@/hooks/usePersistedState';
-import DashboardLojinha from './DashboardLojinha';
-import ComprasPorEquipe from './ComprasPorEquipe';
-import GestaoEquipes from './GestaoEquipes';
 import GerenciadorItens from './GerenciadorItens';
-import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
-import HistoricoLoja from './HistoricoLoja';
 import { toast } from 'sonner';
 
 const LojinhaScreen = () => {
@@ -35,8 +31,8 @@ const LojinhaScreen = () => {
     sabores
   } = useSabores();
 
-  // Persistir estado da tela ativa - alterado para gestao como padrão
-  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'gestao');
+  // Persistir estado da tela ativa - alterado para itens como padrão
+  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'itens');
 
   // Estados para estatísticas
   const [estatisticasGerais, setEstatisticasGerais] = useState({
@@ -138,34 +134,19 @@ const LojinhaScreen = () => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 5 Abas */}
+        {/* Conteúdo Principal com 2 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
-            <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
-            <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
-            <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="gestao" className="mt-6">
-            <GestaoEquipes />
-          </TabsContent>
           
           <TabsContent value="itens" className="mt-6">
             <GerenciadorItens />
           </TabsContent>
           
-          <TabsContent value="sabores" className="mt-6">
-            <GerenciadorSabores />
-          </TabsContent>
-          
           <TabsContent value="vendas" className="mt-6">
             <VendasLoja />
-          </TabsContent>
-          
-          <TabsContent value="dashboard" className="mt-6">
-            <DashboardLojinha />
           </TabsContent>
         </Tabs>
 
