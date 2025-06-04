@@ -57,7 +57,7 @@ const TaktTimeChart = () => {
   const dadosTaktTime = useMemo(() => {
     if (!rodadaAtual) {
       console.log('Sem rodada atual para calcular Takt Time');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], numeroPizzasPorEquipe: 0 };
+      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
     }
 
     console.log('Calculando Takt Time por equipe para rodada:', rodadaAtual.numero);
@@ -72,7 +72,7 @@ const TaktTimeChart = () => {
 
     if (pizzasDaRodada.length === 0) {
       console.log('Nenhuma pizza encontrada para a rodada');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], numeroPizzasPorEquipe: 0 };
+      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
     }
 
     // Obter horário de início da rodada
@@ -80,23 +80,19 @@ const TaktTimeChart = () => {
     
     if (!inicioRodada) {
       console.log('Rodada não tem horário de início registrado');
-      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], numeroPizzasPorEquipe: 0 };
+      return { dados: [], tempoMedioPorPizza: 0, linhasReferencia: [], totalPizzasRodada: 0 };
     }
 
     console.log('Início da rodada:', new Date(inicioRodada).toISOString());
 
-    // Calcular o número de pizzas por equipe baseado no total de pizzas da rodada
-    // Assumindo que cada equipe deveria fazer o mesmo número de pizzas
-    const numeroEquipes = equipes.length;
-    const numeroPizzasPorEquipe = Math.ceil(pizzasDaRodada.length / numeroEquipes);
+    // MUDANÇA PRINCIPAL: Calcular o total de pizzas da rodada baseado no que foi realmente enviado
+    // Este é o número total de pizzas que deveriam ser feitas na rodada (definido implicitamente pelo admin)
+    const totalPizzasRodada = pizzasDaRodada.length;
     
-    // Se não temos informação suficiente, usar um padrão baseado no tempo
-    const pizzasEsperadasPorEquipe = numeroPizzasPorEquipe > 0 ? numeroPizzasPorEquipe : 10;
+    // Calcular o tempo médio esperado por pizza baseado no TOTAL da rodada
+    const tempoMedioPorPizza = rodadaAtual.tempo_limite / totalPizzasRodada;
     
-    // Calcular o tempo médio esperado por pizza
-    const tempoMedioPorPizza = rodadaAtual.tempo_limite / pizzasEsperadasPorEquipe;
-    
-    console.log(`Tempo médio esperado por pizza: ${tempoMedioPorPizza.toFixed(1)}s (${rodadaAtual.tempo_limite}s ÷ ${pizzasEsperadasPorEquipe} pizzas)`);
+    console.log(`Tempo médio esperado por pizza: ${tempoMedioPorPizza.toFixed(1)}s (${rodadaAtual.tempo_limite}s ÷ ${totalPizzasRodada} pizzas total da rodada)`);
 
     // Agrupar pizzas por equipe e calcular dados
     const pizzasPorEquipe: { [equipeId: string]: any[] } = {};
@@ -120,7 +116,7 @@ const TaktTimeChart = () => {
       });
     });
 
-    // Processar cada equipe e criar todas as posições de pizza (1 até pizzasEsperadasPorEquipe)
+    // Processar cada equipe e criar todas as posições de pizza (1 até totalPizzasRodada)
     equipes.forEach(equipe => {
       const pizzasEquipe = pizzasPorEquipe[equipe.id] || [];
       
@@ -139,8 +135,8 @@ const TaktTimeChart = () => {
       
       console.log(`Equipe ${equipe.nome}: ${pizzasEquipe.length} pizzas entregues, Takt Time médio: ${taktTimeEquipe.toFixed(1)}s`);
       
-      // Criar entradas para TODAS as posições de pizza (1 até pizzasEsperadasPorEquipe)
-      for (let numeroPizza = 1; numeroPizza <= pizzasEsperadasPorEquipe; numeroPizza++) {
+      // Criar entradas para TODAS as posições de pizza (1 até totalPizzasRodada)
+      for (let numeroPizza = 1; numeroPizza <= totalPizzasRodada; numeroPizza++) {
         const tempoIdealPizza = numeroPizza * tempoMedioPorPizza;
         const pizzaEntregue = pizzasEquipe[numeroPizza - 1]; // Arrays são 0-indexed
         
@@ -186,7 +182,7 @@ const TaktTimeChart = () => {
 
     // Criar linhas de referência para o Takt Time ideal
     const linhasReferencia = [];
-    for (let i = 1; i <= pizzasEsperadasPorEquipe; i++) {
+    for (let i = 1; i <= totalPizzasRodada; i++) {
       linhasReferencia.push({
         tempo: i * tempoMedioPorPizza,
         label: `Pizza ${i}`
@@ -198,7 +194,7 @@ const TaktTimeChart = () => {
       dados: dadosProcessados, 
       tempoMedioPorPizza,
       linhasReferencia,
-      numeroPizzasPorEquipe: pizzasEsperadasPorEquipe
+      totalPizzasRodada
     };
   }, [rodadaAtual, pizzas, equipes]);
 
@@ -253,23 +249,23 @@ const TaktTimeChart = () => {
     return grupos;
   }, [dadosTaktTime.dados]);
 
-  // Criar array de posições Y únicas para todas as pizzas
+  // Criar array de posições Y únicas para todas as pizzas da rodada
   const posicoesY = useMemo(() => {
     const posicoes = [];
-    for (let i = 1; i <= dadosTaktTime.numeroPizzasPorEquipe; i++) {
+    for (let i = 1; i <= dadosTaktTime.totalPizzasRodada; i++) {
       posicoes.push(`Pizza ${i}`);
     }
     return posicoes;
-  }, [dadosTaktTime.numeroPizzasPorEquipe]);
+  }, [dadosTaktTime.totalPizzasRodada]);
 
   // Criar ticks personalizados para o eixo X baseados no tempo médio por pizza
   const ticksTempoIdeal = useMemo(() => {
     const ticks = [0];
-    for (let i = 1; i <= dadosTaktTime.numeroPizzasPorEquipe; i++) {
+    for (let i = 1; i <= dadosTaktTime.totalPizzasRodada; i++) {
       ticks.push(i * dadosTaktTime.tempoMedioPorPizza);
     }
     return ticks;
-  }, [dadosTaktTime.tempoMedioPorPizza, dadosTaktTime.numeroPizzasPorEquipe]);
+  }, [dadosTaktTime.tempoMedioPorPizza, dadosTaktTime.totalPizzasRodada]);
 
   const coresEquipes = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899'];
 
@@ -298,7 +294,7 @@ const TaktTimeChart = () => {
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
               <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Takt Time por Pizza da Rodada</h4>
               <p className="text-sm text-blue-700 mb-2">
-                Cada linha representa uma posição de pizza (1 a {dadosTaktTime.numeroPizzasPorEquipe}). O tempo médio ideal por pizza é de{' '}
+                Total de <strong>{dadosTaktTime.totalPizzasRodada} pizzas</strong> na rodada. O tempo médio ideal por pizza é de{' '}
                 <strong>{dadosTaktTime.tempoMedioPorPizza.toFixed(1)}s</strong>.
               </p>
               <p className="text-xs text-blue-600">
@@ -407,7 +403,7 @@ const TaktTimeChart = () => {
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
                           <span>Pizzas entregues:</span>
-                          <span className="font-medium">{pizzasEntregues.length}/{dadosTaktTime.numeroPizzasPorEquipe}</span>
+                          <span className="font-medium">{pizzasEntregues.length}/{dadosTaktTime.totalPizzasRodada}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Dentro do Takt:</span>
@@ -448,9 +444,9 @@ const TaktTimeChart = () => {
             <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
               <h4 className="font-semibold text-yellow-800 mb-2">💡 Como interpretar este gráfico:</h4>
               <div className="text-sm text-yellow-700 space-y-1">
-                <p><strong>Takt Time:</strong> Ritmo ideal de produção calculado como tempo total ÷ número de pizzas por equipe</p>
+                <p><strong>Takt Time:</strong> Ritmo ideal de produção calculado como tempo total ÷ número total de pizzas da rodada</p>
                 <p><strong>Linhas verdes verticais:</strong> Momentos ideais para entrega de cada pizza (Pizza 1, Pizza 2...)</p>
-                <p><strong>Eixo Y:</strong> Cada linha representa uma posição de pizza (1 a {dadosTaktTime.numeroPizzasPorEquipe})</p>
+                <p><strong>Eixo Y:</strong> Cada linha representa uma posição de pizza (1 a {dadosTaktTime.totalPizzasRodada})</p>
                 <p><strong>Círculos cheios:</strong> Pizzas aprovadas | <strong>Círculos vazios:</strong> Pizzas reprovadas</p>
                 <p><strong>Borda vermelha:</strong> Pizza entregue fora do Takt Time ideal</p>
                 <p><strong>Objetivo:</strong> Manter todas as pizzas à esquerda das linhas de referência (dentro do Takt)</p>
