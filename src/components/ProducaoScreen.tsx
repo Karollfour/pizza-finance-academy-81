@@ -778,7 +778,7 @@ const ProducaoScreen = () => {
                               <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-400 opacity-60'}`} style={{
                         backgroundColor: cor
                       }}>
-                                <CardContent className="p-4 text-center">
+                                <CardContent className="p-4 text-center mx-0 my-0 px-[18px] py-0">
                                   <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-950">
                                     #{index + 1}
                                   </Badge>
