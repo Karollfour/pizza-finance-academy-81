@@ -30,7 +30,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -118,23 +117,21 @@ const ProducaoScreen = () => {
     const pizzasReprovadas = pizzas.filter(p => p.resultado === 'reprovada').length;
     const pizzasPendentes = pizzas.filter(p => p.status === 'pronta').length;
     const equipesAtivas = equipes.length;
-    
     setEstatisticasGerais({
       totalPizzas,
       pizzasAprovadas,
       pizzasReprovadas,
       pizzasPendentes,
-      totalGastos: 0, // Não temos dados de compras aqui
+      totalGastos: 0,
+      // Não temos dados de compras aqui
       equipesAtivas
     });
   }, [pizzas, equipes]);
-
   const handleIniciarRodada = async () => {
     try {
       if (!rodadaAtual) {
         console.log('Criando nova rodada...');
         const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
-
         if (novaRodada?.id) {
           console.log('Criando sequência de sabores...');
           await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
@@ -177,7 +174,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -196,7 +192,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handlePausarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -207,7 +202,6 @@ const ProducaoScreen = () => {
         status: 'pausada'
       }).eq('id', rodadaAtual.id);
       if (error) throw error;
-
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-pausada', {
           detail: {
@@ -228,7 +222,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const adicionarMinutos = async (minutos: number) => {
     if (!rodadaAtual) return;
     try {
@@ -240,7 +233,6 @@ const ProducaoScreen = () => {
         tempo_limite: novoTempoLimite
       }).eq('id', rodadaAtual.id);
       if (error) throw error;
-
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-tempo-alterado', {
           detail: {
@@ -263,7 +255,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleResetarJogo = async () => {
     const confirmar1 = window.confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?');
     if (!confirmar1) return;
@@ -285,7 +276,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const {
     historico
   } = useHistoricoSaboresRodada(rodadaAtual?.id);
@@ -301,14 +291,12 @@ const ProducaoScreen = () => {
     rodada: rodadaAtual,
     numeroPizzas
   });
-
   useEffect(() => {
     const handleGlobalDataChange = (event: CustomEvent) => {
       const {
         table,
         action
       } = event.detail;
-
       if (table === 'rodadas') {
         refetchRodadas();
         refetchCounter();
@@ -321,12 +309,10 @@ const ProducaoScreen = () => {
       window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
   }, [refetchRodadas, refetchCounter, refetchPizzas]);
-
   const pizzasProntas = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
   const pizzasAprovadas = pizzasAvaliadas.filter(p => p.resultado === 'aprovada');
   const pizzasReprovadas = pizzasAvaliadas.filter(p => p.resultado === 'reprovada');
-
   const estatisticasPorEquipe = equipes.map(equipe => {
     const pizzasEquipe = pizzas.filter(p => p.equipe_id === equipe.id);
     return {
@@ -337,14 +323,11 @@ const ProducaoScreen = () => {
       reprovadas: pizzasEquipe.filter(p => p.resultado === 'reprovada').length
     };
   });
-
   const getEquipeNome = (equipeId: string) => {
     const equipe = equipes.find(e => e.id === equipeId);
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
-
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
-
   const getSaborNome = (item: any) => {
     if (item?.sabor?.nome) {
       return item.sabor.nome;
@@ -352,7 +335,6 @@ const ProducaoScreen = () => {
     const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
     return saborEncontrado?.nome || 'Sabor não encontrado';
   };
-
   const getSaborDescricao = (item: any) => {
     if (item?.sabor?.descricao) {
       return item.sabor.descricao;
@@ -360,13 +342,11 @@ const ProducaoScreen = () => {
     const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
     return saborEncontrado?.descricao;
   };
-
   const formatarTempo = (segundos: number) => {
     const mins = Math.floor(segundos / 60);
     const secs = segundos % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
   const getSaborCorRodadaAtual = (saborNome: string) => {
     const nome = saborNome?.toLowerCase() || '';
     if (nome.includes('mussarela') || nome.includes('queijo')) {
@@ -385,8 +365,7 @@ const ProducaoScreen = () => {
   };
 
   // Componente para o conteúdo atual de controle de rodadas
-  const ControleRodadasContent = () => (
-    <div className="space-y-8">
+  const ControleRodadasContent = () => <div className="space-y-8">
       {/* Controles da Rodada Simplificados */}
       <Card className="shadow-lg border-2 border-red-200">
         <CardHeader className="bg-red-50">
@@ -455,10 +434,8 @@ const ProducaoScreen = () => {
             </div>
 
             {/* Sabores da Rodada Integrados */}
-            {rodadaAtual && historico.length > 0 && (
-              <div>
-                {rodadaAtual.status === 'ativa' && saborAtual ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {rodadaAtual && historico.length > 0 && <div>
+                {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Sabor Atual */}
                     <div className="lg:col-span-2 my-[5px]">
                       <Card className="shadow-lg border-2 border-green-400 bg-green-100">
@@ -514,9 +491,7 @@ const ProducaoScreen = () => {
                           </CardContent>
                         </Card>}
                     </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  </div> : <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div className="lg:col-span-2">
                       <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                         <CardContent className="p-6 text-center py-[71px] my-[6px]">
@@ -562,24 +537,22 @@ const ProducaoScreen = () => {
                           </CardContent>
                         </Card>}
                     </div>
-                  </div>
-                )}
+                  </div>}
                 {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
-                {rodadaAtual.status === 'ativa' && historico.length > 0 && (
-                  <div className="mt-6 pt-4 border-t border-orange-200">
+                {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {historico.map((sabor, index) => {
-                        const saborNome = getSaborNome(sabor);
-                        const cor = getSaborCorRodadaAtual(saborNome);
-                        const isAtual = index === saborAtualIndex;
-                        const isPassado = index < saborAtualIndex;
-
-                        if (!isPassado && !isAtual) {
-                          return null;
-                        }
-                        return (
-                          <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-105 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
-                            <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-300 opacity-80'}`} style={{ backgroundColor: cor }}>
+                  const saborNome = getSaborNome(sabor);
+                  const cor = getSaborCorRodadaAtual(saborNome);
+                  const isAtual = index === saborAtualIndex;
+                  const isPassado = index < saborAtualIndex;
+                  if (!isPassado && !isAtual) {
+                    return null;
+                  }
+                  return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-105 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
+                            <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-300 opacity-80'}`} style={{
+                      backgroundColor: cor
+                    }}>
                               <CardContent className="p-4 text-center mx-0 my-0 px-[18px] py-0">
                                 <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-800">
                                   #{index + 1}
@@ -598,9 +571,8 @@ const ProducaoScreen = () => {
                                   <div className="w-2 h-2 bg-white rounded-full"></div>
                                 </div>
                               </div>}
-                          </div>
-                        );
-                      })}
+                          </div>;
+                })}
                     </div>
                     {/* Legenda específica para rodada atual */}
                     <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
@@ -629,10 +601,8 @@ const ProducaoScreen = () => {
                         <span>Outros</span>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  </div>}
+              </div>}
           </div>
         </CardContent>
       </Card>
@@ -693,11 +663,8 @@ const ProducaoScreen = () => {
             </> : <>🔄 Resetar Jogo</>}
         </Button>
       </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
+    </div>;
+  return <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -707,8 +674,7 @@ const ProducaoScreen = () => {
           {/* Status da Rodada */}
           <Card className="mt-4 shadow-lg border-2 border-red-200">
             <CardContent className="p-4">
-              {rodadaAtual ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              {rodadaAtual ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
                     <div className="text-xl font-bold text-red-600">Rodada {rodadaAtual.numero}</div>
                     <div className="text-sm text-gray-600 capitalize">{rodadaAtual.status}</div>
@@ -725,10 +691,7 @@ const ProducaoScreen = () => {
                     <div className="text-xl font-bold text-purple-600">{estatisticasGerais.equipesAtivas}</div>
                     <div className="text-sm text-gray-600">Equipes Ativas</div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-lg text-gray-600">Nenhuma rodada ativa</div>
-              )}
+                </div> : <div className="text-lg text-gray-600">Nenhuma rodada ativa</div>}
             </CardContent>
           </Card>
 
@@ -737,7 +700,7 @@ const ProducaoScreen = () => {
         {/* Conteúdo Principal com 4 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-            <TabsTrigger value="controle">🎮 Controle</TabsTrigger>
+            <TabsTrigger value="controle">🎮 Carrossel</TabsTrigger>
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
@@ -780,8 +743,6 @@ const ProducaoScreen = () => {
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ProducaoScreen;
