@@ -783,7 +783,7 @@ const ProducaoScreen = () => {
                                     #{index + 1}
                                   </Badge>
                                   
-                                  <h4 className="font-bold text-white text-lg">
+                                  <h4 className="text-white font-bold text-2xl">
                                     {saborNome.length > 12 ? saborNome.substring(0, 12) + '...' : saborNome}
                                   </h4>
                                 </CardContent>
