@@ -17,6 +17,7 @@ import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
 import { toast } from 'sonner';
+
 const LojinhaScreen = () => {
   const {
     rodadaAtual
@@ -137,15 +138,14 @@ const LojinhaScreen = () => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 6 Abas */}
+        {/* Conteúdo Principal com 5 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
             <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
             <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
-            <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
           
           <TabsContent value="gestao" className="mt-6">
@@ -166,10 +166,6 @@ const LojinhaScreen = () => {
           
           <TabsContent value="dashboard" className="mt-6">
             <DashboardLojinha />
-          </TabsContent>
-          
-          <TabsContent value="historico" className="mt-6">
-            <HistoricoLoja />
           </TabsContent>
         </Tabs>
 
