@@ -1,8 +1,8 @@
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useSaborAutomatico } from '@/hooks/useSaborAutomatico';
+import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { Rodada } from '@/types/database';
 
 interface HistoricoSaboresAutomaticoProps {
@@ -11,12 +11,9 @@ interface HistoricoSaboresAutomaticoProps {
 }
 
 const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSaboresAutomaticoProps) => {
-  const {
-    saboresPassados,
-    saborAtualIndex,
-    intervaloTroca,
-    totalSabores
-  } = useSaborAutomatico({ rodada, numeroPizzas });
+  const { historico } = useHistoricoSaboresRodada(rodada?.id);
+  const saboresFinalizadosRef = useRef<any[]>([]);
+  const lastHistoricoLengthRef = useRef(0);
 
   // Memoizar função de formatação
   const formatarTempo = useMemo(() => (segundos: number) => {
@@ -25,15 +22,60 @@ const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSabo
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
-  // Memoizar estatísticas para evitar recálculos
-  const estatisticas = useMemo(() => ({
-    totalSabores,
-    finalizadas: saboresPassados.length,
-    atual: saborAtualIndex + 1,
-    intervaloFormatado: formatarTempo(intervaloTroca)
-  }), [totalSabores, saboresPassados.length, saborAtualIndex, intervaloTroca, formatarTempo]);
+  // Calcular intervalo de troca de forma estável
+  const intervaloTroca = useMemo(() => {
+    return rodada && numeroPizzas > 0 ? Math.floor(rodada.tempo_limite / numeroPizzas) : 0;
+  }, [rodada?.tempo_limite, numeroPizzas]);
 
-  if (!rodada || saboresPassados.length === 0) {
+  // Escutar apenas eventos de sabor finalizado para atualizar a lista
+  useEffect(() => {
+    const handleSaborFinalizado = (event: CustomEvent) => {
+      const { saboresPassados } = event.detail;
+      if (saboresPassados && Array.isArray(saboresPassados)) {
+        // Só atualizar se realmente mudou
+        if (JSON.stringify(saboresPassados) !== JSON.stringify(saboresFinalizadosRef.current)) {
+          saboresFinalizadosRef.current = saboresPassados;
+        }
+      }
+    };
+
+    window.addEventListener('sabor-automatico-alterado', handleSaborFinalizado as EventListener);
+
+    return () => {
+      window.removeEventListener('sabor-automatico-alterado', handleSaborFinalizado as EventListener);
+    };
+  }, []);
+
+  // Memoizar lista de sabores finalizados com base apenas no histórico
+  const saboresFinalizados = useMemo(() => {
+    if (!rodada || !historico.length || rodada.status !== 'ativa') {
+      return [];
+    }
+
+    // Usar os sabores passados do evento ou calcular baseado no histórico
+    if (saboresFinalizadosRef.current.length > 0) {
+      return saboresFinalizadosRef.current;
+    }
+
+    // Fallback: mostrar apenas alguns sabores como finalizados para demonstração
+    const tempoDecorrido = rodada.tempo_limite - (rodada.tempo_limite || 0); // Simplificado
+    const saboresPassados = Math.max(0, Math.floor(tempoDecorrido / intervaloTroca));
+    
+    return historico.slice(0, saboresPassados).map((sabor, index) => ({
+      ...sabor,
+      tempoFinalizado: new Date(Date.now() - (saboresPassados - index) * intervaloTroca * 1000).toISOString()
+    }));
+  }, [historico, rodada, intervaloTroca]);
+
+  // Memoizar estatísticas de forma estável
+  const estatisticas = useMemo(() => ({
+    totalSabores: historico.length,
+    finalizadas: saboresFinalizados.length,
+    atual: saboresFinalizados.length + 1,
+    intervaloFormatado: formatarTempo(intervaloTroca)
+  }), [historico.length, saboresFinalizados.length, intervaloTroca, formatarTempo]);
+
+  if (!rodada || historico.length === 0) {
     return null;
   }
 
@@ -46,7 +88,7 @@ const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSabo
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Informações da sequência */}
+          {/* Informações da sequência - estáveis */}
           <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
@@ -68,9 +110,9 @@ const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSabo
             </div>
           </div>
 
-          {/* Lista de sabores passados - estável */}
+          {/* Lista de sabores finalizados - estável */}
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {saboresPassados.map((sabor, index) => (
+            {saboresFinalizados.map((sabor, index) => (
               <div key={`${sabor.id}-${index}`} className="flex items-center justify-between p-4 bg-white rounded-lg border border-amber-200 shadow-sm">
                 <div className="flex items-center space-x-4">
                   <Badge variant="outline" className="bg-amber-100 text-amber-700 min-w-fit">
@@ -103,7 +145,7 @@ const HistoricoSaboresAutomatico = memo(({ rodada, numeroPizzas }: HistoricoSabo
             ))}
           </div>
 
-          {saboresPassados.length === 0 && rodada.status === 'ativa' && (
+          {saboresFinalizados.length === 0 && rodada.status === 'ativa' && (
             <div className="text-center py-8">
               <div className="text-4xl mb-4">⏳</div>
               <p className="text-gray-500">Nenhum sabor finalizado ainda...</p>
