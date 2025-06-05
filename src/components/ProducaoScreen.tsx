@@ -494,7 +494,7 @@ const ProducaoScreen = () => {
                           {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
                               {getSaborDescricao(saborAtual)}
                             </p>}
-                          <div className="text-sm text-green-600 mb-3">
+                          <div className="text-sm text-green-600 mb-3 my-[28px]">
                             Pizza #{saborAtualIndex + 1} de {historico.length}
                           </div>
                           <div className="bg-green-100 p-2 rounded text-xs text-green-600">
