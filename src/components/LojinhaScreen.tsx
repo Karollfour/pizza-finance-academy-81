@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +14,6 @@ import VendasLoja from './VendasLoja';
 import DashboardLojinha from './DashboardLojinha';
 import HistoricoLoja from './HistoricoLoja';
 import { toast } from 'sonner';
-
 const LojinhaScreen = () => {
   const {
     rodadaAtual
@@ -56,7 +54,6 @@ const LojinhaScreen = () => {
     const totalGastos = compras.reduce((sum, c) => sum + c.valor_total, 0);
     const totalGanhos = equipes.reduce((sum, e) => sum + (e.ganho_total || 0), 0);
     const equipesAtivas = equipes.length;
-    
     setEstatisticasGerais({
       totalPizzas,
       pizzasAprovadas,
@@ -104,12 +101,10 @@ const LojinhaScreen = () => {
       window.removeEventListener('compra-realizada', handleCompraRealizada as EventListener);
     };
   }, []);
-  
   const getSaborNome = (saborId: string) => {
     const sabor = sabores.find(s => s.id === saborId);
     return sabor?.nome || 'Sabor não informado';
   };
-  
   return <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -149,7 +144,7 @@ const LojinhaScreen = () => {
         {/* Conteúdo Principal com 4 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
+            <TabsTrigger value="dashboard" className="Pode retirar o Dashboard dessa aba">📊 Dashboard</TabsTrigger>
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
             <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
@@ -198,5 +193,4 @@ const LojinhaScreen = () => {
       </div>
     </div>;
 };
-
 export default LojinhaScreen;
