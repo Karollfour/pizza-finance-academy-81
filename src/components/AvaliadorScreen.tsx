@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -278,7 +279,8 @@ const AvaliadorScreen = () => {
                       <div className="flex gap-3">
                         <Button
                           onClick={() => handleEvaluation(pizza.id, true)}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                          disabled={!!motivosReprovacao[pizza.id]}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
                         >
                           ✅ Aprovar
                         </Button>
@@ -291,7 +293,11 @@ const AvaliadorScreen = () => {
                         </Button>
                       </div>
 
-                      {!motivosReprovacao[pizza.id] && (
+                      {motivosReprovacao[pizza.id] ? (
+                        <p className="text-sm text-orange-600 text-center">
+                          Motivo selecionado: {getMotivoLabel(motivosReprovacao[pizza.id])}. Para aprovar, remova o motivo.
+                        </p>
+                      ) : (
                         <p className="text-sm text-red-600 text-center">
                           Selecione um motivo para poder reprovar
                         </p>
