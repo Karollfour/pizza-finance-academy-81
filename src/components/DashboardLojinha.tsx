@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -11,27 +10,34 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TaktTimeChart from './TaktTimeChart';
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
 const DashboardLojinha = () => {
-  const { compras } = useCompras();
-  const { equipes } = useEquipes();
-  const { produtos } = useProdutos();
-  const { rodadaAtual } = useRodadas();
-  const { rodadas } = useTodasRodadas();
-  const { pizzas } = usePizzas();
+  const {
+    compras
+  } = useCompras();
+  const {
+    equipes
+  } = useEquipes();
+  const {
+    produtos
+  } = useProdutos();
+  const {
+    rodadaAtual
+  } = useRodadas();
+  const {
+    rodadas
+  } = useTodasRodadas();
+  const {
+    pizzas
+  } = usePizzas();
   const [rodadaSelecionada, setRodadaSelecionada] = useState<number | null>(null);
 
   // Obter todas as rodadas disponíveis que têm pizzas
-  const rodadasDisponiveis = rodadas
-    .filter(rodada => {
-      // Verificar se a rodada tem pizzas associadas
-      const temPizzas = pizzas.some(pizza => pizza.rodada_id === rodada.id);
-      return temPizzas;
-    })
-    .map(rodada => rodada.numero)
-    .sort((a, b) => a - b);
+  const rodadasDisponiveis = rodadas.filter(rodada => {
+    // Verificar se a rodada tem pizzas associadas
+    const temPizzas = pizzas.some(pizza => pizza.rodada_id === rodada.id);
+    return temPizzas;
+  }).map(rodada => rodada.numero).sort((a, b) => a - b);
 
   // Função para obter rodada por número
   const getRodadaPorNumero = (numeroRodada: number) => {
@@ -42,18 +48,11 @@ const DashboardLojinha = () => {
   const dadosPizzasPorRodada = (numeroRodada: number) => {
     const rodada = getRodadaPorNumero(numeroRodada);
     if (!rodada) return [];
-
     return equipes.map(equipe => {
-      const pizzasEquipe = pizzas.filter(p => 
-        p.equipe_id === equipe.id && 
-        p.rodada_id === rodada.id &&
-        p.status === 'avaliada'
-      );
-      
+      const pizzasEquipe = pizzas.filter(p => p.equipe_id === equipe.id && p.rodada_id === rodada.id && p.status === 'avaliada');
       const aprovadas = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
       const reprovadas = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
       const total = aprovadas + reprovadas;
-      
       return {
         equipe: equipe.nome,
         aprovadas,
@@ -66,15 +65,10 @@ const DashboardLojinha = () => {
 
   // Dados gerais por equipe (todas as rodadas)
   const dadosGeraisPorEquipe = equipes.map(equipe => {
-    const pizzasEquipe = pizzas.filter(p => 
-      p.equipe_id === equipe.id && 
-      p.status === 'avaliada'
-    );
-    
+    const pizzasEquipe = pizzas.filter(p => p.equipe_id === equipe.id && p.status === 'avaliada');
     const aprovadas = pizzasEquipe.filter(p => p.resultado === 'aprovada').length;
     const reprovadas = pizzasEquipe.filter(p => p.resultado === 'reprovada').length;
     const total = aprovadas + reprovadas;
-    
     return {
       equipe: equipe.nome,
       aprovadas,
@@ -89,7 +83,6 @@ const DashboardLojinha = () => {
     const comprasEquipe = compras.filter(c => c.equipe_id === equipe.id);
     const totalGasto = comprasEquipe.reduce((sum, c) => sum + c.valor_total, 0);
     const viagens = comprasEquipe.filter(c => c.tipo === 'viagem').length;
-    
     return {
       nome: equipe.nome,
       gasto: totalGasto,
@@ -108,7 +101,6 @@ const DashboardLojinha = () => {
   const produtosMaisComprados = produtos.map(produto => {
     const comprasProduto = compras.filter(c => c.produto_id === produto.id);
     const quantidadeTotal = comprasProduto.reduce((sum, c) => sum + (c.quantidade || 0), 0);
-    
     return {
       nome: produto.nome,
       quantidade: quantidadeTotal
@@ -116,19 +108,14 @@ const DashboardLojinha = () => {
   }).filter(p => p.quantidade > 0).sort((a, b) => b.quantidade - a.quantidade);
 
   // Distribuição de gastos
-  const gastosCategoria = [
-    {
-      name: 'Materiais',
-      value: compras.filter(c => c.tipo === 'material').reduce((sum, c) => sum + c.valor_total, 0)
-    },
-    {
-      name: 'Viagens',
-      value: compras.filter(c => c.tipo === 'viagem').reduce((sum, c) => sum + c.valor_total, 0)
-    }
-  ];
-
-  return (
-    <div className="space-y-6">
+  const gastosCategoria = [{
+    name: 'Materiais',
+    value: compras.filter(c => c.tipo === 'material').reduce((sum, c) => sum + c.valor_total, 0)
+  }, {
+    name: 'Viagens',
+    value: compras.filter(c => c.tipo === 'viagem').reduce((sum, c) => sum + c.valor_total, 0)
+  }];
+  return <div className="space-y-6">
       {/* Novo gráfico de Takt Time */}
       <TaktTimeChart />
 
@@ -137,20 +124,15 @@ const DashboardLojinha = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>🍕 Análise de Pizzas por Rodada</span>
-            <Select 
-              value={rodadaSelecionada?.toString() || "todas"} 
-              onValueChange={(value) => setRodadaSelecionada(value === "todas" ? null : parseInt(value))}
-            >
+            <Select value={rodadaSelecionada?.toString() || "todas"} onValueChange={value => setRodadaSelecionada(value === "todas" ? null : parseInt(value))}>
               <SelectTrigger className="w-48 bg-white">
                 <SelectValue placeholder="Selecione uma rodada" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 <SelectItem value="todas">Todas as Rodadas</SelectItem>
-                {rodadasDisponiveis.map(numeroRodada => (
-                  <SelectItem key={numeroRodada} value={numeroRodada.toString()}>
+                {rodadasDisponiveis.map(numeroRodada => <SelectItem key={numeroRodada} value={numeroRodada.toString()}>
                     Rodada {numeroRodada}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
           </CardTitle>
@@ -162,10 +144,7 @@ const DashboardLojinha = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="equipe" />
               <YAxis />
-              <Tooltip 
-                formatter={(value, name) => [value, name === 'aprovadas' ? 'Aprovadas' : 'Reprovadas']}
-                labelFormatter={(label) => `Equipe: ${label}`}
-              />
+              <Tooltip formatter={(value, name) => [value, name === 'aprovadas' ? 'Aprovadas' : 'Reprovadas']} labelFormatter={label => `Equipe: ${label}`} />
               <Bar dataKey="aprovadas" fill="#22c55e" name="Aprovadas" />
               <Bar dataKey="reprovadas" fill="#ef4444" name="Reprovadas" />
             </BarChart>
@@ -173,8 +152,7 @@ const DashboardLojinha = () => {
 
           {/* Resumo das Pizzas */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(rodadaSelecionada ? dadosPizzasPorRodada(rodadaSelecionada) : dadosGeraisPorEquipe).map((dados, index) => (
-              <Card key={index} className="text-center">
+            {(rodadaSelecionada ? dadosPizzasPorRodada(rodadaSelecionada) : dadosGeraisPorEquipe).map((dados, index) => <Card key={index} className="text-center">
                 <CardContent className="p-4">
                   <h4 className="font-bold text-lg mb-2">{dados.equipe}</h4>
                   <div className="grid grid-cols-3 gap-2 text-sm">
@@ -192,8 +170,7 @@ const DashboardLojinha = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </CardContent>
       </Card>
@@ -210,7 +187,7 @@ const DashboardLojinha = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="nome" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Gasto Total']} />
+                <Tooltip formatter={value => [`R$ ${Number(value).toFixed(2)}`, 'Gasto Total']} />
                 <Bar dataKey="gasto" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
@@ -220,25 +197,21 @@ const DashboardLojinha = () => {
         {/* Ganhos por Equipe - NOVO GRÁFICO */}
         <Card>
           <CardHeader>
-            <CardTitle>🎉 Ganhos por Equipe (Pizzas Aprovadas)</CardTitle>
+            <CardTitle>🎉 Vendas por Equipe (Pizzas Aprovadas)</CardTitle>
           </CardHeader>
           <CardContent>
-            {dadosGanhosPorEquipe.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+            {dadosGanhosPorEquipe.length > 0 ? <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dadosGanhosPorEquipe}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="nome" />
                   <YAxis />
-                  <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Ganho Total']} />
+                  <Tooltip formatter={value => [`R$ ${Number(value).toFixed(2)}`, 'Ganho Total']} />
                   <Bar dataKey="ganho" fill="#22c55e" />
                 </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
+              </ResponsiveContainer> : <div className="text-center py-8 text-gray-500">
                 <p className="text-lg mb-2">🏆 Nenhum ganho ainda</p>
                 <p className="text-sm">As equipes ganham R$ 10,00 para cada pizza aprovada!</p>
-              </div>
-            )}
+              </div>}
           </CardContent>
         </Card>
 
@@ -268,21 +241,13 @@ const DashboardLojinha = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie
-                  data={gastosCategoria}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {gastosCategoria.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                <Pie data={gastosCategoria} cx="50%" cy="50%" labelLine={false} label={({
+                name,
+                percent
+              }) => `${name} ${(percent * 100).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">
+                  {gastosCategoria.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(value) => `R$ ${Number(value).toFixed(2)}`} />
+                <Tooltip formatter={value => `R$ ${Number(value).toFixed(2)}`} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -327,8 +292,6 @@ const DashboardLojinha = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default DashboardLojinha;
