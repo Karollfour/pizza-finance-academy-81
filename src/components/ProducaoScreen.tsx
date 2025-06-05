@@ -624,11 +624,11 @@ const ProducaoScreen = () => {
                     <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs">
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-yellow-500 bg-opacity-30 border border-yellow-500 rounded-full"></div>
-                        <span>Mussarela/Queijo</span>
+                        <span>Mussarela</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-orange-600 bg-opacity-30 border border-orange-600 rounded-full"></div>
-                        <span>Pepperoni/Calabresa</span>
+                        <span>Pepperoni</span>
                       </div>
                       <div className="flex items-center gap-1">
                         
