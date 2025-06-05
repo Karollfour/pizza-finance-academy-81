@@ -141,12 +141,11 @@ const LojinhaScreen = () => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 3 Abas */}
+        {/* Conteúdo Principal com 2 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
-            <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
           
           <TabsContent value="itens" className="mt-6">
@@ -155,10 +154,6 @@ const LojinhaScreen = () => {
           
           <TabsContent value="vendas" className="mt-6">
             <VendasLoja />
-          </TabsContent>
-          
-          <TabsContent value="historico" className="mt-6">
-            <HistoricoLoja />
           </TabsContent>
         </Tabs>
 
