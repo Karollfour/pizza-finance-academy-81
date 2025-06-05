@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +32,7 @@ const AvaliadorScreen = () => {
 
   // Opções de motivos para reprovação
   const motivosReprovacaoOpcoes = [
+    { value: '', label: '🔄 Nenhum motivo (para aprovar)' },
     { value: 'fora_padrao', label: 'Fora do Padrão' },
     { value: 'sequencia_errada', label: 'Sequência Errada' },
     { value: 'fora_padrao_sequencia_errada', label: 'Fora do padrão e Sequência Errada' }
@@ -78,7 +78,7 @@ const AvaliadorScreen = () => {
   const updateMotivoReprovacao = (pizzaId: string, motivo: string) => {
     setMotivosReprovacao({
       ...motivosReprovacao,
-      [pizzaId]: motivo,
+      [pizzaId]: motivo === '' ? undefined : motivo,
     });
   };
 
@@ -256,16 +256,16 @@ const AvaliadorScreen = () => {
                       {/* Dropdown de Motivo de Reprovação */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">
-                          Motivo da reprovação (obrigatório para reprovar):
+                          Avaliação da pizza:
                         </label>
                         <Select
                           value={motivosReprovacao[pizza.id] || ''}
                           onValueChange={(value) => updateMotivoReprovacao(pizza.id, value)}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione o motivo da reprovação..." />
+                            <SelectValue placeholder="Selecione uma opção..." />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             {motivosReprovacaoOpcoes.map((opcao) => (
                               <SelectItem key={opcao.value} value={opcao.value}>
                                 {opcao.label}
@@ -295,11 +295,11 @@ const AvaliadorScreen = () => {
 
                       {motivosReprovacao[pizza.id] ? (
                         <p className="text-sm text-orange-600 text-center">
-                          Motivo selecionado: {getMotivoLabel(motivosReprovacao[pizza.id])}. Para aprovar, remova o motivo.
+                          Motivo selecionado: {getMotivoLabel(motivosReprovacao[pizza.id])}. Para aprovar, selecione "Nenhum motivo".
                         </p>
                       ) : (
-                        <p className="text-sm text-red-600 text-center">
-                          Selecione um motivo para poder reprovar
+                        <p className="text-sm text-green-600 text-center">
+                          Pizza pronta para aprovação ou selecione um motivo para reprovar
                         </p>
                       )}
                     </CardContent>
