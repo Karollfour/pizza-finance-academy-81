@@ -1,73 +1,40 @@
-# Welcome to your Lovable project
+🍕 Pizzaria Lean — Simulador Interativo de Educação Financeira
 
-## Project info
+🧩 Visão Geral
+Pizzaria Lean é uma aplicação web dinâmica e gamificada desenvolvida para ensinar educação financeira de forma prática, criativa e colaborativa. Utilizando a metáfora de uma pizzaria, o sistema permite que estudantes simulem a operação de um pequeno negócio, enfrentando decisões reais de produção, precificação e gestão de recursos.
 
-**URL**: https://lovable.dev/projects/55e0ed1d-b116-422b-8cfc-87277cd49f60
+Este projeto será apresentado por educadores durante um evento acadêmico em San Diego, Califórnia, como uma proposta inovadora para o ensino de finanças em sala de aula.
 
-## How can I edit this code?
+🎯 Objetivo Educacional
+Criado para ser aplicado em escolas do Ensino Fundamental II e Médio, Pizzaria Lean oferece uma abordagem experiencial do aprendizado financeiro. Os alunos montam pizzas fictícias com materiais simples e registram suas ações no sistema, onde aprendem:
 
-There are several ways of editing your application.
+Custos fixos e variáveis
 
-**Use Lovable**
+Precificação baseada em insumos
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/55e0ed1d-b116-422b-8cfc-87277cd49f60) and start prompting.
+Margem de lucro e ponto de equilíbrio
 
-Changes made via Lovable will be committed automatically to this repo.
+Tomada de decisão em equipe
 
-**Use your preferred IDE**
+Análise de desempenho financeiro
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+🚀 Funcionalidades
+🍕 Simulação de Produção: Registro de pizzas criadas com controle de ingredientes e custos.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+📱 Avaliação Interativa: Professores avaliam os produtos em tempo real diretamente pelo sistema.
 
-Follow these steps:
+📊 Relatórios Dinâmicos: Tabelas e gráficos mostram lucro, prejuízo, ranking e evolução por rodada.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+🧠 Gamificação: Desafios, metas e pontuações mantêm o engajamento e promovem o aprendizado ativo.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+🛠️ Tecnologias Utilizadas
+React + TypeScript para uma experiência fluida e robusta
 
-# Step 3: Install the necessary dependencies.
-npm i
+Tailwind CSS para design moderno e responsivo
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+shadcn/ui para componentes acessíveis e elegantes
 
-**Edit a file directly in GitHub**
+Vite para desenvolvimento rápido com pré-visualização instantânea
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/55e0ed1d-b116-422b-8cfc-87277cd49f60) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+🌍 Impacto e Aplicação
+Pizzaria Lean é mais do que um jogo — é uma ferramenta pedagógica pensada para capacitar estudantes a compreender o valor do dinheiro, a lógica de um empreendimento e o poder da colaboração. A apresentação em San Diego representa um passo importante na internacionalização da proposta, mostrando como metodologias ativas e tecnologia podem transformar a educação financeira globalmente.
