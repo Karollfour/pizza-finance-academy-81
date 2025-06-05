@@ -71,9 +71,14 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
     };
   }, [rodada?.id, refetch]);
   
-  // Atualizar índice do sabor atual apenas quando necessário
+  // Atualizar índice do sabor atual apenas quando rodada está ativa (não pausada)
   useEffect(() => {
-    if (!rodada || rodada.status !== 'ativa' || !historico.length || intervaloTroca <= 0) {
+    if (!rodada || !historico.length || intervaloTroca <= 0) {
+      return;
+    }
+    
+    // Só calcular progresso se a rodada estiver ativa
+    if (rodada.status !== 'ativa') {
       return;
     }
     
@@ -132,9 +137,9 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
     }
   }, [timeRemaining, rodada, historico, intervaloTroca]);
   
-  // Reset quando rodada muda ou finaliza
+  // Reset apenas quando rodada finaliza ou aguarda - não quando pausa
   useEffect(() => {
-    if (!rodada || rodada.status !== 'ativa') {
+    if (!rodada || (rodada.status !== 'ativa' && rodada.status !== 'pausada')) {
       setSaborAtualIndex(0);
       setSaboresPassados([]);
       lastIndexRef.current = 0;
@@ -149,7 +154,7 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   
   // Calcular tempo restante para próxima troca - memoizado
   const tempoProximaTroca = useMemo(() => {
-    if (!rodada || intervaloTroca <= 0) return 0;
+    if (!rodada || intervaloTroca <= 0 || rodada.status === 'pausada') return 0;
     const tempoDecorrido = rodada.tempo_limite - timeRemaining;
     return Math.max(0, ((saborAtualIndex + 1) * intervaloTroca) - tempoDecorrido);
   }, [rodada, intervaloTroca, timeRemaining, saborAtualIndex]);

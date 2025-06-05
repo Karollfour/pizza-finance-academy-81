@@ -486,27 +486,32 @@ const ProducaoScreen = () => {
               </div>
             </div>
 
-            {/* Sabores da Rodada Integrados */}
+            {/* Sabores da Rodada Integrados - Modificado para incluir rodadas pausadas */}
             {rodadaAtual && historico.length > 0 && <div>
-                {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {(rodadaAtual.status === 'ativa' || rodadaAtual.status === 'pausada') && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Sabor Atual */}
                     <div className="lg:col-span-2 my-[5px]">
-                      <Card className="shadow-lg border-2 border-green-400 bg-green-100">
-                        <CardContent className="p-6 text-center my-[10px] bg-green-100">
-                          <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
+                      <Card className={`shadow-lg border-2 ${rodadaAtual.status === 'pausada' ? 'border-orange-400 bg-orange-100' : 'border-green-400 bg-green-100'}`}>
+                        <CardContent className={`p-6 text-center my-[10px] ${rodadaAtual.status === 'pausada' ? 'bg-orange-100' : 'bg-green-100'}`}>
+                          <Badge className={`${rodadaAtual.status === 'pausada' ? 'bg-orange-500' : 'bg-green-500'} text-white text-sm px-3 py-1 mb-3`}>
+                            🍕 {rodadaAtual.status === 'pausada' ? 'PAUSADO' : 'EM PRODUÇÃO'}
+                          </Badge>
                           <div className="text-4xl mb-3">🍕</div>
-                          <h3 className="font-bold text-green-700 mb-2 text-4xl">
+                          <h3 className={`font-bold mb-2 text-4xl ${rodadaAtual.status === 'pausada' ? 'text-orange-700' : 'text-green-700'}`}>
                             {getSaborNome(saborAtual)}
                           </h3>
-                          {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
+                          {getSaborDescricao(saborAtual) && <p className={`text-sm mb-3 ${rodadaAtual.status === 'pausada' ? 'text-orange-600' : 'text-green-600'}`}>
                               {getSaborDescricao(saborAtual)}
                             </p>}
-                          <div className="text-sm text-green-600 mb-3">
+                          <div className={`text-sm mb-3 ${rodadaAtual.status === 'pausada' ? 'text-orange-600' : 'text-green-600'}`}>
                             Pizza #{saborAtualIndex + 1} de {historico.length}
                           </div>
-                          <div className="bg-green-100 p-2 rounded text-xs text-green-600">
+                          {rodadaAtual.status === 'ativa' && <div className="bg-green-100 p-2 rounded text-xs text-green-600">
                             Próxima troca: {formatarTempo(tempoProximaTroca)}
-                          </div>
+                          </div>}
+                          {rodadaAtual.status === 'pausada' && <div className="bg-orange-100 p-2 rounded text-xs text-orange-600">
+                            Rodada pausada
+                          </div>}
                         </CardContent>
                       </Card>
                     </div>
@@ -591,8 +596,8 @@ const ProducaoScreen = () => {
                         </Card>}
                     </div>
                   </div>}
-                {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
-                {rodadaAtual.status === 'ativa' && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
+                {/* Histórico Visual da Rodada Atual - Modificado para incluir rodadas pausadas */}
+                {(rodadaAtual.status === 'ativa' || rodadaAtual.status === 'pausada') && historico.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {historico.map((sabor, index) => {
                   const saborNome = getSaborNome(sabor);
@@ -603,7 +608,7 @@ const ProducaoScreen = () => {
                     return null;
                   }
                   return <div key={sabor.id} className={`relative group cursor-pointer transition-all duration-200 ${isAtual ? 'scale-105 z-10' : ''}`} title={`Pizza #${index + 1}: ${saborNome}`}>
-                            <Card className={`shadow-lg border-2 ${isAtual ? 'border-yellow-600 animate-pulse' : 'border-gray-300 opacity-80'}`} style={{
+                            <Card className={`shadow-lg border-2 ${isAtual ? (rodadaAtual.status === 'pausada' ? 'border-orange-600' : 'border-yellow-600') : 'border-gray-300 opacity-80'} ${isAtual && rodadaAtual.status === 'ativa' ? 'animate-pulse' : ''}`} style={{
                       backgroundColor: cor
                     }}>
                               <CardContent className="p-4 text-center mx-0 my-0 px-[18px] py-0">
@@ -618,7 +623,7 @@ const ProducaoScreen = () => {
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
                               Pizza #{index + 1}: {saborNome}
                             </div>
-                            {isAtual && <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white animate-pulse bg-orange-400"></div>}
+                            {isAtual && <div className={`absolute -top-2 -right-2 w-4 h-4 rounded-full border-2 border-white ${rodadaAtual.status === 'pausada' ? 'bg-orange-400' : 'bg-orange-400 animate-pulse'}`}></div>}
                             {isPassado && <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-500 rounded-full border-2 border-white">
                                 <div className="w-full h-full flex items-center justify-center">
                                   <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -636,22 +641,6 @@ const ProducaoScreen = () => {
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-orange-600 bg-opacity-30 border border-orange-600 rounded-full"></div>
                         <span>Pepperoni/Calabresa</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        
-                        
-                      </div>
-                      <div className="flex items-center gap-1">
-                        
-                        
-                      </div>
-                      <div className="flex items-center gap-1">
-                        
-                        
-                      </div>
-                      <div className="flex items-center gap-1">
-                        
-                        
                       </div>
                     </div>
                   </div>}
