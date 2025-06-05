@@ -32,7 +32,7 @@ const AvaliadorScreen = () => {
 
   // Opções de motivos para reprovação
   const motivosReprovacaoOpcoes = [
-    { value: '', label: '🔄 Nenhum motivo (para aprovar)' },
+    { value: 'none', label: '🔄 Nenhum motivo (para aprovar)' },
     { value: 'fora_padrao', label: 'Fora do Padrão' },
     { value: 'sequencia_errada', label: 'Sequência Errada' },
     { value: 'fora_padrao_sequencia_errada', label: 'Fora do padrão e Sequência Errada' }
@@ -78,7 +78,7 @@ const AvaliadorScreen = () => {
   const updateMotivoReprovacao = (pizzaId: string, motivo: string) => {
     setMotivosReprovacao({
       ...motivosReprovacao,
-      [pizzaId]: motivo === '' ? undefined : motivo,
+      [pizzaId]: motivo === 'none' ? undefined : motivo,
     });
   };
 
@@ -259,7 +259,7 @@ const AvaliadorScreen = () => {
                           Avaliação da pizza:
                         </label>
                         <Select
-                          value={motivosReprovacao[pizza.id] || ''}
+                          value={motivosReprovacao[pizza.id] || 'none'}
                           onValueChange={(value) => updateMotivoReprovacao(pizza.id, value)}
                         >
                           <SelectTrigger className="w-full">
