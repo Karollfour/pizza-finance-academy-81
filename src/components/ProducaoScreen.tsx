@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pause, Square } from 'lucide-react';
+import { Pause, Square, Play } from 'lucide-react';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
@@ -31,6 +31,7 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -203,9 +204,34 @@ const ProducaoScreen = () => {
         forceGlobalSync();
         refetchRodadas();
       }, 500);
+      toast.success('⏸️ Rodada pausada!', {
+        duration: 3000,
+        position: 'top-center'
+      });
     } catch (error) {
       console.error('Erro ao pausar rodada:', error);
       toast.error('Erro ao pausar rodada. Tente novamente.', {
+        duration: 4000,
+        position: 'top-center'
+      });
+    }
+  };
+  const handleRetomarRodada = async () => {
+    if (!rodadaAtual) return;
+    try {
+      console.log('Retomando rodada...');
+      await iniciarRodada(rodadaAtual.id);
+      setTimeout(() => {
+        forceGlobalSync();
+        refetchRodadas();
+      }, 500);
+      toast.success('▶️ Rodada retomada!', {
+        duration: 3000,
+        position: 'top-center'
+      });
+    } catch (error) {
+      console.error('Erro ao retomar rodada:', error);
+      toast.error('Erro ao retomar rodada. Tente novamente.', {
         duration: 4000,
         position: 'top-center'
       });
@@ -364,17 +390,29 @@ const ProducaoScreen = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa'} />
+              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'} />
             </div>
 
             <div>
               <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
-              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa'} min="1" max="50" />
+              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'} min="1" max="50" />
             </div>
 
             <div>
               {rodadaAtual?.status === 'ativa' ? <div className="flex gap-2">
-                  
+                  <Button onClick={handlePausarRodada} className="flex-1 bg-orange-500 hover:bg-orange-600" size="sm">
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
+                    <Square className="w-4 h-4 mr-1" />
+                    Encerrar
+                  </Button>
+                </div> : rodadaAtual?.status === 'pausada' ? <div className="flex gap-2">
+                  <Button onClick={handleRetomarRodada} className="flex-1 bg-green-500 hover:bg-green-600" size="sm">
+                    <Play className="w-4 h-4 mr-1" />
+                    Retomar
+                  </Button>
                   <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
@@ -415,7 +453,20 @@ const ProducaoScreen = () => {
                 {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
               </Badge>
               {rodadaAtual?.status === 'ativa' && <div className="flex gap-2">
-                  
+                  <Button onClick={handlePausarRodada} className="bg-orange-500 hover:bg-orange-600" size="sm">
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
+                    <Square className="w-4 h-4 mr-1" />
+                    Encerrar
+                  </Button>
+                </div>}
+              {rodadaAtual?.status === 'pausada' && <div className="flex gap-2">
+                  <Button onClick={handleRetomarRodada} className="bg-green-500 hover:bg-green-600" size="sm">
+                    <Play className="w-4 h-4 mr-1" />
+                    Retomar
+                  </Button>
                   <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
