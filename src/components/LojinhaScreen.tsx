@@ -11,9 +11,9 @@ import { useSabores } from '@/hooks/useSabores';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import GerenciadorItens from './GerenciadorItens';
 import VendasLoja from './VendasLoja';
-import DashboardLojinha from './DashboardLojinha';
 import HistoricoLoja from './HistoricoLoja';
 import { toast } from 'sonner';
+
 const LojinhaScreen = () => {
   const {
     rodadaAtual
@@ -31,8 +31,8 @@ const LojinhaScreen = () => {
     sabores
   } = useSabores();
 
-  // Persistir estado da tela ativa - alterado para dashboard como padrão
-  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'dashboard');
+  // Persistir estado da tela ativa - alterado para itens como padrão
+  const [activeTab, setActiveTab] = usePersistedState('lojinha-active-tab', 'itens');
 
   // Estados para estatísticas
   const [estatisticasGerais, setEstatisticasGerais] = useState({
@@ -141,18 +141,13 @@ const LojinhaScreen = () => {
           </Card>
         </div>
 
-        {/* Conteúdo Principal com 4 Abas */}
+        {/* Conteúdo Principal com 3 Abas */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="Pode retirar o Dashboard dessa aba">📊 Dashboard</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="itens">📦 Gerenciar Itens</TabsTrigger>
             <TabsTrigger value="vendas">💰 Vendas</TabsTrigger>
             <TabsTrigger value="historico">📋 Histórico</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="dashboard" className="mt-6">
-            <DashboardLojinha />
-          </TabsContent>
           
           <TabsContent value="itens" className="mt-6">
             <GerenciadorItens />
@@ -193,4 +188,5 @@ const LojinhaScreen = () => {
       </div>
     </div>;
 };
+
 export default LojinhaScreen;
