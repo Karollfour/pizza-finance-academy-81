@@ -480,7 +480,7 @@ const ProducaoScreen = () => {
               </div>
             </div>
 
-            {/* Sabores da Rodada Integrados - COM NÚMEROS MAIORES */}
+            {/* Sabores da Rodada Integrados - COM NÚMEROS EM TAMANHO ADEQUADO */}
             {rodadaAtual && historico.length > 0 && <div>
                 {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Sabor Atual */}
@@ -490,9 +490,9 @@ const ProducaoScreen = () => {
                           <Badge className="bg-green-500 text-white text-2xl px-6 py-3 mb-6 font-bold">🍕 EM PRODUÇÃO</Badge>
                           <div className="text-8xl mb-6">🍕</div>
                           
-                          {/* NÚMERO DA PIZZA BEM GRANDE */}
+                          {/* NÚMERO DA PIZZA EM TAMANHO ADEQUADO */}
                           <div className="bg-white border-4 border-green-500 rounded-xl p-6 mb-6 shadow-lg">
-                            <div className="text-8xl font-black text-green-700 mb-2">
+                            <div className="text-6xl font-black text-green-700 mb-2">
                               #{saborAtualIndex + 1}
                             </div>
                             <div className="text-2xl text-green-600 font-bold">
@@ -520,14 +520,14 @@ const ProducaoScreen = () => {
                             <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4 font-bold">PRÓXIMO</Badge>
                             <div className="text-6xl mb-4">🍕</div>
                             
-                            {/* NÚMERO PRÓXIMO TAMBÉM GRANDE */}
+                            {/* NÚMERO PRÓXIMO EM TAMANHO ADEQUADO */}
                             <div className="bg-white border-3 border-blue-500 rounded-lg p-4 mb-4">
-                              <div className="text-5xl font-black text-blue-700">
+                              <div className="text-4xl font-black text-blue-700">
                                 #{saborAtualIndex + 2}
                               </div>
                             </div>
                             
-                            <h4 className="font-bold text-4xl text-sky-700 mb-2">
+                            <h4 className="font-bold text-3xl text-sky-700 mb-2">
                               {getSaborNome(proximoSabor)}
                             </h4>
                           </CardContent>
@@ -543,14 +543,14 @@ const ProducaoScreen = () => {
                             <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4 font-bold">DEPOIS</Badge>
                             <div className="text-6xl mb-4">🍕</div>
                             
-                            {/* NÚMERO SEGUNDO PRÓXIMO TAMBÉM GRANDE */}
+                            {/* NÚMERO SEGUNDO PRÓXIMO EM TAMANHO ADEQUADO */}
                             <div className="bg-white border-3 border-purple-500 rounded-lg p-4 mb-4">
-                              <div className="text-5xl font-black text-purple-700">
+                              <div className="text-4xl font-black text-purple-700">
                                 #{saborAtualIndex + 3}
                               </div>
                             </div>
                             
-                            <h4 className="font-bold text-purple-700 text-4xl">
+                            <h4 className="font-bold text-purple-700 text-3xl">
                               {getSaborNome(segundoProximoSabor)}
                             </h4>
                           </CardContent>
@@ -563,9 +563,9 @@ const ProducaoScreen = () => {
                           <Badge className="bg-yellow-500 text-white text-2xl px-6 py-3 mb-6 font-bold">🍕 EM PRODUÇÃO</Badge>
                           <div className="text-8xl mb-6">🍕</div>
                           
-                          {/* NÚMERO DA PRIMEIRA PIZZA BEM GRANDE */}
+                          {/* NÚMERO DA PRIMEIRA PIZZA EM TAMANHO ADEQUADO */}
                           <div className="bg-white border-4 border-yellow-500 rounded-xl p-6 mb-6 shadow-lg">
-                            <div className="text-8xl font-black text-yellow-700 mb-2">
+                            <div className="text-6xl font-black text-yellow-700 mb-2">
                               #1
                             </div>
                             <div className="text-2xl text-yellow-600 font-bold">
@@ -589,14 +589,14 @@ const ProducaoScreen = () => {
                             <Badge className="bg-blue-500 text-white text-lg px-4 py-2 mb-4 font-bold">PRÓXIMO</Badge>
                             <div className="text-6xl mb-4">🍕</div>
                             
-                            {/* NÚMERO 2 GRANDE */}
+                            {/* NÚMERO 2 EM TAMANHO ADEQUADO */}
                             <div className="bg-white border-3 border-blue-500 rounded-lg p-4 mb-4">
-                              <div className="text-5xl font-black text-blue-700">
+                              <div className="text-4xl font-black text-blue-700">
                                 #2
                               </div>
                             </div>
                             
-                            <h4 className="font-bold text-4xl text-sky-700">
+                            <h4 className="font-bold text-3xl text-sky-700">
                               {getSaborNome(historico[1])}
                             </h4>
                           </CardContent>
@@ -607,14 +607,14 @@ const ProducaoScreen = () => {
                             <Badge className="bg-purple-500 text-white text-lg px-4 py-2 mb-4 font-bold">DEPOIS</Badge>
                             <div className="text-6xl mb-4">🍕</div>
                             
-                            {/* NÚMERO 3 GRANDE */}
+                            {/* NÚMERO 3 EM TAMANHO ADEQUADO */}
                             <div className="bg-white border-3 border-purple-500 rounded-lg p-4 mb-4">
-                              <div className="text-5xl font-black text-purple-700">
+                              <div className="text-4xl font-black text-purple-700">
                                 #3
                               </div>
                             </div>
                             
-                            <h4 className="font-bold text-purple-700 text-4xl">
+                            <h4 className="font-bold text-purple-700 text-3xl">
                               {getSaborNome(historico[2])}
                             </h4>
                           </CardContent>
@@ -632,11 +632,11 @@ const ProducaoScreen = () => {
                       backgroundColor: cor
                     }}>
                               <CardContent className="p-4 text-center">
-                                {/* NÚMERO HISTÓRICO TAMBÉM MAIOR */}
-                                <div className="bg-zinc-800 text-white text-2xl font-black px-3 py-2 mb-3 rounded-lg">
+                                {/* NÚMERO HISTÓRICO EM TAMANHO ADEQUADO */}
+                                <div className="bg-zinc-800 text-white text-xl font-black px-3 py-2 mb-3 rounded-lg">
                                   #{index + 1}
                                 </div>
-                                <h4 className="text-xl font-bold text-zinc-700">
+                                <h4 className="text-lg font-bold text-zinc-700">
                                   {saborNome.length > 10 ? saborNome.substring(0, 10) + '...' : saborNome}
                                 </h4>
                               </CardContent>
