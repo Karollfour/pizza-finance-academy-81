@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
@@ -132,7 +133,7 @@ export const useRodadas = () => {
       // Dispatch evento global para sincronização
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-iniciada', {
-          detail: { rodadaId }
+          detail: { rodadaId, timestamp: new Date().toISOString() }
         }));
       }
       
@@ -157,7 +158,7 @@ export const useRodadas = () => {
       // Dispatch evento global para sincronização
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-pausada', {
-          detail: { rodadaId }
+          detail: { rodadaId, timestamp: new Date().toISOString() }
         }));
       }
       
@@ -183,7 +184,7 @@ export const useRodadas = () => {
       // Dispatch evento global para sincronização
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-finalizada', {
-          detail: { rodadaId }
+          detail: { rodadaId, timestamp: new Date().toISOString() }
         }));
       }
       
