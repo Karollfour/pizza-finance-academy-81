@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Rodada } from '@/types/database';
@@ -16,7 +15,7 @@ export const useRodadas = () => {
       const { data, error } = await supabase
         .from('rodadas')
         .select('*')
-        .in('status', ['aguardando', 'ativa'])
+        .in('status', ['aguardando', 'ativa', 'pausada'])
         .order('numero', { ascending: false })
         .limit(1)
         .single();
@@ -129,6 +128,14 @@ export const useRodadas = () => {
         .eq('id', rodadaId);
 
       if (error) throw error;
+      
+      // Dispatch evento global para sincronização
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-iniciada', {
+          detail: { rodadaId }
+        }));
+      }
+      
       await fetchRodadaAtual();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao iniciar rodada');
@@ -146,6 +153,14 @@ export const useRodadas = () => {
         .eq('id', rodadaId);
 
       if (error) throw error;
+      
+      // Dispatch evento global para sincronização
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-pausada', {
+          detail: { rodadaId }
+        }));
+      }
+      
       await fetchRodadaAtual();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao pausar rodada');
@@ -164,6 +179,14 @@ export const useRodadas = () => {
         .eq('id', rodadaId);
 
       if (error) throw error;
+      
+      // Dispatch evento global para sincronização
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rodada-finalizada', {
+          detail: { rodadaId }
+        }));
+      }
+      
       await fetchRodadaAtual();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao finalizar rodada');

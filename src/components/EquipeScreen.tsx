@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -79,6 +78,12 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
       });
     };
 
+    const handleRodadaPausada = () => {
+      toast.warning('⏸️ Rodada pausada!', {
+        duration: 4000,
+      });
+    };
+
     const handleRodadaFinalizada = () => {
       toast.info('🏁 Rodada finalizada!', {
         duration: 4000,
@@ -102,12 +107,14 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
     };
 
     window.addEventListener('rodada-iniciada', handleRodadaIniciada);
+    window.addEventListener('rodada-pausada', handleRodadaPausada);
     window.addEventListener('rodada-finalizada', handleRodadaFinalizada);
     window.addEventListener('rodada-criada', handleRodadaCriada as EventListener);
     window.addEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
 
     return () => {
       window.removeEventListener('rodada-iniciada', handleRodadaIniciada);
+      window.removeEventListener('rodada-pausada', handleRodadaPausada);
       window.removeEventListener('rodada-finalizada', handleRodadaFinalizada);
       window.removeEventListener('rodada-criada', handleRodadaCriada as EventListener);
       window.removeEventListener('pizza-avaliada', handlePizzaAvaliada as EventListener);
@@ -177,7 +184,23 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
                       Rodada {rodadaAtual.numero}
                     </div>
                     <div className="text-sm text-gray-600 capitalize">
-                      {rodadaAtual.status}
+                      <Badge 
+                        variant={
+                          rodadaAtual.status === 'ativa' ? 'default' : 
+                          rodadaAtual.status === 'pausada' ? 'secondary' : 
+                          'outline'
+                        }
+                        className={
+                          rodadaAtual.status === 'ativa' ? 'bg-green-500' :
+                          rodadaAtual.status === 'pausada' ? 'bg-orange-500' :
+                          rodadaAtual.status === 'aguardando' ? 'bg-yellow-500' : 
+                          'bg-gray-500'
+                        }
+                      >
+                        {rodadaAtual.status === 'ativa' ? 'Ativa' :
+                         rodadaAtual.status === 'pausada' ? 'Pausada' :
+                         rodadaAtual.status === 'aguardando' ? 'Aguardando' : 'Finalizada'}
+                      </Badge>
                     </div>
                   </div>
                   <div>
@@ -187,7 +210,8 @@ const EquipeScreen = ({ teamName, teamId }: EquipeScreenProps) => {
                       </div>
                     ) : (
                       <div className="text-lg text-gray-600">
-                        {rodadaAtual.status === 'aguardando' ? 'Aguardando início' : 'Finalizada'}
+                        {rodadaAtual.status === 'aguardando' ? 'Aguardando início' : 
+                         rodadaAtual.status === 'pausada' ? 'Pausada' : 'Finalizada'}
                       </div>
                     )}
                   </div>
