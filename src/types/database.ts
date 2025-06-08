@@ -6,8 +6,6 @@ export type Compra = Database['public']['Tables']['compras']['Row']
 export type Sabor = Database['public']['Tables']['sabores_pizza']['Row']
 export type Rodada = Database['public']['Tables']['rodadas']['Row']
 export type Pizza = Database['public']['Tables']['pizzas']['Row']
-export type HistoricoLoja = Database['public']['Tables']['historico_loja']['Row']
-export type VendaLoja = Database['public']['Tables']['vendas_loja']['Row']
 export type HistoricoSaboresRodada = Database['public']['Tables']['historico_sabores_rodada']['Row']
 export type ProdutoLoja = Database['public']['Tables']['produtos_loja']['Row']
 export type SaborPizza = Database['public']['Tables']['sabores_pizza']['Row']
@@ -24,4 +22,18 @@ export interface Equipe {
   emblema?: string;
   quantidade_pessoas: number;
   created_at: string;
+  ordem?: number; // Adding ordem property to fix TaktTimeChart errors
+}
+
+// Adding missing types for loja tables
+export interface HistoricoLoja {
+  id: string;
+  created_at: string;
+  // Add other properties as needed
+}
+
+export interface VendaLoja {
+  id: string;
+  created_at: string;
+  // Add other properties as needed
 }

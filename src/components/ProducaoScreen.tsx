@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pause, Square, Play, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Pause, Square, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
@@ -72,8 +72,6 @@ const ProducaoScreen = () => {
   // Estados para controle do carrossel
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
-  const [configSalva, setConfigSalva] = useState(false);
-  const [rodadaConfigurada, setRodadaConfigurada] = useState(false);
 
   // Sincronização global ativa
   const {
@@ -151,76 +149,35 @@ const ProducaoScreen = () => {
   useEffect(() => {
     if (rodadaAtual) {
       setTempoLimite(rodadaAtual.tempo_limite);
-      setConfigSalva(true);
-      setRodadaConfigurada(true);
-    } else {
-      setConfigSalva(false);
-      setRodadaConfigurada(false);
     }
   }, [rodadaAtual]);
 
-  const handleSalvarAlteracoes = async () => {
+  const handleCriarNovaRodada = async () => {
     try {
-      if (!rodadaAtual) {
-        // Criar nova rodada se não existir
-        console.log('Criando nova rodada...');
-        const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
-        if (novaRodada?.id) {
-          await salvarConfigRodada(novaRodada.id, numeroPizzas);
-          
-          // Criar sequência de sabores automaticamente após salvar configurações
-          console.log('Criando sequência de sabores...');
-          await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
-          
-          await refetchCounter();
-          setConfigSalva(true);
-          
-          // Aguardar um pouco para garantir que o histórico seja carregado
-          setTimeout(() => {
-            forceGlobalSync();
-          }, 500);
-          
-          toast.success(`🎯 Rodada ${proximoNumero} criada e configurada! Carrossel disponível.`, {
-            duration: 3000,
-            position: 'top-center'
-          });
-        }
-      } else {
-        // Atualizar rodada existente
-        const { error } = await supabase
-          .from('rodadas')
-          .update({ tempo_limite: tempoLimite })
-          .eq('id', rodadaAtual.id);
-
-        if (error) throw error;
-
-        await salvarConfigRodada(rodadaAtual.id, numeroPizzas);
+      console.log('Criando nova rodada...');
+      const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
+      if (novaRodada?.id) {
+        await salvarConfigRodada(novaRodada.id, numeroPizzas);
         
-        // Verificar se já existe sequência, se não criar
-        const { data: historicoExistente } = await supabase
-          .from('historico_sabores_rodada')
-          .select('id')
-          .eq('rodada_id', rodadaAtual.id)
-          .limit(1);
-
-        if (!historicoExistente || historicoExistente.length === 0) {
-          console.log('Criando sequência de sabores...');
-          await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
-          
-          setTimeout(() => {
-            forceGlobalSync();
-          }, 500);
-        }
+        // Criar sequência de sabores automaticamente
+        console.log('Criando sequência de sabores...');
+        await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
         
-        setConfigSalva(true);
-        toast.success('⚙️ Configurações salvas! Carrossel disponível.', {
+        await refetchCounter();
+        
+        // Aguardar um pouco para garantir que o histórico seja carregado
+        setTimeout(() => {
+          forceGlobalSync();
+        }, 500);
+        
+        toast.success(`🎯 Rodada ${proximoNumero} criada!`, {
           duration: 3000,
           position: 'top-center'
         });
       }
     } catch (error) {
-      console.error('Erro ao salvar alterações:', error);
-      toast.error('Erro ao salvar alterações. Tente novamente.', {
+      console.error('Erro ao criar rodada:', error);
+      toast.error('Erro ao criar rodada. Tente novamente.', {
         duration: 4000,
         position: 'top-center'
       });
@@ -228,20 +185,9 @@ const ProducaoScreen = () => {
   };
 
   const handleIniciarRodada = async () => {
-    if (!configSalva) {
-      toast.error('Salve as configurações antes de iniciar a rodada!', {
-        duration: 3000,
-        position: 'top-center'
-      });
-      return;
-    }
-
     try {
       if (!rodadaAtual) {
-        toast.error('Rodada não encontrada. Salve as configurações primeiro.', {
-          duration: 3000,
-          position: 'top-center'
-        });
+        await handleCriarNovaRodada();
         return;
       }
 
@@ -252,7 +198,6 @@ const ProducaoScreen = () => {
           forceGlobalSync();
           refetchRodadas();
         }, 500);
-        setRodadaConfigurada(true);
         toast.success(`🚀 Rodada ${rodadaAtual.numero} iniciada!`, {
           duration: 3000,
           position: 'top-center'
@@ -273,8 +218,6 @@ const ProducaoScreen = () => {
       console.log('Finalizando rodada...');
       await finalizarRodada(rodadaAtual.id);
       await refetchCounter();
-      setConfigSalva(false);
-      setRodadaConfigurada(false);
       toast.success(`🏁 Rodada ${rodadaAtual.numero} finalizada!`, {
         duration: 3000,
         position: 'top-center'
@@ -377,8 +320,6 @@ const ProducaoScreen = () => {
       console.log('Resetando jogo...');
       await resetarJogo();
       await Promise.all([refetchCounter(), refetchPizzas()]);
-      setConfigSalva(false);
-      setRodadaConfigurada(false);
       toast.success('🔄 Jogo resetado com sucesso!', {
         duration: 3000,
         position: 'top-center'
@@ -492,7 +433,7 @@ const ProducaoScreen = () => {
           <CardTitle>⚙️ Configuração da Rodada</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
               <Input
@@ -519,30 +460,19 @@ const ProducaoScreen = () => {
 
             <div>
               <Button
-                onClick={handleSalvarAlteracoes}
-                className="w-full bg-blue-500 hover:bg-blue-600"
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || loadingSequencia}
-              >
-                <Save className="w-4 h-4 mr-1" />
-                {loadingSequencia ? 'Criando Sequência...' : 'Salvar Alterações'}
-              </Button>
-            </div>
-
-            <div>
-              <Button
                 onClick={handleIniciarRodada}
                 className="w-full bg-green-500 hover:bg-green-600"
-                disabled={!configSalva || rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                disabled={loadingSequencia}
               >
-                Iniciar Rodada
+                {loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Timer e Status da Rodada - só aparece após salvar configurações */}
-      {configSalva && rodadaAtual && (
+      {/* Timer e Status da Rodada */}
+      {rodadaAtual && (
         <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -652,8 +582,8 @@ const ProducaoScreen = () => {
         </Card>
       )}
 
-      {/* Carrossel de Sabores - aparece após salvar configurações se houver histórico */}
-      {configSalva && rodadaAtual && historico.length > 0 && (
+      {/* Carrossel de Sabores - aparece automaticamente se houver histórico */}
+      {historico.length > 0 && (
         <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -684,7 +614,7 @@ const ProducaoScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {rodadaAtual.status === 'ativa' && saborAtual ? (
+            {rodadaAtual?.status === 'ativa' && saborAtual ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Sabor Atual */}
                 <div className="lg:col-span-2">
@@ -810,7 +740,7 @@ const ProducaoScreen = () => {
             )}
 
             {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
-            {rodadaAtual.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && (
+            {rodadaAtual?.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && (
               <div className="mt-6 pt-4 border-t border-orange-200">
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {saboresPassados.map((sabor, index) => {
