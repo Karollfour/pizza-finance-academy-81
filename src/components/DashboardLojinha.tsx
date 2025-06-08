@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -193,8 +192,8 @@ const DashboardLojinha = () => {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Takt Time */}
-      <TaktTimeChart />
+      {/* Gráfico de Takt Time com filtro global */}
+      <TaktTimeChart rodadaSelecionada={rodadaSelecionada} />
 
       {/* Novo Gráfico: Produtividade de Mão de Obra */}
       <Card>
