@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -160,11 +159,8 @@ const DashboardLojinha = () => {
 
   return (
     <div className="space-y-6">
-      {/* Novo gráfico de Takt Time */}
-      <TaktTimeChart />
-
-      {/* Controle Unificado de Seleção de Rodada - MOVIDO PARA O TOPO */}
-      <Card>
+      {/* Filtro Global Unificado - MOVIDO PARA O INÍCIO */}
+      <Card className="shadow-lg border-2 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>🎯 Filtro Global de Análise</span>
@@ -176,7 +172,7 @@ const DashboardLojinha = () => {
                 <SelectValue placeholder="Selecione uma rodada" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="todas">Todas as Rodadas</SelectItem>
+                <SelectItem value="todas">Ver Todas as Rodadas</SelectItem>
                 {rodadasDisponiveis.map(numeroRodada => (
                   <SelectItem key={numeroRodada} value={numeroRodada.toString()}>
                     Rodada {numeroRodada}
@@ -189,12 +185,15 @@ const DashboardLojinha = () => {
         <CardContent>
           <div className="text-center text-gray-600">
             {rodadaSelecionada 
-              ? `Analisando dados da Rodada ${rodadaSelecionada}`
-              : "Analisando dados de todas as rodadas"
+              ? `📊 Analisando dados da Rodada ${rodadaSelecionada}`
+              : "📈 Analisando dados de todas as rodadas"
             }
           </div>
         </CardContent>
       </Card>
+
+      {/* Gráfico de Takt Time */}
+      <TaktTimeChart />
 
       {/* Novo Gráfico: Produtividade de Mão de Obra */}
       <Card>
