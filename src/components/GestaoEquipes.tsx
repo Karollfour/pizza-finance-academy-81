@@ -14,7 +14,8 @@ const GestaoEquipes = () => {
   const [novaEquipe, setNovaEquipe] = useState({
     nome: '',
     saldoInicial: 100,
-    professorResponsavel: ''
+    professorResponsavel: '',
+    quantidadePessoas: 1
   });
   const [editandoEquipe, setEditandoEquipe] = useState<string | null>(null);
 
@@ -44,16 +45,26 @@ const GestaoEquipes = () => {
     }
 
     try {
+      const cores = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+      const emblemas = ['⚡', '🔥', '🌟', '🚀', '💎', '🎯'];
+      
+      const corTema = cores[Math.floor(Math.random() * cores.length)];
+      const emblema = emblemas[Math.floor(Math.random() * emblemas.length)];
+
       await criarEquipe(
         novaEquipe.nome,
         novaEquipe.saldoInicial,
-        novaEquipe.professorResponsavel
+        novaEquipe.professorResponsavel,
+        corTema,
+        emblema,
+        novaEquipe.quantidadePessoas
       );
       
       setNovaEquipe({
         nome: '',
         saldoInicial: 100,
-        professorResponsavel: ''
+        professorResponsavel: '',
+        quantidadePessoas: 1
       });
       
       toast.success('Equipe criada com sucesso!');
@@ -69,6 +80,15 @@ const GestaoEquipes = () => {
       setEditandoEquipe(null);
     } catch (error) {
       toast.error('Erro ao atualizar saldo');
+    }
+  };
+
+  const handleAtualizarQuantidadePessoas = async (equipeId: string, novaQuantidade: number) => {
+    try {
+      await atualizarEquipe(equipeId, { quantidade_pessoas: novaQuantidade });
+      toast.success('Quantidade de pessoas atualizada com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao atualizar quantidade de pessoas');
     }
   };
 
@@ -104,7 +124,7 @@ const GestaoEquipes = () => {
           <CardTitle className="text-blue-600">➕ Criar Nova Equipe</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Input
               placeholder="Nome da equipe"
               value={novaEquipe.nome}
@@ -120,6 +140,14 @@ const GestaoEquipes = () => {
               placeholder="Saldo inicial"
               value={novaEquipe.saldoInicial}
               onChange={(e) => setNovaEquipe(prev => ({ ...prev, saldoInicial: Number(e.target.value) }))}
+            />
+            <Input
+              type="number"
+              placeholder="Quantidade de pessoas"
+              value={novaEquipe.quantidadePessoas}
+              min="1"
+              max="10"
+              onChange={(e) => setNovaEquipe(prev => ({ ...prev, quantidadePessoas: Number(e.target.value) }))}
             />
           </div>
           <Button onClick={handleCriarEquipe} className="w-full">
@@ -166,6 +194,9 @@ const GestaoEquipes = () => {
                         <p className="text-sm text-gray-600 mb-1">
                           <strong>Professor:</strong> {equipe.professor_responsavel}
                         </p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Pessoas na equipe:</strong> {equipe.quantidade_pessoas || 1}
+                        </p>
                         <div className="flex items-center space-x-4 text-sm">
                           <span className="text-green-600">
                             <strong>Saldo Inicial:</strong> R$ {equipe.saldo_inicial.toFixed(2)}
@@ -201,27 +232,53 @@ const GestaoEquipes = () => {
                     
                     {editandoEquipe === equipe.id && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            type="number"
-                            placeholder="Novo saldo inicial"
-                            defaultValue={equipe.saldo_inicial}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                const input = e.target as HTMLInputElement;
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Novo saldo inicial"
+                              defaultValue={equipe.saldo_inicial}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.target as HTMLInputElement;
+                                  handleAtualizarSaldo(equipe.id, Number(input.value));
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
                                 handleAtualizarSaldo(equipe.id, Number(input.value));
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                              handleAtualizarSaldo(equipe.id, Number(input.value));
-                            }}
-                          >
-                            Atualizar
-                          </Button>
+                              }}
+                            >
+                              Atualizar Saldo
+                            </Button>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Quantidade de pessoas"
+                              defaultValue={equipe.quantidade_pessoas || 1}
+                              min="1"
+                              max="10"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  const input = e.target as HTMLInputElement;
+                                  handleAtualizarQuantidadePessoas(equipe.id, Number(input.value));
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
+                                handleAtualizarQuantidadePessoas(equipe.id, Number(input.value));
+                              }}
+                            >
+                              Atualizar Pessoas
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}

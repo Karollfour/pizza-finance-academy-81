@@ -123,6 +123,7 @@ export type Database = {
           id: string
           nome: string
           professor_responsavel: string | null
+          quantidade_pessoas: number
           saldo_inicial: number
         }
         Insert: {
@@ -132,6 +133,7 @@ export type Database = {
           id?: string
           nome: string
           professor_responsavel?: string | null
+          quantidade_pessoas?: number
           saldo_inicial?: number
         }
         Update: {
@@ -141,6 +143,7 @@ export type Database = {
           id?: string
           nome?: string
           professor_responsavel?: string | null
+          quantidade_pessoas?: number
           saldo_inicial?: number
         }
         Relationships: []

@@ -28,13 +28,20 @@ export const useEquipes = () => {
     }
   };
 
-  const criarEquipe = async (nome: string, saldoInicial: number, professorResponsavel: string) => {
+  const criarEquipe = async (
+    nome: string, 
+    saldoInicial: number, 
+    professorResponsavel: string,
+    corTema?: string,
+    emblema?: string,
+    quantidadePessoas: number = 1
+  ) => {
     try {
       const cores = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
       const emblemas = ['⚡', '🔥', '🌟', '🚀', '💎', '🎯'];
       
-      const corTema = cores[Math.floor(Math.random() * cores.length)];
-      const emblema = emblemas[Math.floor(Math.random() * emblemas.length)];
+      const corTemaSelecionada = corTema || cores[Math.floor(Math.random() * cores.length)];
+      const emblemaSelecionado = emblema || emblemas[Math.floor(Math.random() * emblemas.length)];
 
       const { data, error } = await supabase
         .from('equipes')
@@ -42,8 +49,9 @@ export const useEquipes = () => {
           nome,
           saldo_inicial: saldoInicial,
           professor_responsavel: professorResponsavel,
-          cor_tema: corTema,
-          emblema
+          cor_tema: corTemaSelecionada,
+          emblema: emblemaSelecionado,
+          quantidade_pessoas: quantidadePessoas
         })
         .select()
         .single();

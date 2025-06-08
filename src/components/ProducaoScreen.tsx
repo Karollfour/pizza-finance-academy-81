@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pause, Square, Play } from 'lucide-react';
+import { Pause, Square, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
@@ -112,6 +112,21 @@ const ProducaoScreen = () => {
     totalGastos: 0,
     equipesAtivas: 0
   });
+
+  // Carousel controls for the sabores display
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const nextSlide = () => {
+    if (historico.length > 0) {
+      setCarouselIndex((prev) => (prev + 1) % historico.length);
+    }
+  };
+
+  const prevSlide = () => {
+    if (historico.length > 0) {
+      setCarouselIndex((prev) => (prev - 1 + historico.length) % historico.length);
+    }
+  };
 
   // Calcular estatísticas em tempo real
   useEffect(() => {
@@ -380,7 +395,8 @@ const ProducaoScreen = () => {
   };
 
   // Componente para o conteúdo atual de controle de rodadas
-  const ControleRodadasContent = () => <div className="space-y-8">
+  const ControleRodadasContent = () => (
+    <div className="space-y-8">
       {/* Controles da Rodada Simplificados */}
       <Card className="shadow-lg border-2 border-red-200">
         <CardHeader className="bg-red-50">
@@ -390,49 +406,116 @@ const ProducaoScreen = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'} />
+              <Input
+                id="tempoLimite"
+                type="number"
+                value={tempoLimite}
+                onChange={(e) => setTempoLimite(Number(e.target.value))}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+              />
             </div>
 
             <div>
               <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
-              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'} min="1" max="50" />
+              <Input
+                id="numeroPizzas"
+                type="number"
+                value={numeroPizzas}
+                onChange={(e) => setNumeroPizzas(Number(e.target.value))}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                min="1"
+                max="50"
+              />
             </div>
 
             <div>
-              {rodadaAtual?.status === 'ativa' ? <div className="flex gap-2">
-                  
-                  <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
+              {rodadaAtual?.status === 'ativa' ? (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handlePausarRodada}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600"
+                    size="sm"
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button
+                    onClick={handleFinalizarRodada}
+                    className="flex-1 bg-red-500 hover:bg-red-600"
+                    size="sm"
+                  >
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div> : rodadaAtual?.status === 'pausada' ? <div className="flex gap-2">
-                  <Button onClick={handleRetomarRodada} className="flex-1 bg-green-500 hover:bg-green-600" size="sm">
+                </div>
+              ) : rodadaAtual?.status === 'pausada' ? (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleRetomarRodada}
+                    className="flex-1 bg-green-500 hover:bg-green-600"
+                    size="sm"
+                  >
                     <Play className="w-4 h-4 mr-1" />
                     Retomar
                   </Button>
-                  <Button onClick={handleFinalizarRodada} className="flex-1 bg-red-500 hover:bg-red-600" size="sm">
+                  <Button
+                    onClick={handleFinalizarRodada}
+                    className="flex-1 bg-red-500 hover:bg-red-600"
+                    size="sm"
+                  >
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div> : <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600" disabled={loadingSequencia}>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleIniciarRodada}
+                  className="w-full bg-green-500 hover:bg-green-600"
+                  disabled={loadingSequencia}
+                >
                   {loadingSequencia ? 'Criando Sequência...' : `Iniciar Rodada ${numeroRodadaDisplay}`}
-                </Button>}
+                </Button>
+              )}
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => adicionarMinutos(-1)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
+              <Button
+                onClick={() => adicionarMinutos(-1)}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
                 -1 min
               </Button>
-              <Button onClick={() => adicionarMinutos(1)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
+              <Button
+                onClick={() => adicionarMinutos(1)}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
                 +1 min
               </Button>
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => adicionarMinutos(-5)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
+              <Button
+                onClick={() => adicionarMinutos(-5)}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
                 -5 min
               </Button>
-              <Button onClick={() => adicionarMinutos(5)} disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'} variant="outline" size="sm" className="flex-1">
+              <Button
+                onClick={() => adicionarMinutos(5)}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa'}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+              >
                 +5 min
               </Button>
             </div>
@@ -446,26 +529,58 @@ const ProducaoScreen = () => {
           <CardTitle className="flex items-center justify-between">
             <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
             <div className="flex items-center gap-4">
-              <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'}>
-                {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
+              <Badge
+                variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}
+                className={
+                  rodadaAtual?.status === 'ativa' ? 'bg-green-500' :
+                  rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' :
+                  rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'
+                }
+              >
+                {rodadaAtual?.status === 'ativa' ? "Em Andamento" :
+                 rodadaAtual?.status === 'aguardando' ? "Aguardando" :
+                 rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
               </Badge>
-              {rodadaAtual?.status === 'ativa' && <div className="flex gap-2">
-                  
-                  <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
+              {rodadaAtual?.status === 'ativa' && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handlePausarRodada}
+                    className="bg-orange-500 hover:bg-orange-600"
+                    size="sm"
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pausar
+                  </Button>
+                  <Button
+                    onClick={handleFinalizarRodada}
+                    className="bg-red-500 hover:bg-red-600"
+                    size="sm"
+                  >
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div>}
-              {rodadaAtual?.status === 'pausada' && <div className="flex gap-2">
-                  <Button onClick={handleRetomarRodada} className="bg-green-500 hover:bg-green-600" size="sm">
+                </div>
+              )}
+              {rodadaAtual?.status === 'pausada' && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleRetomarRodada}
+                    className="bg-green-500 hover:bg-green-600"
+                    size="sm"
+                  >
                     <Play className="w-4 h-4 mr-1" />
                     Retomar
                   </Button>
-                  <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
+                  <Button
+                    onClick={handleFinalizarRodada}
+                    className="bg-red-500 hover:bg-red-600"
+                    size="sm"
+                  >
                     <Square className="w-4 h-4 mr-1" />
                     Encerrar
                   </Button>
-                </div>}
+                </div>
+              )}
             </div>
           </CardTitle>
         </CardHeader>
@@ -480,9 +595,39 @@ const ProducaoScreen = () => {
               </div>
             </div>
 
-            {/* Sabores da Rodada Integrados */}
-            {rodadaAtual && historico.length > 0 && <div>
-                {rodadaAtual.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Sabores da Rodada Integrados com Controles de Carrossel */}
+            {rodadaAtual && historico.length > 0 && (
+              <div>
+                {/* Controles de Carrossel */}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-orange-600">🍕 Sequência de Sabores</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={prevSlide}
+                      disabled={historico.length <= 1}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm text-gray-600 mx-2">
+                      {carouselIndex + 1} de {historico.length}
+                    </span>
+                    <Button
+                      onClick={nextSlide}
+                      disabled={historico.length <= 1}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Próximo
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {rodadaAtual.status === 'ativa' && saborAtual ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Sabor Atual */}
                     <div className="lg:col-span-2 my-[5px]">
                       <Card className="shadow-lg border-2 border-green-400 bg-green-100 my-0 mx-0 py-[10px]">
@@ -492,9 +637,11 @@ const ProducaoScreen = () => {
                           <h3 className="font-bold text-green-700 mb-2 text-4xl">
                             {getSaborNome(saborAtual)}
                           </h3>
-                          {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
+                          {getSaborDescricao(saborAtual) && (
+                            <p className="text-sm text-green-600 mb-3">
                               {getSaborDescricao(saborAtual)}
-                            </p>}
+                            </p>
+                          )}
                           <div className="text-lg text-green-600 mb-3 my-[28px]">
                             Pizza #{saborAtualIndex + 1} de {historico.length}
                           </div>
@@ -507,7 +654,8 @@ const ProducaoScreen = () => {
 
                     {/* Próximos Sabores */}
                     <div className="space-y-3">
-                      {proximoSabor ? <Card className="shadow-lg border-2 border-blue-400 bg-orange-200">
+                      {proximoSabor ? (
+                        <Card className="shadow-lg border-2 border-blue-400 bg-orange-200">
                           <CardContent className="p-3 text-center bg-orange-100">
                             <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 1</Badge>
                             <div className="text-2xl mb-2">🍕</div>
@@ -518,14 +666,18 @@ const ProducaoScreen = () => {
                               Pizza #{saborAtualIndex + 2}
                             </div>
                           </CardContent>
-                        </Card> : <Card className="shadow-lg border-2 border-gray-200">
+                        </Card>
+                      ) : (
+                        <Card className="shadow-lg border-2 border-gray-200">
                           <CardContent className="p-3 text-center">
                             <div className="text-xl mb-2">🏁</div>
                             <p className="text-xs text-gray-500">Último sabor</p>
                           </CardContent>
-                        </Card>}
+                        </Card>
+                      )}
 
-                      {segundoProximoSabor && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+                      {segundoProximoSabor && (
+                        <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                           <CardContent className="p-3 text-center bg-red-200">
                             <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
                             <div className="text-2xl mb-2">🍕</div>
@@ -536,55 +688,69 @@ const ProducaoScreen = () => {
                               Pizza #{saborAtualIndex + 3}
                             </div>
                           </CardContent>
-                        </Card>}
+                        </Card>
+                      )}
                     </div>
-                  </div> : <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  </div>
+                ) : (
+                  /* Visualização Manual do Carrossel quando não ativa */
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div className="lg:col-span-2">
                       <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                         <CardContent className="p-6 text-center py-[71px] my-[6px]">
-                          <Badge className="bg-yellow-500 text-white text-sm px-3 mb-3 py-[3px] rounded-md">🍕 EM  PRODUÇÃO</Badge>
+                          <Badge className="bg-yellow-500 text-white text-sm px-3 mb-3 py-[3px] rounded-md">
+                            🍕 PIZZA #{historico[carouselIndex]?.ordem || carouselIndex + 1}
+                          </Badge>
                           <div className="text-4xl mb-3">🍕</div>
                           <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
-                            {getSaborNome(historico[0])}
+                            {getSaborNome(historico[carouselIndex])}
                           </h3>
-                          {getSaborDescricao(historico[0]) && <p className="text-yellow-600 mb-3 text-xl">
-                              {getSaborDescricao(historico[0])}
-                            </p>}
+                          {getSaborDescricao(historico[carouselIndex]) && (
+                            <p className="text-yellow-600 mb-3 text-xl">
+                              {getSaborDescricao(historico[carouselIndex])}
+                            </p>
+                          )}
                           <div className="text-sm text-yellow-600">
-                            Pizza #{historico[0]?.ordem || 1}
+                            Pizza #{historico[carouselIndex]?.ordem || carouselIndex + 1} de {historico.length}
                           </div>
                         </CardContent>
                       </Card>
                     </div>
 
                     <div className="space-y-3">
-                      {historico[1] && <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+                      {historico[carouselIndex + 1] && (
+                        <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                           <CardContent className="p-3 text-center">
-                            <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 2</Badge>
+                            <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO</Badge>
                             <div className="text-2xl mb-2 my-[4px]">🍕</div>
                             <h4 className="font-bold text-4xl text-sky-700 py-0 my-[13px] mx-0">
-                              {getSaborNome(historico[1])}
+                              {getSaborNome(historico[carouselIndex + 1])}
                             </h4>
                             <div className="text-xs text-blue-600">
-                              Pizza #{historico[1].ordem}
+                              Pizza #{historico[carouselIndex + 1].ordem}
                             </div>
                           </CardContent>
-                        </Card>}
+                        </Card>
+                      )}
 
-                      {historico[2] && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+                      {historico[carouselIndex + 2] && (
+                        <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                           <CardContent className="p-3 text-center">
-                            <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO 3</Badge>
+                            <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO +2</Badge>
                             <div className="text-2xl mb-2 my-0">🍕</div>
                             <h4 className="font-bold text-purple-700 text-4xl my-[12px]">
-                              {getSaborNome(historico[2])}
+                              {getSaborNome(historico[carouselIndex + 2])}
                             </h4>
                             <div className="text-xs text-purple-600">
-                              Pizza #{historico[2].ordem}
+                              Pizza #{historico[carouselIndex + 2].ordem}
                             </div>
                           </CardContent>
-                        </Card>}
+                        </Card>
+                      )}
                     </div>
-                  </div>}
+                  </div>
+                )}
+
                 {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
                 {rodadaAtual.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -643,7 +809,8 @@ const ProducaoScreen = () => {
                       </div>
                     </div>
                   </div>}
-              </div>}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -671,7 +838,9 @@ const ProducaoScreen = () => {
             </> : <>🔄 Resetar Jogo</>}
         </Button>
       </div>
-    </div>;
+    </div>
+  );
+
   return <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -753,4 +922,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;
