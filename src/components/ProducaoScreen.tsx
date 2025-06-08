@@ -647,8 +647,11 @@ const ProducaoScreen = () => {
                       <div className="text-lg text-green-600 mb-3">
                         Pizza #{saborAtualIndex + 1} de {historico.length}
                       </div>
-                      <div className="bg-green-100 p-2 rounded text-xs text-green-600">
-                        Próxima troca: {formatarTempo(tempoProximaTroca)}
+                      <div className="bg-green-200 p-3 rounded-lg">
+                        <div className="text-sm text-green-700 mb-1">Próxima troca em:</div>
+                        <div className="text-2xl font-bold text-green-800">
+                          {formatarTempo(tempoProximaTroca)}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -666,6 +669,9 @@ const ProducaoScreen = () => {
                         </h4>
                         <div className="text-xs text-blue-600">
                           Pizza #{saborAtualIndex + 2}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          Em {formatarTempo(tempoProximaTroca)}
                         </div>
                       </CardContent>
                     </Card>
@@ -689,6 +695,9 @@ const ProducaoScreen = () => {
                         <div className="text-xs text-purple-600">
                           Pizza #{saborAtualIndex + 3}
                         </div>
+                        <div className="text-xs text-purple-600 mt-1">
+                          Em {formatarTempo(tempoProximaTroca + intervaloTroca)}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
@@ -704,7 +713,7 @@ const ProducaoScreen = () => {
                         🍕 PIZZA #{historico[carouselIndex]?.ordem || carouselIndex + 1}
                       </Badge>
                       <div className="text-4xl mb-3">🍕</div>
-                      <h3 className="font-bold text-yellow-700 text-5xl">
+                      <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
                         {getSaborNome(historico[carouselIndex])}
                       </h3>
                       {getSaborDescricao(historico[carouselIndex]) && (
