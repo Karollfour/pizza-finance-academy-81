@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { usePizzas } from '@/hooks/usePizzas';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useSabores } from '@/hooks/useSabores';
+import { obterConfigRodada } from '@/utils/rodadaConfig';
 import { toast } from 'sonner';
 
 interface FilaProducaoProps {
@@ -21,12 +21,51 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
   const { sabores, loading: loadingSabores } = useSabores();
   const [saborSelecionado, setSaborSelecionado] = useState<string>('');
   const [enviandoPizza, setEnviandoPizza] = useState(false);
+  const [limitePizzasRodada, setLimitePizzasRodada] = useState<number>(5);
+  const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // Carregar configuração da rodada atual
+  useEffect(() => {
+    const carregarConfigRodada = async () => {
+      if (!rodadaAtual?.id) {
+        setLoadingConfig(false);
+        return;
+      }
+      
+      try {
+        setLoadingConfig(true);
+        const config = await obterConfigRodada(rodadaAtual.id);
+        if (config) {
+          setLimitePizzasRodada(config.numeroPizzasPlanejadas);
+          console.log(`Limite de pizzas para rodada ${rodadaAtual.numero}: ${config.numeroPizzasPlanejadas}`);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configuração da rodada:', error);
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    carregarConfigRodada();
+  }, [rodadaAtual?.id]);
+
+  // Verificar se a equipe atingiu o limite de pizzas para a rodada atual
+  const verificarLimitePizzas = () => {
+    const pizzasEnviadas = pizzas.length;
+    return pizzasEnviadas >= limitePizzasRodada;
+  };
 
   const handleEnviarPizza = async () => {
     if (!rodadaAtual) return;
     
     if (!saborSelecionado) {
       toast.error('Por favor, selecione o sabor da pizza antes de enviar!');
+      return;
+    }
+
+    // Verificar limite de pizzas
+    if (verificarLimitePizzas()) {
+      toast.error(`Limite atingido! Esta equipe já enviou ${limitePizzasRodada} pizza(s) nesta rodada.`);
       return;
     }
     
@@ -51,7 +90,12 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
       // Limpar seleção após envio
       setSaborSelecionado('');
       
-      toast.success('🍕 Pizza enviada para avaliação!');
+      const pizzasRestantes = limitePizzasRodada - (pizzas.length + 1);
+      if (pizzasRestantes > 0) {
+        toast.success(`🍕 Pizza enviada! Restam ${pizzasRestantes} pizza(s) para esta rodada.`);
+      } else {
+        toast.success('🍕 Última pizza da rodada enviada com sucesso!');
+      }
     } catch (error) {
       console.error('Erro ao enviar pizza para avaliação:', error);
       toast.error('Erro ao enviar pizza. Tente novamente.');
@@ -80,6 +124,9 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
     return pizza.sabor?.nome || 'Sabor não informado';
   };
 
+  const atingiuLimite = verificarLimitePizzas();
+  const pizzasRestantes = limitePizzasRodada - pizzas.length;
+
   return (
     <div className="space-y-6">
       {/* Formulário para Enviar Pizza */}
@@ -90,64 +137,97 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
         <CardContent className="p-6">
           <div className="text-center space-y-4">
             <div className="text-6xl mb-4">🍕</div>
-            <h3 className="text-xl font-bold text-gray-700">
-              Pronto para enviar uma pizza?
-            </h3>
-            
-            {/* Seleção de Sabor */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-600">
-                Selecione o sabor da pizza:
-              </label>
-              <Select 
-                value={saborSelecionado} 
-                onValueChange={setSaborSelecionado}
-                disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || loadingSabores}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Escolha o sabor da pizza..." />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                  {sabores.map((sabor) => (
-                    <SelectItem key={sabor.id} value={sabor.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{sabor.nome}</span>
-                        {sabor.descricao && (
-                          <span className="text-xs text-gray-500">{sabor.descricao}</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <p className="text-gray-600">
-              Escolha o sabor e clique no botão abaixo quando sua pizza estiver pronta para avaliação
-            </p>
-            
-            <Button
-              onClick={handleEnviarPizza}
-              className="w-full h-16 text-xl bg-green-500 hover:bg-green-600 text-white font-bold"
-              disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || !saborSelecionado || enviandoPizza}
-            >
-              {enviandoPizza ? (
-                <>🔄 Enviando...</>
-              ) : (
-                <>✅ Enviar Pizza para Avaliação</>
-              )}
-            </Button>
-            
-            {(!rodadaAtual || rodadaAtual.status !== 'ativa') && (
-              <p className="text-sm text-gray-500">
-                Aguardando rodada ativa para enviar pizzas
-              </p>
+
+            {/* Indicador de limite de pizzas */}
+            {!loadingConfig && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-sm font-medium text-blue-700">
+                  Pizzas desta rodada: {pizzas.length} / {limitePizzasRodada}
+                </div>
+                {pizzasRestantes > 0 ? (
+                  <div className="text-xs text-blue-600">
+                    Restam {pizzasRestantes} pizza(s) para enviar
+                  </div>
+                ) : (
+                  <div className="text-xs text-red-600 font-medium">
+                    ⚠️ Limite atingido para esta rodada
+                  </div>
+                )}
+              </div>
             )}
-            
-            {!saborSelecionado && rodadaAtual?.status === 'ativa' && (
-              <p className="text-sm text-orange-600">
-                ⚠️ Selecione o sabor da pizza antes de enviar
-              </p>
+
+            {atingiuLimite ? (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h3 className="text-lg font-bold text-red-700 mb-2">
+                  🚫 Limite Atingido
+                </h3>
+                <p className="text-red-600">
+                  Sua equipe já enviou o número máximo de {limitePizzasRodada} pizza(s) para esta rodada.
+                  Aguarde a próxima rodada para enviar mais pizzas.
+                </p>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-gray-700">
+                  Pronto para enviar uma pizza?
+                </h3>
+                
+                {/* Seleção de Sabor */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-600">
+                    Selecione o sabor da pizza:
+                  </label>
+                  <Select 
+                    value={saborSelecionado} 
+                    onValueChange={setSaborSelecionado}
+                    disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || loadingSabores || atingiuLimite}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Escolha o sabor da pizza..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                      {sabores.map((sabor) => (
+                        <SelectItem key={sabor.id} value={sabor.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{sabor.nome}</span>
+                            {sabor.descricao && (
+                              <span className="text-xs text-gray-500">{sabor.descricao}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <p className="text-gray-600">
+                  Escolha o sabor e clique no botão abaixo quando sua pizza estiver pronta para avaliação
+                </p>
+                
+                <Button
+                  onClick={handleEnviarPizza}
+                  className="w-full h-16 text-xl bg-green-500 hover:bg-green-600 text-white font-bold"
+                  disabled={!rodadaAtual || rodadaAtual.status !== 'ativa' || !saborSelecionado || enviandoPizza || atingiuLimite}
+                >
+                  {enviandoPizza ? (
+                    <>🔄 Enviando...</>
+                  ) : (
+                    <>✅ Enviar Pizza para Avaliação</>
+                  )}
+                </Button>
+                
+                {(!rodadaAtual || rodadaAtual.status !== 'ativa') && (
+                  <p className="text-sm text-gray-500">
+                    Aguardando rodada ativa para enviar pizzas
+                  </p>
+                )}
+                
+                {!saborSelecionado && rodadaAtual?.status === 'ativa' && !atingiuLimite && (
+                  <p className="text-sm text-orange-600">
+                    ⚠️ Selecione o sabor da pizza antes de enviar
+                  </p>
+                )}
+              </>
             )}
           </div>
         </CardContent>
@@ -200,7 +280,7 @@ const FilaProducao = ({ equipeId, equipeNome, onPizzaEnviada }: FilaProducaoProp
       )}
 
       {/* Mensagem quando não há pizzas */}
-      {pizzas.length === 0 && rodadaAtual?.status === 'ativa' && (
+      {pizzas.length === 0 && rodadaAtual?.status === 'ativa' && !atingiuLimite && (
         <Card className="shadow-lg border-2 border-yellow-200">
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-4">🎯</div>
