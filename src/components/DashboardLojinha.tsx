@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useCompras } from '@/hooks/useCompras';
@@ -293,7 +294,7 @@ const DashboardLojinha = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Gastos por Equipe - ATUALIZADO COM FILTRO DE RODADA */}
+        {/* Gastos por Equipe - SEM FILTRO INDIVIDUAL */}
         <Card>
           <CardHeader>
             <CardTitle>💰 Gastos por Equipe</CardTitle>
@@ -323,7 +324,7 @@ const DashboardLojinha = () => {
           </CardContent>
         </Card>
 
-        {/* Ganhos por Equipe - ATUALIZADO COM FILTRO DE RODADA */}
+        {/* Ganhos por Equipe - SEM FILTRO INDIVIDUAL */}
         <Card>
           <CardHeader>
             <CardTitle>🎉 Vendas por Equipe (Pizzas Aprovadas)</CardTitle>
