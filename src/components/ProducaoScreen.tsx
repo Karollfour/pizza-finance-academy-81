@@ -80,10 +80,12 @@ const ProducaoScreen = () => {
   // Persistir estado da aba ativa - controle como padrão
   const [activeTab, setActiveTab] = usePersistedState('producao-active-tab', 'controle');
 
-  // Estados para controle do carrossel
+  // Estados para controle do carrossel - PERSISTIR O NÚMERO DE RODADAS CONFIGURADO PELO USUÁRIO
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
-  const [numeroRodadas, setNumeroRodadas] = useState(5);
+  
+  // Persistir o número de rodadas configurado pelo usuário independentemente do limite do banco
+  const [numeroRodasUsuario, setNumeroRodasUsuario] = usePersistedState('numero-rodadas-configurado', 5);
 
   // Sincronização global ativa
   const {
@@ -162,14 +164,21 @@ const ProducaoScreen = () => {
     }
   }, [rodadaAtual]);
 
-  // Sincronizar o número de rodadas com o limite quando alterado
-  useEffect(() => {
-    if (numeroRodadas !== limiteRodadas) {
-      atualizarLimiteRodadas(numeroRodadas).catch(error => {
-        console.error('Erro ao atualizar limite:', error);
+  // Atualizar limite no banco apenas quando o usuário alterar o número de rodadas
+  const handleNumeroRodasChange = async (novoNumero: number) => {
+    setNumeroRodasUsuario(novoNumero);
+    
+    try {
+      await atualizarLimiteRodadas(novoNumero);
+    } catch (error) {
+      console.error('Erro ao atualizar limite:', error);
+      toast.error('Erro ao salvar configuração de rodadas', {
+        duration: 3000,
+        position: 'top-center'
       });
     }
-  }, [numeroRodadas]);
+  };
+
   const handleCriarNovaRodada = async () => {
     try {
       // Verificar se pode criar nova rodada
@@ -506,14 +515,14 @@ const ProducaoScreen = () => {
               <Input 
                 id="numeroRodadas" 
                 type="number" 
-                value={numeroRodadas} 
-                onChange={e => setNumeroRodadas(Number(e.target.value))} 
+                value={numeroRodasUsuario} 
+                onChange={e => handleNumeroRodasChange(Number(e.target.value))} 
                 disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
                 min="0" 
                 max="20" 
               />
               <div className="text-xs text-gray-600 mt-1">
-                {limiteRodadas === 0 ? 'Ilimitado (configure > 0 para definir limite)' : `Finalizadas: ${rodadasFinalizadas}/${limiteRodadas}`}
+                {numeroRodasUsuario === 0 ? 'Ilimitado (configure > 0 para definir limite)' : `Finalizadas: ${rodadasFinalizadas}/${numeroRodasUsuario}`}
               </div>
             </div>
 
