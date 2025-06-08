@@ -474,7 +474,7 @@ const ProducaoScreen = () => {
               <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="1" max="50" />
             </div>
 
-            <div className="px-0 py-0 my-0">
+            <div>
               <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
               <Input id="numeroRodadas" type="number" value={numeroRodadas} onChange={e => setNumeroRodadas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="0" max="20" />
               <div className="text-xs text-gray-600 mt-1">
