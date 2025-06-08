@@ -167,9 +167,20 @@ const ProducaoScreen = () => {
         const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
         if (novaRodada?.id) {
           await salvarConfigRodada(novaRodada.id, numeroPizzas);
+          
+          // Criar sequência de sabores automaticamente após salvar configurações
+          console.log('Criando sequência de sabores...');
+          await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
+          
           await refetchCounter();
           setConfigSalva(true);
-          toast.success(`🎯 Rodada ${proximoNumero} criada e configurada!`, {
+          
+          // Aguardar um pouco para garantir que o histórico seja carregado
+          setTimeout(() => {
+            forceGlobalSync();
+          }, 500);
+          
+          toast.success(`🎯 Rodada ${proximoNumero} criada e configurada! Carrossel disponível.`, {
             duration: 3000,
             position: 'top-center'
           });
@@ -184,8 +195,25 @@ const ProducaoScreen = () => {
         if (error) throw error;
 
         await salvarConfigRodada(rodadaAtual.id, numeroPizzas);
+        
+        // Verificar se já existe sequência, se não criar
+        const { data: historicoExistente } = await supabase
+          .from('historico_sabores_rodada')
+          .select('id')
+          .eq('rodada_id', rodadaAtual.id)
+          .limit(1);
+
+        if (!historicoExistente || historicoExistente.length === 0) {
+          console.log('Criando sequência de sabores...');
+          await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
+          
+          setTimeout(() => {
+            forceGlobalSync();
+          }, 500);
+        }
+        
         setConfigSalva(true);
-        toast.success('⚙️ Configurações salvas com sucesso!', {
+        toast.success('⚙️ Configurações salvas! Carrossel disponível.', {
           duration: 3000,
           position: 'top-center'
         });
@@ -218,19 +246,6 @@ const ProducaoScreen = () => {
       }
 
       if (rodadaAtual.status === 'aguardando') {
-        const { data: historicoExistente } = await supabase
-          .from('historico_sabores_rodada')
-          .select('id')
-          .eq('rodada_id', rodadaAtual.id)
-          .limit(1);
-
-        if (!historicoExistente || historicoExistente.length === 0) {
-          console.log('Criando sequência de sabores...');
-          await criarSequenciaParaRodada(rodadaAtual.id, numeroPizzas);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          forceGlobalSync();
-        }
-
         console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
         setTimeout(() => {
@@ -506,10 +521,10 @@ const ProducaoScreen = () => {
               <Button
                 onClick={handleSalvarAlteracoes}
                 className="w-full bg-blue-500 hover:bg-blue-600"
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || loadingSequencia}
               >
                 <Save className="w-4 h-4 mr-1" />
-                Salvar Alterações
+                {loadingSequencia ? 'Criando Sequência...' : 'Salvar Alterações'}
               </Button>
             </div>
 
@@ -517,9 +532,9 @@ const ProducaoScreen = () => {
               <Button
                 onClick={handleIniciarRodada}
                 className="w-full bg-green-500 hover:bg-green-600"
-                disabled={!configSalva || rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || loadingSequencia}
+                disabled={!configSalva || rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
               >
-                {loadingSequencia ? 'Criando Sequência...' : 'Iniciar Rodada'}
+                Iniciar Rodada
               </Button>
             </div>
           </div>
@@ -637,8 +652,8 @@ const ProducaoScreen = () => {
         </Card>
       )}
 
-      {/* Carrossel de Sabores - só aparece após iniciar rodada */}
-      {rodadaConfigurada && rodadaAtual && historico.length > 0 && (
+      {/* Carrossel de Sabores - aparece após salvar configurações se houver histórico */}
+      {configSalva && rodadaAtual && historico.length > 0 && (
         <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
