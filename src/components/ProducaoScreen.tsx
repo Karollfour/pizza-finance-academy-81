@@ -72,6 +72,7 @@ const ProducaoScreen = () => {
   // Estados para controle do carrossel
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
+  const [numeroRodadas, setNumeroRodadas] = useState(5);
 
   // Sincronização global ativa
   const {
@@ -433,7 +434,7 @@ const ProducaoScreen = () => {
           <CardTitle>⚙️ Configuração da Rodada</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
               <Input
@@ -455,6 +456,19 @@ const ProducaoScreen = () => {
                 disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
                 min="1"
                 max="50"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
+              <Input
+                id="numeroRodadas"
+                type="number"
+                value={numeroRodadas}
+                onChange={(e) => setNumeroRodadas(Number(e.target.value))}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                min="1"
+                max="20"
               />
             </div>
 
@@ -690,7 +704,7 @@ const ProducaoScreen = () => {
                         🍕 PIZZA #{historico[carouselIndex]?.ordem || carouselIndex + 1}
                       </Badge>
                       <div className="text-4xl mb-3">🍕</div>
-                      <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
+                      <h3 className="font-bold text-yellow-700 text-5xl">
                         {getSaborNome(historico[carouselIndex])}
                       </h3>
                       {getSaborDescricao(historico[carouselIndex]) && (
