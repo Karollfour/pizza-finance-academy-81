@@ -93,6 +93,65 @@ const DashboardLojinha = () => {
     }).filter(dados => dados.totalPizzas > 0);
   };
 
+  // NOVO: Dados para o gráfico de análise de lucro
+  const dadosAnaliseLucro = (numeroRodada: number) => {
+    const rodada = getRodadaPorNumero(numeroRodada);
+    if (!rodada) return [];
+
+    return equipes.map(equipe => {
+      // Filtrar compras da rodada específica
+      const comprasEquipeRodada = compras.filter(c => c.equipe_id === equipe.id && c.rodada_id === rodada.id);
+      
+      // Calcular MP (Matéria-Prima) - todos os produtos exceto forno e descanso de massa
+      const comprasMP = comprasEquipeRodada.filter(c => {
+        if (!c.produto_id) return false;
+        const produto = produtos.find(p => p.id === c.produto_id);
+        return produto && !produto.nome.toLowerCase().includes('forno') && !produto.nome.toLowerCase().includes('descanso');
+      });
+      const mp = comprasMP.reduce((sum, c) => sum + c.valor_total, 0);
+      
+      // Calcular EQ (Equipamento) - forno e descanso de massa
+      const comprasEQ = comprasEquipeRodada.filter(c => {
+        if (!c.produto_id) return false;
+        const produto = produtos.find(p => p.id === c.produto_id);
+        return produto && (produto.nome.toLowerCase().includes('forno') || produto.nome.toLowerCase().includes('descanso'));
+      });
+      
+      // Para equipamentos, dividir o valor total pelo número de rodadas em que foi usado
+      const numeroRodadasUsadas = rodadas.filter(r => 
+        compras.some(c => c.equipe_id === equipe.id && c.rodada_id === r.id && 
+          comprasEQ.some(eq => eq.produto_id === c.produto_id))
+      ).length || 1;
+      
+      const eq = comprasEQ.reduce((sum, c) => sum + (c.valor_total / numeroRodadasUsadas), 0);
+      
+      // Calcular MO (Mão de Obra) - número de pessoas x R$10
+      const mo = (equipe.quantidade_pessoas || 1) * 10;
+      
+      // Calcular número de pizzas aprovadas na rodada
+      const pizzasAprovadas = pizzas.filter(p => 
+        p.equipe_id === equipe.id && 
+        p.rodada_id === rodada.id && 
+        p.resultado === 'aprovada'
+      ).length;
+      
+      // Calcular lucro = (MP + EQ + MO) ÷ número de pizzas aprovadas
+      const custoTotal = mp + eq + mo;
+      const lucro = pizzasAprovadas > 0 ? custoTotal / pizzasAprovadas : 0;
+      
+      return {
+        equipe: equipe.nome,
+        mp,
+        eq, 
+        mo,
+        custoTotal,
+        pizzasAprovadas,
+        lucro: Number(lucro.toFixed(2)),
+        corEquipe: equipe.cor_tema || '#3b82f6'
+      };
+    }).filter(dados => dados.pizzasAprovadas > 0);
+  };
+
   // NOVO: Dados por equipe para gastos com filtro de rodada
   const dadosGastosPorEquipe = (numeroRodada: number | null) => {
     return equipes.map(equipe => {
@@ -191,6 +250,99 @@ const DashboardLojinha = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* NOVO: Gráfico de Análise de Lucro por Pizza - Só aparece quando uma rodada específica está selecionada */}
+      {rodadaSelecionada && (
+        <Card className="shadow-lg border-2 border-green-200">
+          <CardHeader>
+            <CardTitle>💰 Análise de Lucro por Pizza - Rodada {rodadaSelecionada}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dadosAnaliseLucro(rodadaSelecionada).length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={500}>
+                  <BarChart data={dadosAnaliseLucro(rodadaSelecionada)} margin={{ top: 50, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="equipe" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => {
+                        const formatters = {
+                          mp: (val: number) => [`R$ ${val.toFixed(2)}`, 'Matéria-Prima (MP)'],
+                          eq: (val: number) => [`R$ ${val.toFixed(2)}`, 'Equipamento (EQ)'],
+                          mo: (val: number) => [`R$ ${val.toFixed(2)}`, 'Mão de Obra (MO)']
+                        };
+                        return formatters[name as keyof typeof formatters]?.(value as number) || [value, name];
+                      }}
+                      labelFormatter={(label) => `Equipe: ${label}`}
+                    />
+                    {/* Barras empilhadas para mostrar MP, EQ e MO */}
+                    <Bar dataKey="mp" stackId="custo" fill="#ef4444" name="mp" />
+                    <Bar dataKey="eq" stackId="custo" fill="#f59e0b" name="eq" />
+                    <Bar dataKey="mo" stackId="custo" fill="#10b981" name="mo" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Resumo detalhado da análise de lucro */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {dadosAnaliseLucro(rodadaSelecionada).map((dados, index) => (
+                    <Card key={index} className="border-2" style={{ borderColor: dados.corEquipe }}>
+                      <CardContent className="p-4">
+                        <h4 className="font-bold text-lg mb-3 text-center" style={{ color: dados.corEquipe }}>
+                          {dados.equipe}
+                        </h4>
+                        
+                        {/* Lucro por pizza - destaque principal */}
+                        <div className="bg-green-100 p-3 rounded-lg mb-3 text-center">
+                          <div className="text-2xl font-bold text-green-700">
+                            R$ {dados.lucro}
+                          </div>
+                          <div className="text-sm text-green-600">Custo por Pizza</div>
+                        </div>
+
+                        {/* Breakdown dos custos */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between items-center bg-red-50 p-2 rounded">
+                            <span className="text-red-700">MP (Matéria-Prima):</span>
+                            <span className="font-bold text-red-800">R$ {dados.mp.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center bg-yellow-50 p-2 rounded">
+                            <span className="text-yellow-700">EQ (Equipamento):</span>
+                            <span className="font-bold text-yellow-800">R$ {dados.eq.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center bg-green-50 p-2 rounded">
+                            <span className="text-green-700">MO (Mão de Obra):</span>
+                            <span className="font-bold text-green-800">R$ {dados.mo.toFixed(2)}</span>
+                          </div>
+                          
+                          {/* Totais */}
+                          <div className="border-t pt-2 mt-2">
+                            <div className="flex justify-between items-center font-bold">
+                              <span>Custo Total:</span>
+                              <span>R$ {dados.custoTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-blue-600">
+                              <span>Pizzas Aprovadas:</span>
+                              <span>{dados.pizzasAprovadas}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-lg mb-2">📊 Nenhum dado encontrado</p>
+                <p className="text-sm">
+                  Não há dados suficientes para calcular o lucro na Rodada {rodadaSelecionada}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Gráfico de Takt Time com filtro global */}
       <TaktTimeChart rodadaSelecionada={rodadaSelecionada} />
