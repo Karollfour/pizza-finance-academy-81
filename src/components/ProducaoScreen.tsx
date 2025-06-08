@@ -33,7 +33,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -127,16 +126,14 @@ const ProducaoScreen = () => {
 
   // Carousel controls for the sabores display
   const [carouselIndex, setCarouselIndex] = useState(0);
-
   const nextSlide = () => {
     if (historico.length > 0) {
-      setCarouselIndex((prev) => (prev + 1) % historico.length);
+      setCarouselIndex(prev => (prev + 1) % historico.length);
     }
   };
-
   const prevSlide = () => {
     if (historico.length > 0) {
-      setCarouselIndex((prev) => (prev - 1 + historico.length) % historico.length);
+      setCarouselIndex(prev => (prev - 1 + historico.length) % historico.length);
     }
   };
 
@@ -172,7 +169,6 @@ const ProducaoScreen = () => {
       });
     }
   }, [numeroRodadas]);
-
   const handleCriarNovaRodada = async () => {
     try {
       // Verificar se pode criar nova rodada
@@ -183,23 +179,20 @@ const ProducaoScreen = () => {
         });
         return;
       }
-
       console.log('Criando nova rodada...');
       const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
       if (novaRodada?.id) {
         await salvarConfigRodada(novaRodada.id, numeroPizzas);
-        
+
         // Criar sequência de sabores automaticamente
         console.log('Criando sequência de sabores...');
         await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
-        
         await refetchCounter();
-        
+
         // Aguardar um pouco para garantir que o histórico seja carregado
         setTimeout(() => {
           forceGlobalSync();
         }, 500);
-        
         toast.success(`🎯 Rodada ${proximoNumero} criada!`, {
           duration: 3000,
           position: 'top-center'
@@ -213,7 +206,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleIniciarRodada = async () => {
     try {
       // Verificar se pode iniciar nova rodada
@@ -224,12 +216,10 @@ const ProducaoScreen = () => {
         });
         return;
       }
-
       if (!rodadaAtual) {
         await handleCriarNovaRodada();
         return;
       }
-
       if (rodadaAtual.status === 'aguardando') {
         console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
@@ -250,7 +240,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -269,7 +258,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handlePausarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -291,7 +279,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleRetomarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -313,19 +300,17 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const adicionarMinutos = async (minutos: number) => {
     if (!rodadaAtual) return;
     try {
       const novoTempoLimite = rodadaAtual.tempo_limite + minutos * 60;
       console.log(`Alterando tempo limite de ${rodadaAtual.tempo_limite}s para ${novoTempoLimite}s`);
-      const { error } = await supabase
-        .from('rodadas')
-        .update({ tempo_limite: novoTempoLimite })
-        .eq('id', rodadaAtual.id);
-
+      const {
+        error
+      } = await supabase.from('rodadas').update({
+        tempo_limite: novoTempoLimite
+      }).eq('id', rodadaAtual.id);
       if (error) throw error;
-
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('rodada-tempo-alterado', {
           detail: {
@@ -336,7 +321,6 @@ const ProducaoScreen = () => {
           }
         }));
       }
-
       toast.success(`${minutos > 0 ? 'Adicionados' : 'Removidos'} ${Math.abs(minutos)} minuto(s)`, {
         duration: 2000,
         position: 'top-center'
@@ -349,7 +333,6 @@ const ProducaoScreen = () => {
       });
     }
   };
-
   const handleResetarJogo = async () => {
     const confirmar1 = window.confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?');
     if (!confirmar1) return;
@@ -371,8 +354,9 @@ const ProducaoScreen = () => {
       });
     }
   };
-
-  const { historico } = useHistoricoSaboresRodada(rodadaAtual?.id);
+  const {
+    historico
+  } = useHistoricoSaboresRodada(rodadaAtual?.id);
   const {
     saborAtual,
     proximoSabor,
@@ -385,10 +369,12 @@ const ProducaoScreen = () => {
     rodada: rodadaAtual,
     numeroPizzas
   });
-
   useEffect(() => {
     const handleGlobalDataChange = (event: CustomEvent) => {
-      const { table, action } = event.detail;
+      const {
+        table,
+        action
+      } = event.detail;
       if (table === 'rodadas') {
         refetchRodadas();
         refetchCounter();
@@ -401,7 +387,6 @@ const ProducaoScreen = () => {
       window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
   }, [refetchRodadas, refetchCounter, refetchPizzas]);
-
   const pizzasProntas = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
   const pizzasAprovadas = pizzasAvaliadas.filter(p => p.resultado === 'aprovada');
@@ -416,14 +401,11 @@ const ProducaoScreen = () => {
       reprovadas: pizzasEquipe.filter(p => p.resultado === 'reprovada').length
     };
   });
-
   const getEquipeNome = (equipeId: string) => {
     const equipe = equipes.find(e => e.id === equipeId);
     return equipe ? equipe.nome : 'Equipe não encontrada';
   };
-
   const numeroRodadaDisplay = rodadaAtual?.numero || proximoNumero;
-
   const getSaborNome = (item: any) => {
     if (item?.sabor?.nome) {
       return item.sabor.nome;
@@ -431,7 +413,6 @@ const ProducaoScreen = () => {
     const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
     return saborEncontrado?.nome || 'Sabor não encontrado';
   };
-
   const getSaborDescricao = (item: any) => {
     if (item?.sabor?.descricao) {
       return item.sabor.descricao;
@@ -439,13 +420,11 @@ const ProducaoScreen = () => {
     const saborEncontrado = sabores.find(s => s.id === item?.sabor_id);
     return saborEncontrado?.descricao;
   };
-
   const formatarTempo = (segundos: number) => {
     const mins = Math.floor(segundos / 60);
     const secs = segundos % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
   const getSaborCorRodadaAtual = (saborNome: string) => {
     const nome = saborNome?.toLowerCase() || '';
     if (nome.includes('mussarela') || nome.includes('queijo')) {
@@ -464,11 +443,9 @@ const ProducaoScreen = () => {
   };
 
   // Componente para o conteúdo atual de controle de rodadas
-  const ControleRodadasContent = () => (
-    <div className="space-y-8">
+  const ControleRodadasContent = () => <div className="space-y-8">
       {/* Aviso de Limite Excedido - só mostrar se limite > 0 */}
-      {limiteExcedido && limiteRodadas > 0 && (
-        <Card className="shadow-lg border-2 border-red-500 bg-red-50">
+      {limiteExcedido && limiteRodadas > 0 && <Card className="shadow-lg border-2 border-red-500 bg-red-50">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 text-red-700">
               <AlertTriangle className="w-6 h-6" />
@@ -478,8 +455,7 @@ const ProducaoScreen = () => {
               </div>
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Configuração da Rodada */}
       <Card className="shadow-lg border-2 border-red-200">
@@ -490,55 +466,25 @@ const ProducaoScreen = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-              <Input
-                id="tempoLimite"
-                type="number"
-                value={tempoLimite}
-                onChange={(e) => setTempoLimite(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
-              />
+              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} />
             </div>
 
             <div>
               <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
-              <Input
-                id="numeroPizzas"
-                type="number"
-                value={numeroPizzas}
-                onChange={(e) => setNumeroPizzas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
-                min="1"
-                max="50"
-              />
+              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="1" max="50" />
             </div>
 
-            <div>
+            <div className="px-0 py-0 my-0">
               <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
-              <Input
-                id="numeroRodadas"
-                type="number"
-                value={numeroRodadas}
-                onChange={(e) => setNumeroRodadas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
-                min="0"
-                max="20"
-              />
+              <Input id="numeroRodadas" type="number" value={numeroRodadas} onChange={e => setNumeroRodadas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="0" max="20" />
               <div className="text-xs text-gray-600 mt-1">
-                {limiteRodadas === 0 ? 
-                  'Ilimitado (configure > 0 para definir limite)' : 
-                  `Finalizadas: ${rodadasFinalizadas}/${limiteRodadas}`
-                }
+                {limiteRodadas === 0 ? 'Ilimitado (configure > 0 para definir limite)' : `Finalizadas: ${rodadasFinalizadas}/${limiteRodadas}`}
               </div>
             </div>
 
             <div>
-              <Button
-                onClick={handleIniciarRodada}
-                className="w-full bg-green-500 hover:bg-green-600"
-                disabled={loadingSequencia || (limiteExcedido && limiteRodadas > 0)}
-              >
-                {(limiteExcedido && limiteRodadas > 0) ? 'Limite Atingido' : 
-                 loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
+              <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600" disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0}>
+                {limiteExcedido && limiteRodadas > 0 ? 'Limite Atingido' : loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
               </Button>
             </div>
           </div>
@@ -546,64 +492,34 @@ const ProducaoScreen = () => {
       </Card>
 
       {/* Timer e Status da Rodada */}
-      {rodadaAtual && (
-        <Card className="shadow-lg border-2 border-orange-200">
+      {rodadaAtual && <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
               <div className="flex items-center gap-4">
-                <Badge
-                  variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"}
-                  className={
-                    rodadaAtual?.status === 'ativa' ? 'bg-green-500' :
-                    rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' :
-                    rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'
-                  }
-                >
-                  {rodadaAtual?.status === 'ativa' ? "Em Andamento" :
-                   rodadaAtual?.status === 'aguardando' ? "Aguardando" :
-                   rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
+                <Badge variant={rodadaAtual?.status === 'ativa' ? "default" : "secondary"} className={rodadaAtual?.status === 'ativa' ? 'bg-green-500' : rodadaAtual?.status === 'aguardando' ? 'bg-yellow-500' : rodadaAtual?.status === 'pausada' ? 'bg-orange-500' : 'bg-gray-500'}>
+                  {rodadaAtual?.status === 'ativa' ? "Em Andamento" : rodadaAtual?.status === 'aguardando' ? "Aguardando" : rodadaAtual?.status === 'pausada' ? "Pausada" : "Finalizada"}
                 </Badge>
-                {rodadaAtual?.status === 'ativa' && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handlePausarRodada}
-                      className="bg-orange-500 hover:bg-orange-600"
-                      size="sm"
-                    >
+                {rodadaAtual?.status === 'ativa' && <div className="flex gap-2">
+                    <Button onClick={handlePausarRodada} className="bg-orange-500 hover:bg-orange-600" size="sm">
                       <Pause className="w-4 h-4 mr-1" />
                       Pausar
                     </Button>
-                    <Button
-                      onClick={handleFinalizarRodada}
-                      className="bg-red-500 hover:bg-red-600"
-                      size="sm"
-                    >
+                    <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
                       <Square className="w-4 h-4 mr-1" />
                       Encerrar
                     </Button>
-                  </div>
-                )}
-                {rodadaAtual?.status === 'pausada' && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleRetomarRodada}
-                      className="bg-green-500 hover:bg-green-600"
-                      size="sm"
-                    >
+                  </div>}
+                {rodadaAtual?.status === 'pausada' && <div className="flex gap-2">
+                    <Button onClick={handleRetomarRodada} className="bg-green-500 hover:bg-green-600" size="sm">
                       <Play className="w-4 h-4 mr-1" />
                       Retomar
                     </Button>
-                    <Button
-                      onClick={handleFinalizarRodada}
-                      className="bg-red-500 hover:bg-red-600"
-                      size="sm"
-                    >
+                    <Button onClick={handleFinalizarRodada} className="bg-red-500 hover:bg-red-600" size="sm">
                       <Square className="w-4 h-4 mr-1" />
                       Encerrar
                     </Button>
-                  </div>
-                )}
+                  </div>}
               </div>
             </CardTitle>
           </CardHeader>
@@ -619,68 +535,38 @@ const ProducaoScreen = () => {
               </div>
 
               {/* Controles de tempo só aparecem se a rodada estiver ativa */}
-              {rodadaAtual?.status === 'ativa' && (
-                <div className="flex justify-center gap-2">
-                  <Button
-                    onClick={() => adicionarMinutos(-1)}
-                    variant="outline"
-                    size="sm"
-                  >
+              {rodadaAtual?.status === 'ativa' && <div className="flex justify-center gap-2">
+                  <Button onClick={() => adicionarMinutos(-1)} variant="outline" size="sm">
                     -1 min
                   </Button>
-                  <Button
-                    onClick={() => adicionarMinutos(1)}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={() => adicionarMinutos(1)} variant="outline" size="sm">
                     +1 min
                   </Button>
-                  <Button
-                    onClick={() => adicionarMinutos(-5)}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={() => adicionarMinutos(-5)} variant="outline" size="sm">
                     -5 min
                   </Button>
-                  <Button
-                    onClick={() => adicionarMinutos(5)}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={() => adicionarMinutos(5)} variant="outline" size="sm">
                     +5 min
                   </Button>
-                </div>
-              )}
+                </div>}
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Carrossel de Sabores - aparece automaticamente se houver histórico */}
-      {historico.length > 0 && (
-        <Card className="shadow-lg border-2 border-orange-200">
+      {historico.length > 0 && <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-xl font-bold text-orange-600">🍕 Carrossel de Sabores</span>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={prevSlide}
-                  disabled={historico.length <= 1}
-                  variant="outline"
-                  size="sm"
-                >
+                <Button onClick={prevSlide} disabled={historico.length <= 1} variant="outline" size="sm">
                   <ChevronLeft className="w-4 h-4" />
                   Anterior
                 </Button>
                 <span className="text-sm text-gray-600 mx-2">
                   {carouselIndex + 1} de {historico.length}
                 </span>
-                <Button
-                  onClick={nextSlide}
-                  disabled={historico.length <= 1}
-                  variant="outline"
-                  size="sm"
-                >
+                <Button onClick={nextSlide} disabled={historico.length <= 1} variant="outline" size="sm">
                   Próximo
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -688,8 +574,7 @@ const ProducaoScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {rodadaAtual?.status === 'ativa' && saborAtual ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {rodadaAtual?.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Sabor Atual */}
                 <div className="lg:col-span-2">
                   <Card className="shadow-lg border-2 border-green-400 bg-green-100">
@@ -699,11 +584,9 @@ const ProducaoScreen = () => {
                       <h3 className="font-bold text-green-700 mb-2 text-4xl">
                         {getSaborNome(saborAtual)}
                       </h3>
-                      {getSaborDescricao(saborAtual) && (
-                        <p className="text-sm text-green-600 mb-3">
+                      {getSaborDescricao(saborAtual) && <p className="text-sm text-green-600 mb-3">
                           {getSaborDescricao(saborAtual)}
-                        </p>
-                      )}
+                        </p>}
                       <div className="text-lg text-green-600 mb-3">
                         Pizza #{saborAtualIndex + 1} de {historico.length}
                       </div>
@@ -719,8 +602,7 @@ const ProducaoScreen = () => {
 
                 {/* Próximos Sabores */}
                 <div className="space-y-3">
-                  {proximoSabor ? (
-                    <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+                  {proximoSabor ? <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                       <CardContent className="p-3 text-center">
                         <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO</Badge>
                         <div className="text-2xl mb-2">🍕</div>
@@ -734,18 +616,14 @@ const ProducaoScreen = () => {
                           Em {formatarTempo(tempoProximaTroca)}
                         </div>
                       </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="shadow-lg border-2 border-gray-200">
+                    </Card> : <Card className="shadow-lg border-2 border-gray-200">
                       <CardContent className="p-3 text-center">
                         <div className="text-xl mb-2">🏁</div>
                         <p className="text-xs text-gray-500">Último sabor</p>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
 
-                  {segundoProximoSabor && (
-                    <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+                  {segundoProximoSabor && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                       <CardContent className="p-3 text-center">
                         <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO +2</Badge>
                         <div className="text-2xl mb-2">🍕</div>
@@ -759,13 +637,10 @@ const ProducaoScreen = () => {
                           Em {formatarTempo(tempoProximaTroca + intervaloTroca)}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
                 </div>
-              </div>
-            ) : (
-              /* Visualização Manual do Carrossel quando não ativa */
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              </div> : (/* Visualização Manual do Carrossel quando não ativa */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
                   <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
                     <CardContent className="p-6 text-center">
@@ -776,11 +651,9 @@ const ProducaoScreen = () => {
                       <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
                         {getSaborNome(historico[carouselIndex])}
                       </h3>
-                      {getSaborDescricao(historico[carouselIndex]) && (
-                        <p className="text-yellow-600 mb-3 text-xl">
+                      {getSaborDescricao(historico[carouselIndex]) && <p className="text-yellow-600 mb-3 text-xl">
                           {getSaborDescricao(historico[carouselIndex])}
-                        </p>
-                      )}
+                        </p>}
                       <div className="text-sm text-yellow-600">
                         Pizza #{historico[carouselIndex]?.ordem || carouselIndex + 1} de {historico.length}
                       </div>
@@ -789,8 +662,7 @@ const ProducaoScreen = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {historico[carouselIndex + 1] && (
-                    <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
+                  {historico[carouselIndex + 1] && <Card className="shadow-lg border-2 border-blue-400 bg-blue-50">
                       <CardContent className="p-3 text-center">
                         <Badge className="bg-blue-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO</Badge>
                         <div className="text-2xl mb-2">🍕</div>
@@ -801,11 +673,9 @@ const ProducaoScreen = () => {
                           Pizza #{historico[carouselIndex + 1].ordem}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
 
-                  {historico[carouselIndex + 2] && (
-                    <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
+                  {historico[carouselIndex + 2] && <Card className="shadow-lg border-2 border-purple-400 bg-purple-50">
                       <CardContent className="p-3 text-center">
                         <Badge className="bg-purple-500 text-white text-xs px-2 py-1 mb-2">PRÓXIMO +2</Badge>
                         <div className="text-2xl mb-2">🍕</div>
@@ -816,22 +686,20 @@ const ProducaoScreen = () => {
                           Pizza #{historico[carouselIndex + 2].ordem}
                         </div>
                       </CardContent>
-                    </Card>
-                  )}
+                    </Card>}
                 </div>
-              </div>
-            )}
+              </div>)}
 
             {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
-            {rodadaAtual?.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-orange-200">
+            {rodadaAtual?.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {saboresPassados.map((sabor, index) => {
-                    const saborNome = getSaborNome(sabor);
-                    const cor = getSaborCorRodadaAtual(saborNome);
-                    return (
-                      <div key={sabor.id} className="relative group cursor-pointer transition-all duration-200" title={`Pizza #${index + 1}: ${saborNome}`}>
-                        <Card className="shadow-lg border-2 border-gray-300 opacity-80" style={{ backgroundColor: cor }}>
+              const saborNome = getSaborNome(sabor);
+              const cor = getSaborCorRodadaAtual(saborNome);
+              return <div key={sabor.id} className="relative group cursor-pointer transition-all duration-200" title={`Pizza #${index + 1}: ${saborNome}`}>
+                        <Card className="shadow-lg border-2 border-gray-300 opacity-80" style={{
+                  backgroundColor: cor
+                }}>
                           <CardContent className="p-4 text-center">
                             <Badge className="text-white text-xs px-2 py-1 mb-2 bg-zinc-800">
                               #{index + 1}
@@ -849,15 +717,12 @@ const ProducaoScreen = () => {
                             <div className="w-2 h-2 bg-white rounded-full"></div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      </div>;
+            })}
                 </div>
-              </div>
-            )}
+              </div>}
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
       {/* Histórico de Sabores Automático */}
       <HistoricoSaboresAutomatico rodada={rodadaAtual} numeroPizzas={numeroPizzas} />
@@ -870,21 +735,14 @@ const ProducaoScreen = () => {
       {/* Botão de Reset no final da tela */}
       <div className="flex justify-center mt-8 mb-4">
         <Button onClick={handleResetarJogo} disabled={resetLoading} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg">
-          {resetLoading ? (
-            <>
+          {resetLoading ? <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Resetando Jogo...
-            </>
-          ) : (
-            <>🔄 Resetar Jogo</>
-          )}
+            </> : <>🔄 Resetar Jogo</>}
         </Button>
       </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
+    </div>;
+  return <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -894,8 +752,7 @@ const ProducaoScreen = () => {
           {/* Status da Rodada */}
           <Card className="mt-4 shadow-lg border-2 border-red-200">
             <CardContent className="p-4">
-              {rodadaAtual ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              {rodadaAtual ? <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
                     <div className="text-xl font-bold text-red-600">Rodada {rodadaAtual.numero}</div>
                     <div className="text-sm text-gray-600 capitalize">{rodadaAtual.status}</div>
@@ -912,12 +769,9 @@ const ProducaoScreen = () => {
                     <div className="text-xl font-bold text-purple-600">{estatisticasGerais.equipesAtivas}</div>
                     <div className="text-sm text-gray-600">Equipes Ativas</div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-lg text-gray-600">
+                </div> : <div className="text-lg text-gray-600">
                   {limiteExcedido ? getMensagemLimite() : 'Nenhuma rodada ativa'}
-                </div>
-              )}
+                </div>}
             </CardContent>
           </Card>
         </div>
@@ -968,8 +822,6 @@ const ProducaoScreen = () => {
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ProducaoScreen;
