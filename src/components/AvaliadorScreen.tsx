@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,8 +39,11 @@ const AvaliadorScreen = () => {
     { value: 'fora_padrao_sequencia_errada', label: 'Fora do padrão e Sequência Errada' }
   ];
 
-  const pizzasPendentes = pizzas.filter(p => p.status === 'pronta');
-  const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
+  // Ordenar pizzas cronologicamente (mais antiga primeiro)
+  const pizzasOrdenadas = pizzas.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  
+  const pizzasPendentes = pizzasOrdenadas.filter(p => p.status === 'pronta');
+  const pizzasAvaliadas = pizzasOrdenadas.filter(p => p.status === 'avaliada');
 
   // Função para obter o número do pedido baseado na ordem cronológica
   const getNumeroPedido = (pizza: any) => {
@@ -204,7 +208,7 @@ const AvaliadorScreen = () => {
               <h1 className="text-3xl font-bold">{equipeSelecionada?.nome}</h1>
             </div>
           </div>
-          <p className="text-gray-600">Avaliando pizzas da equipe selecionada</p>
+          <p className="text-gray-600">Avaliando pizzas da equipe selecionada - Ordenadas cronologicamente</p>
           {rodadaAtual && (
             <div className="mt-4 p-3 bg-white/70 rounded-lg">
               <span className="text-lg font-semibold text-purple-800">
@@ -324,45 +328,43 @@ const AvaliadorScreen = () => {
           <TabsContent value="evaluated" className="space-y-6">
             {pizzasAvaliadas.length > 0 ? (
               <div className="space-y-4">
-                {pizzasAvaliadas
-                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                  .map((pizza) => (
-                    <Card key={pizza.id} className="shadow-lg border-2 border-blue-200">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className="text-2xl">🍕</div>
-                            <div>
-                              <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
-                              <p className="text-sm text-gray-600">
-                                Pedido #{getNumeroPedido(pizza)} • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge
-                              variant={pizza.resultado === 'aprovada' ? 'default' : 'destructive'}
-                              className={
-                                pizza.resultado === 'aprovada'
-                                  ? 'bg-green-500'
-                                  : 'bg-red-500'
-                              }
-                            >
-                              {pizza.resultado === 'aprovada' ? '✅ Aprovada' : '❌ Reprovada'}
-                            </Badge>
-                            {pizza.justificativa_reprovacao && pizza.resultado === 'reprovada' && (
-                              <p className="text-sm text-gray-600 mt-2 max-w-xs">
-                                "{getMotivoLabel(pizza.justificativa_reprovacao)}"
-                              </p>
-                            )}
+                {pizzasAvaliadas.map((pizza) => (
+                  <Card key={pizza.id} className="shadow-lg border-2 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="text-2xl">🍕</div>
+                          <div>
+                            <h3 className="font-bold">{getEquipeNome(pizza.equipe_id)}</h3>
+                            <p className="text-sm text-gray-600">
+                              Pedido #{getNumeroPedido(pizza)} • Pizza #{pizza.id.slice(-6)} • Sabor: {getSaborPizza(pizza)} • Rodada {rodadaAtual?.numero || 'N/A'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Avaliada: {new Date(pizza.updated_at).toLocaleString('pt-BR')}
+                            </p>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className="text-right">
+                          <Badge
+                            variant={pizza.resultado === 'aprovada' ? 'default' : 'destructive'}
+                            className={
+                              pizza.resultado === 'aprovada'
+                                ? 'bg-green-500'
+                                : 'bg-red-500'
+                            }
+                          >
+                            {pizza.resultado === 'aprovada' ? '✅ Aprovada' : '❌ Reprovada'}
+                          </Badge>
+                          {pizza.justificativa_reprovacao && pizza.resultado === 'reprovada' && (
+                            <p className="text-sm text-gray-600 mt-2 max-w-xs">
+                              "{getMotivoLabel(pizza.justificativa_reprovacao)}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : (
               <Card className="shadow-lg border-2 border-gray-200">
