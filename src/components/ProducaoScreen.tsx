@@ -466,8 +466,8 @@ const ProducaoScreen = () => {
   // Componente para o conteúdo atual de controle de rodadas
   const ControleRodadasContent = () => (
     <div className="space-y-8">
-      {/* Aviso de Limite Excedido */}
-      {limiteExcedido && (
+      {/* Aviso de Limite Excedido - só mostrar se limite > 0 */}
+      {limiteExcedido && limiteRodadas > 0 && (
         <Card className="shadow-lg border-2 border-red-500 bg-red-50">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 text-red-700">
@@ -495,7 +495,7 @@ const ProducaoScreen = () => {
                 type="number"
                 value={tempoLimite}
                 onChange={(e) => setTempoLimite(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
               />
             </div>
 
@@ -506,7 +506,7 @@ const ProducaoScreen = () => {
                 type="number"
                 value={numeroPizzas}
                 onChange={(e) => setNumeroPizzas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
                 min="1"
                 max="50"
               />
@@ -519,12 +519,15 @@ const ProducaoScreen = () => {
                 type="number"
                 value={numeroRodadas}
                 onChange={(e) => setNumeroRodadas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
-                min="1"
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)}
+                min="0"
                 max="20"
               />
               <div className="text-xs text-gray-600 mt-1">
-                Finalizadas: {rodadasFinalizadas}/{limiteRodadas}
+                {limiteRodadas === 0 ? 
+                  'Ilimitado (configure > 0 para definir limite)' : 
+                  `Finalizadas: ${rodadasFinalizadas}/${limiteRodadas}`
+                }
               </div>
             </div>
 
@@ -532,9 +535,9 @@ const ProducaoScreen = () => {
               <Button
                 onClick={handleIniciarRodada}
                 className="w-full bg-green-500 hover:bg-green-600"
-                disabled={loadingSequencia || limiteExcedido}
+                disabled={loadingSequencia || (limiteExcedido && limiteRodadas > 0)}
               >
-                {limiteExcedido ? 'Limite Atingido' : 
+                {(limiteExcedido && limiteRodadas > 0) ? 'Limite Atingido' : 
                  loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
               </Button>
             </div>

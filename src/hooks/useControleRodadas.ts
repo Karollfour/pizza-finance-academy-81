@@ -12,7 +12,12 @@ export const useControleRodadas = () => {
     try {
       setLoading(true);
       const resultado = await verificarSeExcedeuLimiteRodadas();
-      setLimiteExcedido(resultado.excedeu);
+      // Se o limite for 0, não aplicar restrições
+      if (resultado.limite === 0) {
+        setLimiteExcedido(false);
+      } else {
+        setLimiteExcedido(resultado.excedeu);
+      }
       setRodadasFinalizadas(resultado.totalRodadas);
       setLimiteRodadas(resultado.limite);
       return resultado;
@@ -36,10 +41,19 @@ export const useControleRodadas = () => {
   };
 
   const podeIniciarNovaRodada = () => {
+    // Se o limite for 0, sempre permitir
+    if (limiteRodadas === 0) {
+      return true;
+    }
     return !limiteExcedido;
   };
 
   const getMensagemLimite = () => {
+    // Se o limite for 0, não mostrar mensagem de limite
+    if (limiteRodadas === 0) {
+      return `Rodadas ilimitadas (configure um limite maior que 0)`;
+    }
+    
     if (limiteExcedido) {
       return `🏁 Todas as ${limiteRodadas} rodadas foram finalizadas! Para continuar, você precisa resetar o jogo.`;
     }
