@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pause, Square, Play, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Pause, Square, Play, ChevronLeft, ChevronRight, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
@@ -466,23 +466,63 @@ const ProducaoScreen = () => {
   // Componente para o conteúdo atual de controle de rodadas
   const ControleRodadasContent = () => (
     <div className="space-y-8">
-      {/* Aviso de Limite Excedido - só mostrar se limite > 0 */}
-      {limiteExcedido && limiteRodadas > 0 && <Card className="shadow-lg border-2 border-red-500 bg-red-50">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 text-red-700">
-              <AlertTriangle className="w-6 h-6" />
-              <div>
-                <div className="font-bold text-lg">🏁 Todas as rodadas foram finalizadas!</div>
-                <div className="text-sm">{getMensagemLimite()}</div>
+      {/* Aviso de Jogo Concluído - MAIS PROEMINENTE */}
+      {limiteExcedido && limiteRodadas > 0 && (
+        <Card className="shadow-2xl border-4 border-red-600 bg-gradient-to-r from-red-100 to-red-200 animate-pulse">
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏁</div>
+              <div className="text-3xl font-bold text-red-800 mb-4">
+                JOGO CONCLUÍDO!
+              </div>
+              <div className="text-xl text-red-700 mb-6">
+                Todas as {limiteRodadas} rodadas foram finalizadas
+              </div>
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-6">
+                <div className="text-lg text-red-800 font-semibold mb-2">
+                  ⚠️ Para continuar jogando você precisa:
+                </div>
+                <div className="text-red-700">
+                  1. Resetar o jogo completamente ou<br/>
+                  2. Aumentar o número de rodadas nas configurações
+                </div>
+              </div>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  onClick={handleResetarJogo} 
+                  disabled={resetLoading}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 text-lg"
+                  size="lg"
+                >
+                  {resetLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Resetando...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-5 h-5 mr-2" />
+                      Resetar Jogo
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
 
-      {/* Configuração da Rodada */}
-      <Card className="shadow-lg border-2 border-red-200">
-        <CardHeader className="bg-red-50">
-          <CardTitle>⚙️ Configuração da Rodada</CardTitle>
+      {/* Configuração da Rodada - DESABILITADA quando limite excedido */}
+      <Card className={`shadow-lg border-2 ${limiteExcedido && limiteRodadas > 0 ? 'border-gray-300 opacity-50' : 'border-red-200'}`}>
+        <CardHeader className={limiteExcedido && limiteRodadas > 0 ? 'bg-gray-100' : 'bg-red-50'}>
+          <CardTitle className={limiteExcedido && limiteRodadas > 0 ? 'text-gray-500' : ''}>
+            ⚙️ Configuração da Rodada
+            {limiteExcedido && limiteRodadas > 0 && (
+              <span className="ml-2 text-sm font-normal text-red-600">
+                (Bloqueado - Limite atingido)
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
@@ -493,7 +533,7 @@ const ProducaoScreen = () => {
                 type="number" 
                 value={tempoLimite} 
                 onChange={e => setTempoLimite(Number(e.target.value))} 
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)} 
               />
             </div>
 
@@ -504,35 +544,44 @@ const ProducaoScreen = () => {
                 type="number" 
                 value={numeroPizzas} 
                 onChange={e => setNumeroPizzas(Number(e.target.value))} 
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || (limiteExcedido && limiteRodadas > 0)} 
                 min="1" 
                 max="50" 
               />
             </div>
 
             <div className="-my-5">
-              <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
+              <Label htmlFor="numeroRodadas">
+                Número de Rodadas
+                {limiteExcedido && limiteRodadas > 0 && (
+                  <span className="text-red-600 font-bold ml-1">(LIMITE ATINGIDO)</span>
+                )}
+              </Label>
               <Input 
                 id="numeroRodadas" 
                 type="number" 
                 value={numeroRodasUsuario} 
                 onChange={e => handleNumeroRodasChange(Number(e.target.value))} 
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'} 
                 min="0" 
                 max="20" 
+                className={limiteExcedido && limiteRodadas > 0 ? 'border-red-300 bg-red-50' : ''}
               />
-              <div className="text-xs text-gray-600 mt-1">
-                {numeroRodasUsuario === 0 ? 'Ilimitado (configure > 0 para definir limite)' : `Finalizadas: ${rodadasFinalizadas}/${numeroRodasUsuario}`}
+              <div className={`text-xs mt-1 ${limiteExcedido && limiteRodadas > 0 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                {numeroRodasUsuario === 0 ? 'Ilimitado (configure > 0 para definir limite)' : 
+                 limiteExcedido && limiteRodadas > 0 ? 
+                 `🏁 CONCLUÍDO: ${rodadasFinalizadas}/${numeroRodasUsuario} rodadas` :
+                 `Finalizadas: ${rodadasFinalizadas}/${numeroRodasUsuario}`}
               </div>
             </div>
 
             <div>
               <Button 
                 onClick={handleCriarNovaRodada} 
-                className="w-full bg-blue-500 hover:bg-blue-600" 
-                disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0 || rodadaAtual && rodadaAtual.status === 'aguardando'}
+                className={`w-full ${limiteExcedido && limiteRodadas > 0 ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'}`}
+                disabled={loadingSequencia || (limiteExcedido && limiteRodadas > 0) || (rodadaAtual && rodadaAtual.status === 'aguardando')}
               >
-                {limiteExcedido && limiteRodadas > 0 ? 'Limite Atingido' : 
+                {limiteExcedido && limiteRodadas > 0 ? '🏁 Jogo Concluído' : 
                  loadingSequencia ? 'Criando...' : 'Criar Rodada'}
               </Button>
             </div>
@@ -540,10 +589,11 @@ const ProducaoScreen = () => {
             <div>
               <Button 
                 onClick={handleIniciarRodada} 
-                className="w-full bg-green-500 hover:bg-green-600" 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || limiteExcedido && limiteRodadas > 0}
+                className={`w-full ${limiteExcedido && limiteRodadas > 0 ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'}`}
+                disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || (limiteExcedido && limiteRodadas > 0)}
               >
-                {!rodadaAtual ? 'Sem Rodada' : 
+                {limiteExcedido && limiteRodadas > 0 ? '🏁 Jogo Concluído' :
+                 !rodadaAtual ? 'Sem Rodada' : 
                  rodadaAtual.status !== 'aguardando' ? 'Rodada Ativa' : 'Iniciar Rodada'}
               </Button>
             </div>
@@ -551,8 +601,9 @@ const ProducaoScreen = () => {
         </CardContent>
       </Card>
 
-      {/* Timer e Status da Rodada */}
-      {rodadaAtual && <Card className="shadow-lg border-2 border-orange-200">
+      {/* Timer e Status da Rodada - também desabilitado se limite excedido */}
+      {rodadaAtual && !(limiteExcedido && limiteRodadas > 0) && (
+        <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-4xl">Rodada {numeroRodadaDisplay}</span>
@@ -611,10 +662,12 @@ const ProducaoScreen = () => {
                 </div>}
             </div>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
 
-      {/* Carrossel de Sabores - aparece automaticamente se houver histórico */}
-      {historico.length > 0 && <Card className="shadow-lg border-2 border-orange-200">
+      {/* Carrossel de Sabores - só mostrar se não excedeu limite */}
+      {historico.length > 0 && !(limiteExcedido && limiteRodadas > 0) && (
+        <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-xl font-bold text-orange-600">🍕 Carrossel de Sabores</span>
@@ -784,21 +837,39 @@ const ProducaoScreen = () => {
           </CardContent>
         </Card>}
 
-      {/* Histórico de Sabores Automático */}
-      <HistoricoSaboresAutomatico rodada={rodadaAtual} numeroPizzas={numeroPizzas} />
+      {/* Histórico de Sabores Automático - só mostrar se não excedeu limite */}
+      {!(limiteExcedido && limiteRodadas > 0) && (
+        <HistoricoSaboresAutomatico rodada={rodadaAtual} numeroPizzas={numeroPizzas} />
+      )}
 
-      {/* Histórico de Todas as Rodadas */}
+      {/* Histórico de Todas as Rodadas - sempre mostrar */}
       <div className="mb-8">
         <HistoricoTodasRodadas />
       </div>
 
-      {/* Botão de Reset no final da tela */}
+      {/* Botão de Reset - mais proeminente quando limite excedido */}
       <div className="flex justify-center mt-8 mb-4">
-        <Button onClick={handleResetarJogo} disabled={resetLoading} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-700 shadow-lg">
-          {resetLoading ? <>
+        <Button 
+          onClick={handleResetarJogo} 
+          disabled={resetLoading} 
+          size={limiteExcedido && limiteRodadas > 0 ? "lg" : "sm"}
+          className={`font-bold border-2 shadow-lg ${
+            limiteExcedido && limiteRodadas > 0 
+              ? 'bg-red-600 hover:bg-red-700 text-white border-red-700 px-8 py-4 text-lg' 
+              : 'bg-red-600 hover:bg-red-700 text-white border-red-700'
+          }`}
+        >
+          {resetLoading ? (
+            <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Resetando Jogo...
-            </> : <>🔄 Resetar Jogo</>}
+            </>
+          ) : (
+            <>
+              <RotateCcw className={`${limiteExcedido && limiteRodadas > 0 ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
+              {limiteExcedido && limiteRodadas > 0 ? 'Resetar Jogo Completo' : 'Resetar Jogo'}
+            </>
+          )}
         </Button>
       </div>
     </div>
