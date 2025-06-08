@@ -23,11 +23,12 @@ const DashboardLojinha = () => {
   const { pizzas } = usePizzas();
   const [rodadaSelecionada, setRodadaSelecionada] = useState<number | null>(null);
 
-  // Obter todas as rodadas disponíveis que têm pizzas
+  // Obter todas as rodadas disponíveis que têm dados
   const rodadasDisponiveis = rodadas.filter(rodada => {
-    // Verificar se a rodada tem pizzas associadas
+    // Verificar se a rodada tem dados associados (pizzas ou compras)
     const temPizzas = pizzas.some(pizza => pizza.rodada_id === rodada.id);
-    return temPizzas;
+    const temCompras = compras.some(compra => compra.rodada_id === rodada.id);
+    return temPizzas || temCompras;
   }).map(rodada => rodada.numero).sort((a, b) => a - b);
 
   // Função para obter rodada por número
@@ -93,24 +94,47 @@ const DashboardLojinha = () => {
     }).filter(dados => dados.totalPizzas > 0);
   };
 
-  // Dados por equipe para gastos
-  const dadosGastosPorEquipe = equipes.map(equipe => {
-    const comprasEquipe = compras.filter(c => c.equipe_id === equipe.id);
-    const totalGasto = comprasEquipe.reduce((sum, c) => sum + c.valor_total, 0);
-    const viagens = comprasEquipe.filter(c => c.tipo === 'viagem').length;
-    return {
-      nome: equipe.nome,
-      gasto: totalGasto,
-      viagens
-    };
-  });
+  // NOVO: Dados por equipe para gastos com filtro de rodada
+  const dadosGastosPorEquipe = (numeroRodada: number | null) => {
+    return equipes.map(equipe => {
+      const comprasEquipe = numeroRodada 
+        ? compras.filter(c => {
+            const rodada = getRodadaPorNumero(numeroRodada);
+            return c.equipe_id === equipe.id && c.rodada_id === rodada?.id;
+          })
+        : compras.filter(c => c.equipe_id === equipe.id);
+      
+      const totalGasto = comprasEquipe.reduce((sum, c) => sum + c.valor_total, 0);
+      const viagens = comprasEquipe.filter(c => c.tipo === 'viagem').length;
+      
+      return {
+        nome: equipe.nome,
+        gasto: totalGasto,
+        viagens,
+        corEquipe: equipe.cor_tema || '#3b82f6'
+      };
+    }).filter(dados => dados.gasto > 0);
+  };
 
-  // Dados de ganhos por equipe
-  const dadosGanhosPorEquipe = equipes.map(equipe => ({
-    nome: equipe.nome,
-    ganho: equipe.ganho_total || 0,
-    corEquipe: equipe.cor_tema || '#3b82f6'
-  })).filter(dados => dados.ganho > 0);
+  // NOVO: Dados de ganhos por equipe com filtro de rodada
+  const dadosGanhosPorEquipe = (numeroRodada: number | null) => {
+    return equipes.map(equipe => {
+      const pizzasEquipe = numeroRodada 
+        ? pizzas.filter(p => {
+            const rodada = getRodadaPorNumero(numeroRodada);
+            return p.equipe_id === equipe.id && p.rodada_id === rodada?.id && p.resultado === 'aprovada';
+          })
+        : pizzas.filter(p => p.equipe_id === equipe.id && p.resultado === 'aprovada');
+      
+      const ganho = pizzasEquipe.length * 10; // R$ 10 por pizza aprovada
+      
+      return {
+        nome: equipe.nome,
+        ganho,
+        corEquipe: equipe.cor_tema || '#3b82f6'
+      };
+    }).filter(dados => dados.ganho > 0);
+  };
 
   // Produtos mais comprados
   const produtosMaisComprados = produtos.map(produto => {
@@ -139,11 +163,11 @@ const DashboardLojinha = () => {
       {/* Novo gráfico de Takt Time */}
       <TaktTimeChart />
 
-      {/* Controle Unificado de Seleção de Rodada */}
+      {/* Controle Unificado de Seleção de Rodada - MOVIDO PARA O TOPO */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>🎯 Seleção de Análise</span>
+            <span>🎯 Filtro Global de Análise</span>
             <Select 
               value={rodadaSelecionada?.toString() || "todas"} 
               onValueChange={(value) => setRodadaSelecionada(value === "todas" ? null : parseInt(value))}
@@ -270,33 +294,45 @@ const DashboardLojinha = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Gastos por Equipe */}
+        {/* Gastos por Equipe - ATUALIZADO COM FILTRO DE RODADA */}
         <Card>
           <CardHeader>
             <CardTitle>💰 Gastos por Equipe</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dadosGastosPorEquipe}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="nome" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Gasto Total']} />
-                <Bar dataKey="gasto" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
+            {dadosGastosPorEquipe(rodadaSelecionada).length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={dadosGastosPorEquipe(rodadaSelecionada)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="nome" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Gasto Total']} />
+                  <Bar dataKey="gasto" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p className="text-lg mb-2">💰 Nenhum gasto encontrado</p>
+                <p className="text-sm">
+                  {rodadaSelecionada 
+                    ? `Não há gastos registrados para a Rodada ${rodadaSelecionada}`
+                    : "Não há gastos registrados"
+                  }
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Ganhos por Equipe - NOVO GRÁFICO */}
+        {/* Ganhos por Equipe - ATUALIZADO COM FILTRO DE RODADA */}
         <Card>
           <CardHeader>
             <CardTitle>🎉 Vendas por Equipe (Pizzas Aprovadas)</CardTitle>
           </CardHeader>
           <CardContent>
-            {dadosGanhosPorEquipe.length > 0 ? (
+            {dadosGanhosPorEquipe(rodadaSelecionada).length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dadosGanhosPorEquipe}>
+                <BarChart data={dadosGanhosPorEquipe(rodadaSelecionada)}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="nome" />
                   <YAxis />
@@ -306,8 +342,13 @@ const DashboardLojinha = () => {
               </ResponsiveContainer>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <p className="text-lg mb-2">🏆 Nenhum ganho ainda</p>
-                <p className="text-sm">As equipes ganham R$ 10,00 para cada pizza aprovada!</p>
+                <p className="text-lg mb-2">🏆 Nenhum ganho encontrado</p>
+                <p className="text-sm">
+                  {rodadaSelecionada 
+                    ? `Não há pizzas aprovadas na Rodada ${rodadaSelecionada}`
+                    : "As equipes ganham R$ 10,00 para cada pizza aprovada!"
+                  }
+                </p>
               </div>
             )}
           </CardContent>
