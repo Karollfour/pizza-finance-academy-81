@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Pause, Square, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pause, Square, Play, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { useOptimizedRodadas } from '@/hooks/useOptimizedRodadas';
 import { useRodadaCounter } from '@/hooks/useRodadaCounter';
 import { useSynchronizedTimer } from '@/hooks/useSynchronizedTimer';
@@ -19,6 +19,7 @@ import { useSaborAutomatico } from '@/hooks/useSaborAutomatico';
 import { useHistoricoSaboresRodada } from '@/hooks/useHistoricoSaboresRodada';
 import { useGlobalSync } from '@/hooks/useGlobalSync';
 import { usePersistedState } from '@/hooks/usePersistedState';
+import { useControleRodadas } from '@/hooks/useControleRodadas';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { salvarConfigRodada } from '@/utils/rodadaConfig';
@@ -65,6 +66,16 @@ const ProducaoScreen = () => {
     criarSequenciaParaRodada,
     loading: loadingSequencia
   } = useSequenciaSabores();
+
+  // Controle de limite de rodadas
+  const {
+    limiteRodadas,
+    rodadasFinalizadas,
+    limiteExcedido,
+    atualizarLimiteRodadas,
+    podeIniciarNovaRodada,
+    getMensagemLimite
+  } = useControleRodadas();
 
   // Persistir estado da aba ativa - controle como padrão
   const [activeTab, setActiveTab] = usePersistedState('producao-active-tab', 'controle');
@@ -153,8 +164,26 @@ const ProducaoScreen = () => {
     }
   }, [rodadaAtual]);
 
+  // Sincronizar o número de rodadas com o limite quando alterado
+  useEffect(() => {
+    if (numeroRodadas !== limiteRodadas) {
+      atualizarLimiteRodadas(numeroRodadas).catch(error => {
+        console.error('Erro ao atualizar limite:', error);
+      });
+    }
+  }, [numeroRodadas]);
+
   const handleCriarNovaRodada = async () => {
     try {
+      // Verificar se pode criar nova rodada
+      if (!podeIniciarNovaRodada()) {
+        toast.error(getMensagemLimite(), {
+          duration: 5000,
+          position: 'top-center'
+        });
+        return;
+      }
+
       console.log('Criando nova rodada...');
       const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
       if (novaRodada?.id) {
@@ -187,6 +216,15 @@ const ProducaoScreen = () => {
 
   const handleIniciarRodada = async () => {
     try {
+      // Verificar se pode iniciar nova rodada
+      if (!podeIniciarNovaRodada()) {
+        toast.error(getMensagemLimite(), {
+          duration: 5000,
+          position: 'top-center'
+        });
+        return;
+      }
+
       if (!rodadaAtual) {
         await handleCriarNovaRodada();
         return;
@@ -428,6 +466,21 @@ const ProducaoScreen = () => {
   // Componente para o conteúdo atual de controle de rodadas
   const ControleRodadasContent = () => (
     <div className="space-y-8">
+      {/* Aviso de Limite Excedido */}
+      {limiteExcedido && (
+        <Card className="shadow-lg border-2 border-red-500 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertTriangle className="w-6 h-6" />
+              <div>
+                <div className="font-bold text-lg">🏁 Todas as rodadas foram finalizadas!</div>
+                <div className="text-sm">{getMensagemLimite()}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Configuração da Rodada */}
       <Card className="shadow-lg border-2 border-red-200">
         <CardHeader className="bg-red-50">
@@ -442,7 +495,7 @@ const ProducaoScreen = () => {
                 type="number"
                 value={tempoLimite}
                 onChange={(e) => setTempoLimite(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
               />
             </div>
 
@@ -453,7 +506,7 @@ const ProducaoScreen = () => {
                 type="number"
                 value={numeroPizzas}
                 onChange={(e) => setNumeroPizzas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
                 min="1"
                 max="50"
               />
@@ -466,19 +519,23 @@ const ProducaoScreen = () => {
                 type="number"
                 value={numeroRodadas}
                 onChange={(e) => setNumeroRodadas(Number(e.target.value))}
-                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada'}
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido}
                 min="1"
                 max="20"
               />
+              <div className="text-xs text-gray-600 mt-1">
+                Finalizadas: {rodadasFinalizadas}/{limiteRodadas}
+              </div>
             </div>
 
             <div>
               <Button
                 onClick={handleIniciarRodada}
                 className="w-full bg-green-500 hover:bg-green-600"
-                disabled={loadingSequencia}
+                disabled={loadingSequencia || limiteExcedido}
               >
-                {loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
+                {limiteExcedido ? 'Limite Atingido' : 
+                 loadingSequencia ? 'Criando Sequência...' : 'Criar/Iniciar Rodada'}
               </Button>
             </div>
           </div>
@@ -854,7 +911,9 @@ const ProducaoScreen = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-lg text-gray-600">Nenhuma rodada ativa</div>
+                <div className="text-lg text-gray-600">
+                  {limiteExcedido ? getMensagemLimite() : 'Nenhuma rodada ativa'}
+                </div>
               )}
             </CardContent>
           </Card>

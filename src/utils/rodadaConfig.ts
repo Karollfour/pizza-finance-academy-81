@@ -93,3 +93,81 @@ export const salvarConfigRodada = async (rodadaId: string, numeroPizzas: number)
     throw error;
   }
 };
+
+export const salvarLimiteRodadas = async (numeroRodadas: number): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('configuracoes')
+      .upsert({
+        chave: 'limite_total_rodadas',
+        valor: numeroRodadas.toString(),
+        descricao: `Limite máximo de rodadas permitidas no jogo`
+      }, {
+        onConflict: 'chave'
+      });
+
+    if (error) throw error;
+    console.log(`Limite de rodadas salvo: ${numeroRodadas} rodadas`);
+  } catch (error) {
+    console.error('Erro ao salvar limite de rodadas:', error);
+    throw error;
+  }
+};
+
+export const obterLimiteRodadas = async (): Promise<number> => {
+  try {
+    const { data, error } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'limite_total_rodadas')
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    if (data) {
+      const limite = parseInt(data.valor);
+      console.log(`Limite de rodadas obtido: ${limite}`);
+      return limite;
+    }
+
+    console.log('Nenhum limite definido, usando padrão de 5 rodadas');
+    return 5; // Padrão se não houver configuração
+  } catch (error) {
+    console.error('Erro ao obter limite de rodadas:', error);
+    return 5; // Padrão em caso de erro
+  }
+};
+
+export const verificarSeExcedeuLimiteRodadas = async (): Promise<{ excedeu: boolean; totalRodadas: number; limite: number }> => {
+  try {
+    // Obter limite configurado
+    const limite = await obterLimiteRodadas();
+    
+    // Contar total de rodadas finalizadas
+    const { data: rodadas, error } = await supabase
+      .from('rodadas')
+      .select('numero')
+      .eq('status', 'finalizada')
+      .order('numero', { ascending: false });
+
+    if (error) throw error;
+
+    const totalRodadas = rodadas ? rodadas.length : 0;
+    const excedeu = totalRodadas >= limite;
+
+    console.log(`Verificação de limite: ${totalRodadas}/${limite} rodadas finalizadas. Excedeu: ${excedeu}`);
+
+    return {
+      excedeu,
+      totalRodadas,
+      limite
+    };
+  } catch (error) {
+    console.error('Erro ao verificar limite de rodadas:', error);
+    return {
+      excedeu: false,
+      totalRodadas: 0,
+      limite: 5
+    };
+  }
+};
