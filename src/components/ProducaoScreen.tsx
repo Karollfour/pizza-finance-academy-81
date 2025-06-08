@@ -33,7 +33,6 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
-
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -217,7 +216,6 @@ const ProducaoScreen = () => {
         });
         return;
       }
-
       if (!rodadaAtual) {
         toast.error('Nenhuma rodada disponível para iniciar. Crie uma rodada primeiro.', {
           duration: 4000,
@@ -225,7 +223,6 @@ const ProducaoScreen = () => {
         });
         return;
       }
-
       if (rodadaAtual.status === 'aguardando') {
         console.log('Iniciando rodada...');
         await iniciarRodada(rodadaAtual.id);
@@ -480,7 +477,7 @@ const ProducaoScreen = () => {
               <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="1" max="50" />
             </div>
 
-            <div>
+            <div className="-my-5">
               <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
               <Input id="numeroRodadas" type="number" value={numeroRodadas} onChange={e => setNumeroRodadas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="0" max="20" />
               <div className="text-xs text-gray-600 mt-1">
@@ -489,21 +486,13 @@ const ProducaoScreen = () => {
             </div>
 
             <div>
-              <Button 
-                onClick={handleCriarNovaRodada} 
-                className="w-full bg-blue-500 hover:bg-blue-600" 
-                disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0 || (rodadaAtual && rodadaAtual.status === 'aguardando')}
-              >
+              <Button onClick={handleCriarNovaRodada} className="w-full bg-blue-500 hover:bg-blue-600" disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0 || rodadaAtual && rodadaAtual.status === 'aguardando'}>
                 {limiteExcedido && limiteRodadas > 0 ? 'Limite Atingido' : loadingSequencia ? 'Criando...' : 'Criar Rodada'}
               </Button>
             </div>
 
             <div>
-              <Button 
-                onClick={handleIniciarRodada} 
-                className="w-full bg-green-500 hover:bg-green-600" 
-                disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || limiteExcedido && limiteRodadas > 0}
-              >
+              <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600" disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || limiteExcedido && limiteRodadas > 0}>
                 {!rodadaAtual ? 'Sem Rodada' : rodadaAtual.status !== 'aguardando' ? 'Rodada Ativa' : 'Iniciar Rodada'}
               </Button>
             </div>
@@ -844,5 +833,4 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
-
 export default ProducaoScreen;
