@@ -33,6 +33,7 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -187,13 +188,20 @@ const ProducaoScreen = () => {
         // Criar sequência de sabores automaticamente
         console.log('Criando sequência de sabores...');
         await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
-        await refetchCounter();
+        
+        // Forçar atualizações imediatas
+        await Promise.all([
+          refetchCounter(),
+          refetchHistorico() // Adicionar refetch do histórico
+        ]);
 
-        // Aguardar um pouco para garantir que o histórico seja carregado
+        // Aguardar um pouco mais para garantir que tudo seja carregado
         setTimeout(() => {
           forceGlobalSync();
-        }, 500);
-        toast.success(`🎯 Rodada ${proximoNumero} criada!`, {
+          refetchHistorico(); // Refetch adicional do histórico
+        }, 1000);
+
+        toast.success(`🎯 Rodada ${proximoNumero} criada com carrossel de sabores!`, {
           duration: 3000,
           position: 'top-center'
         });
@@ -358,7 +366,8 @@ const ProducaoScreen = () => {
     }
   };
   const {
-    historico
+    historico,
+    refetch: refetchHistorico
   } = useHistoricoSaboresRodada(rodadaAtual?.id);
   const {
     saborAtual,
@@ -446,7 +455,8 @@ const ProducaoScreen = () => {
   };
 
   // Componente para o conteúdo atual de controle de rodadas
-  const ControleRodadasContent = () => <div className="space-y-8">
+  const ControleRodadasContent = () => (
+    <div className="space-y-8">
       {/* Aviso de Limite Excedido - só mostrar se limite > 0 */}
       {limiteExcedido && limiteRodadas > 0 && <Card className="shadow-lg border-2 border-red-500 bg-red-50">
           <CardContent className="p-6">
@@ -469,31 +479,63 @@ const ProducaoScreen = () => {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
               <Label htmlFor="tempoLimite">Tempo Limite (segundos)</Label>
-              <Input id="tempoLimite" type="number" value={tempoLimite} onChange={e => setTempoLimite(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} />
+              <Input 
+                id="tempoLimite" 
+                type="number" 
+                value={tempoLimite} 
+                onChange={e => setTempoLimite(Number(e.target.value))} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+              />
             </div>
 
             <div>
               <Label htmlFor="numeroPizzas">Número de Pizzas</Label>
-              <Input id="numeroPizzas" type="number" value={numeroPizzas} onChange={e => setNumeroPizzas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="1" max="50" />
+              <Input 
+                id="numeroPizzas" 
+                type="number" 
+                value={numeroPizzas} 
+                onChange={e => setNumeroPizzas(Number(e.target.value))} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+                min="1" 
+                max="50" 
+              />
             </div>
 
             <div className="-my-5">
               <Label htmlFor="numeroRodadas">Número de Rodadas</Label>
-              <Input id="numeroRodadas" type="number" value={numeroRodadas} onChange={e => setNumeroRodadas(Number(e.target.value))} disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} min="0" max="20" />
+              <Input 
+                id="numeroRodadas" 
+                type="number" 
+                value={numeroRodadas} 
+                onChange={e => setNumeroRodadas(Number(e.target.value))} 
+                disabled={rodadaAtual?.status === 'ativa' || rodadaAtual?.status === 'pausada' || limiteExcedido && limiteRodadas > 0} 
+                min="0" 
+                max="20" 
+              />
               <div className="text-xs text-gray-600 mt-1">
                 {limiteRodadas === 0 ? 'Ilimitado (configure > 0 para definir limite)' : `Finalizadas: ${rodadasFinalizadas}/${limiteRodadas}`}
               </div>
             </div>
 
             <div>
-              <Button onClick={handleCriarNovaRodada} className="w-full bg-blue-500 hover:bg-blue-600" disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0 || rodadaAtual && rodadaAtual.status === 'aguardando'}>
-                {limiteExcedido && limiteRodadas > 0 ? 'Limite Atingido' : loadingSequencia ? 'Criando...' : 'Criar Rodada'}
+              <Button 
+                onClick={handleCriarNovaRodada} 
+                className="w-full bg-blue-500 hover:bg-blue-600" 
+                disabled={loadingSequencia || limiteExcedido && limiteRodadas > 0 || rodadaAtual && rodadaAtual.status === 'aguardando'}
+              >
+                {limiteExcedido && limiteRodadas > 0 ? 'Limite Atingido' : 
+                 loadingSequencia ? 'Criando...' : 'Criar Rodada'}
               </Button>
             </div>
 
             <div>
-              <Button onClick={handleIniciarRodada} className="w-full bg-green-500 hover:bg-green-600" disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || limiteExcedido && limiteRodadas > 0}>
-                {!rodadaAtual ? 'Sem Rodada' : rodadaAtual.status !== 'aguardando' ? 'Rodada Ativa' : 'Iniciar Rodada'}
+              <Button 
+                onClick={handleIniciarRodada} 
+                className="w-full bg-green-500 hover:bg-green-600" 
+                disabled={!rodadaAtual || rodadaAtual.status !== 'aguardando' || limiteExcedido && limiteRodadas > 0}
+              >
+                {!rodadaAtual ? 'Sem Rodada' : 
+                 rodadaAtual.status !== 'aguardando' ? 'Rodada Ativa' : 'Iniciar Rodada'}
               </Button>
             </div>
           </div>
@@ -750,7 +792,9 @@ const ProducaoScreen = () => {
             </> : <>🔄 Resetar Jogo</>}
         </Button>
       </div>
-    </div>;
+    </div>
+  );
+
   return <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -833,4 +877,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;
