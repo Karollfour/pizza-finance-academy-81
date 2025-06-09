@@ -730,8 +730,8 @@ const ProducaoScreen = () => {
           </CardContent>
         </Card>}
 
-      {/* Carrossel de Sabores - só mostrar se não excedeu limite */}
-      {historico.length > 0 && !(limiteExcedido && limiteRodadas > 0) && <Card className="shadow-lg border-2 border-orange-200">
+      {/* Carrossel de Sabores - MODIFICADO: mostrar sempre que há rodada ativa ou aguardando e historico existe */}
+      {historico.length > 0 && rodadaAtual && (rodadaAtual.status === 'ativa' || rodadaAtual.status === 'aguardando') && !(limiteExcedido && limiteRodadas > 0) && <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-xl font-bold text-orange-600">🍕 Carrossel de Sabores</span>
@@ -816,7 +816,7 @@ const ProducaoScreen = () => {
                       </CardContent>
                     </Card>}
                 </div>
-              </div> : (/* Visualização Manual do Carrossel quando não ativa */
+              </div> : (/* Visualização Estática do Carrossel quando aguardando início */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
                   <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
@@ -834,6 +834,9 @@ const ProducaoScreen = () => {
                       <div className="text-sm text-yellow-600">
                         Pizza #{historico[carouselIndex]?.ordem || carouselIndex + 1} de {historico.length}
                       </div>
+                      {rodadaAtual.status === 'aguardando' && <div className="mt-3 text-lg text-yellow-700 font-semibold">
+                          Aguardando início da rodada
+                        </div>}
                     </CardContent>
                   </Card>
                 </div>
