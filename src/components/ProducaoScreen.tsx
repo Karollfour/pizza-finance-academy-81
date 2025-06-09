@@ -132,9 +132,8 @@ const ProducaoScreen = () => {
     carregarConfiguracoesSalvas();
   }, [getConfiguracao]);
 
-  // Remove the old configuracoesLocked useEffect and replace with new logic
+  // Use the new hook's logic for determining if configurations are locked
   useEffect(() => {
-    // Use the new hook's logic for determining if configurations are locked
     setConfiguracoesLocked(configuracoesBloqueadas);
   }, [configuracoesBloqueadas]);
 
@@ -283,6 +282,13 @@ const ProducaoScreen = () => {
         console.log('Criando sequência de sabores...');
         await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
         
+        // Disparar evento para indicar que uma rodada foi criada
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('rodada-criada', {
+            detail: { rodadaId: novaRodada.id, numero: proximoNumero }
+          }));
+        }
+        
         // Forçar atualizações imediatas
         await Promise.all([
           refetchCounter(),
@@ -295,8 +301,8 @@ const ProducaoScreen = () => {
           refetchHistorico();
         }, 1000);
 
-        toast.success(`🎯 Rodada ${proximoNumero} criada com carrossel de sabores!`, {
-          duration: 3000,
+        toast.success(`🎯 Rodada ${proximoNumero} criada com carrossel de sabores! Configurações agora bloqueadas.`, {
+          duration: 4000,
           position: 'top-center'
         });
       }
@@ -662,7 +668,7 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={tempoLimite} 
                   onChange={e => setTempoLimite(Number(e.target.value))} 
-                  className="text-lg p-3"
+                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="60"
                   max="1800"
                   disabled={!podeAlterarConfiguracoes()}
@@ -679,7 +685,7 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={numeroPizzas} 
                   onChange={e => setNumeroPizzas(Number(e.target.value))} 
-                  className="text-lg p-3"
+                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="1" 
                   max="50" 
                   disabled={!podeAlterarConfiguracoes()}
@@ -696,7 +702,7 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={numeroRodasUsuario} 
                   onChange={e => setNumeroRodasUsuario(Number(e.target.value))} 
-                  className="text-lg p-3"
+                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="0" 
                   max="20" 
                   disabled={!podeAlterarConfiguracoes()}
@@ -711,7 +717,7 @@ const ProducaoScreen = () => {
               <Button 
                 onClick={handleCriarNovaRodada} 
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 text-lg"
-                disabled={loadingSequencia || !podeAlterarConfiguracoes()}
+                disabled={loadingSequencia || !podeIniciarNovaRodada()}
                 size="lg"
               >
                 {loadingSequencia ? (
@@ -719,8 +725,8 @@ const ProducaoScreen = () => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Criando Rodada...
                   </>
-                ) : !podeAlterarConfiguracoes() ? (
-                  <>🔒 Configurações Bloqueadas</>
+                ) : !podeIniciarNovaRodada() ? (
+                  <>🏁 Limite de Rodadas Atingido</>
                 ) : (
                   <>🎯 Criar Rodada</>
                 )}
@@ -749,10 +755,10 @@ const ProducaoScreen = () => {
               </Button>
             </div>
 
-            {configuracoesSalvas && (
+            {configuracoesSalvas && !podeAlterarConfiguracoes() && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="text-sm text-green-700 text-center">
-                  ✅ Configurações salvas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
+                  ✅ Configurações bloqueadas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
                 </div>
               </div>
             )}

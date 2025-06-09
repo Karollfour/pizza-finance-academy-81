@@ -143,23 +143,23 @@ export const verificarSeExcedeuLimiteRodadas = async (): Promise<{ excedeu: bool
     // Obter limite configurado
     const limite = await obterLimiteRodadas();
     
-    // Contar total de rodadas finalizadas
+    // Contar total de rodadas (finalizadas E criadas)
     const { data: rodadas, error } = await supabase
       .from('rodadas')
-      .select('numero')
-      .eq('status', 'finalizada')
+      .select('numero, status')
       .order('numero', { ascending: false });
 
     if (error) throw error;
 
     const totalRodadas = rodadas ? rodadas.length : 0;
-    const excedeu = totalRodadas >= limite;
+    const rodadasFinalizadas = rodadas ? rodadas.filter(r => r.status === 'finalizada').length : 0;
+    const excedeu = rodadasFinalizadas >= limite;
 
-    console.log(`Verificação de limite: ${totalRodadas}/${limite} rodadas finalizadas. Excedeu: ${excedeu}`);
+    console.log(`Verificação de limite: ${rodadasFinalizadas}/${limite} rodadas finalizadas. Total criadas: ${totalRodadas}. Excedeu: ${excedeu}`);
 
     return {
       excedeu,
-      totalRodadas,
+      totalRodadas: rodadasFinalizadas, // Retorna apenas finalizadas para o controle de limite
       limite
     };
   } catch (error) {

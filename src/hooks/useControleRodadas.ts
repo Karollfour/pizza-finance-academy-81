@@ -19,7 +19,7 @@ export const useControleRodadas = () => {
         setConfiguracoesBloqueadas(false);
       } else {
         setLimiteExcedido(resultado.excedeu);
-        // Bloquear configurações se já existem rodadas no sistema
+        // Bloquear configurações se já existem rodadas no sistema (criadas ou finalizadas)
         setConfiguracoesBloqueadas(resultado.totalRodadas > 0 || resultado.excedeu);
       }
       setRodadasFinalizadas(resultado.totalRodadas);
@@ -76,7 +76,7 @@ export const useControleRodadas = () => {
       return '🔒 Configurações bloqueadas - Todas as rodadas foram finalizadas. Reset o jogo para alterar.';
     }
     
-    return `🔒 Configurações bloqueadas - ${rodadasFinalizadas} de ${limiteRodadas} rodadas em andamento. Complete todas as rodadas ou reset o jogo para alterar.`;
+    return `🔒 Configurações bloqueadas - Rodadas criadas no sistema. Complete todas as ${limiteRodadas} rodadas ou reset o jogo para alterar.`;
   };
 
   useEffect(() => {
@@ -93,10 +93,12 @@ export const useControleRodadas = () => {
 
     window.addEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
     window.addEventListener('global-data-changed', handleRodadaEvent as EventListener);
+    window.addEventListener('rodada-criada', handleRodadaEvent as EventListener);
 
     return () => {
       window.removeEventListener('rodada-finalizada', handleRodadaEvent as EventListener);
       window.removeEventListener('global-data-changed', handleRodadaEvent as EventListener);
+      window.removeEventListener('rodada-criada', handleRodadaEvent as EventListener);
     };
   }, []);
 
