@@ -182,18 +182,6 @@ const ProducaoScreen = () => {
     warningThreshold: 30
   });
 
-  // Estados para estatísticas
-  const [estatisticasGerais, setEstatisticasGerais] = useState({
-    totalPizzas: 0,
-    pizzasAprovadas: 0,
-    pizzasReprovadas: 0,
-    pizzasPendentes: 0,
-    totalGastos: 0,
-    equipesAtivas: 0
-  });
-
-  // Carousel controls for the sabores display
-  const [carouselIndex, setCarouselIndex] = useState(0);
   const nextSlide = () => {
     if (historico.length > 0) {
       setCarouselIndex(prev => (prev + 1) % historico.length);
