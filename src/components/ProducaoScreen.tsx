@@ -85,7 +85,7 @@ const ProducaoScreen = () => {
   // Persistir estado da aba ativa - controle como padrão
   const [activeTab, setActiveTab] = usePersistedState('producao-active-tab', 'controle');
 
-  // Estados para controle do carrossel - agora carregados das configurações salvas
+  // Estados para controle do carrossel - valores padrão
   const [tempoLimite, setTempoLimite] = useState(300);
   const [numeroPizzas, setNumeroPizzas] = useState(10);
   const [numeroRodasUsuario, setNumeroRodasUsuario] = useState(5);
@@ -252,10 +252,8 @@ const ProducaoScreen = () => {
         return;
       }
 
-      // Se não há configurações salvas, salvar primeiro
-      if (!configuracoesSalvas) {
-        await handleSalvarConfiguracoes();
-      }
+      // Salvar configurações primeiro
+      await handleSalvarConfiguracoes();
 
       console.log('Criando nova rodada com configurações salvas...', {
         numero: proximoNumero,
@@ -297,7 +295,7 @@ const ProducaoScreen = () => {
     }
   };
 
-  const handleIniciarProximaRodada = async () => {
+  const handleIniciarRodada = async () => {
     try {
       // Verificar se pode iniciar nova rodada
       if (!podeIniciarNovaRodada()) {
@@ -323,7 +321,7 @@ const ProducaoScreen = () => {
         return;
       }
 
-      // Caso contrário, criar nova rodada e iniciar
+      // Caso contrário, criar nova rodada e iniciar (usando configurações salvas)
       console.log('Criando e iniciando nova rodada com configurações salvas...');
       const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
       if (novaRodada?.id) {
@@ -350,44 +348,6 @@ const ProducaoScreen = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao iniciar próxima rodada:', error);
-      toast.error('Erro ao iniciar próxima rodada. Tente novamente.', {
-        duration: 4000,
-        position: 'top-center'
-      });
-    }
-  };
-
-  const handleIniciarRodada = async () => {
-    try {
-      // Verificar se pode iniciar nova rodada
-      if (!podeIniciarNovaRodada()) {
-        toast.error(getMensagemLimite(), {
-          duration: 5000,
-          position: 'top-center'
-        });
-        return;
-      }
-      if (!rodadaAtual) {
-        toast.error('Nenhuma rodada disponível para iniciar. Crie uma rodada primeiro.', {
-          duration: 4000,
-          position: 'top-center'
-        });
-        return;
-      }
-      if (rodadaAtual.status === 'aguardando') {
-        console.log('Iniciando rodada...');
-        await iniciarRodada(rodadaAtual.id);
-        setTimeout(() => {
-          forceGlobalSync();
-          refetchRodadas();
-        }, 500);
-        toast.success(`🚀 Rodada ${rodadaAtual.numero} iniciada!`, {
-          duration: 3000,
-          position: 'top-center'
-        });
-      }
-    } catch (error) {
       console.error('Erro ao iniciar rodada:', error);
       toast.error('Erro ao iniciar rodada. Tente novamente.', {
         duration: 4000,
@@ -395,6 +355,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const handleFinalizarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -413,6 +374,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const handlePausarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -434,6 +396,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const handleRetomarRodada = async () => {
     if (!rodadaAtual) return;
     try {
@@ -455,6 +418,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const adicionarMinutos = async (minutos: number) => {
     if (!rodadaAtual) return;
     try {
@@ -490,6 +454,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const handleResetarJogo = async () => {
     const confirmar1 = window.confirm('⚠️ ATENÇÃO: Esta ação irá apagar TODOS os dados do jogo (rodadas, pizzas, compras e estatísticas). Esta ação NÃO PODE SER DESFEITA. Deseja continuar?');
     if (!confirmar1) return;
@@ -513,6 +478,7 @@ const ProducaoScreen = () => {
       });
     }
   };
+
   const {
     historico,
     refetch: refetchHistorico
@@ -529,6 +495,7 @@ const ProducaoScreen = () => {
     rodada: rodadaAtual,
     numeroPizzas
   });
+
   useEffect(() => {
     const handleGlobalDataChange = (event: CustomEvent) => {
       const { table, action } = event.detail;
@@ -545,6 +512,7 @@ const ProducaoScreen = () => {
       window.removeEventListener('global-data-changed', handleGlobalDataChange as EventListener);
     };
   }, [refetchRodadas, refetchCounter, refetchPizzas]);
+
   const pizzasProntas = pizzas.filter(p => p.status === 'pronta');
   const pizzasAvaliadas = pizzas.filter(p => p.status === 'avaliada');
   const pizzasAprovadas = pizzasAvaliadas.filter(p => p.resultado === 'aprovada');
@@ -649,21 +617,15 @@ const ProducaoScreen = () => {
         </Card>
       )}
 
-      {/* Configuração Inicial do Jogo */}
-      {!configuracoesSalvas && !loadingConfiguracoes && (
-        <Card className="shadow-2xl border-4 border-blue-600 bg-gradient-to-r from-blue-100 to-blue-200">
-          <CardHeader className="bg-blue-50">
-            <CardTitle className="text-blue-600 text-center text-2xl">
-              🎮 Configuração Inicial do Jogo
+      {/* Configuração do Jogo - sempre visível */}
+      {!loadingConfiguracoes && !(limiteExcedido && limiteRodadas > 0) && (
+        <Card className="shadow-lg border-2 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-blue-600 text-center text-xl">
+              🎮 Configuração do Jogo
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="text-center mb-6">
-              <div className="text-lg text-blue-700 mb-4">
-                Configure uma única vez os parâmetros do jogo. Essas configurações serão usadas para todas as rodadas.
-              </div>
-            </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
               <div>
                 <Label htmlFor="tempoLimite" className="text-lg font-semibold">Tempo por Rodada (segundos)</Label>
@@ -675,6 +637,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="60"
                   max="1800"
+                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Recomendado: 300s (5 minutos)
@@ -691,6 +654,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="1" 
                   max="50" 
+                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Máximo que cada equipe pode produzir
@@ -707,6 +671,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="0" 
                   max="20" 
+                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   {numeroRodasUsuario === 0 ? 'Ilimitado' : `Total do jogo: ${numeroRodasUsuario} rodadas`}
@@ -714,60 +679,28 @@ const ProducaoScreen = () => {
               </div>
             </div>
 
-            <div className="flex justify-center mt-8">
-              <Button 
-                onClick={handleCriarNovaRodada} 
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 text-xl"
-                disabled={loadingSequencia}
-                size="lg"
-              >
-                {loadingSequencia ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Configurando Jogo...
-                  </>
-                ) : (
-                  <>
-                    🎯 Configurar e Criar Primeira Rodada
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Configurações Salvas - Apenas para visualização */}
-      {configuracoesSalvas && (
-        <Card className="shadow-lg border-2 border-green-200 bg-green-50">
-          <CardHeader>
-            <CardTitle className="text-green-600 text-center">
-              ✅ Configurações do Jogo Salvas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="bg-white p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{tempoLimite}s</div>
-                <div className="text-sm text-gray-600">Tempo por Rodada</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{numeroPizzas}</div>
-                <div className="text-sm text-gray-600">Pizzas por Rodada</div>
-              </div>
-              <div className="bg-white p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {numeroRodasUsuario === 0 ? '∞' : numeroRodasUsuario}
-                </div>
-                <div className="text-sm text-gray-600">Total de Rodadas</div>
-              </div>
-            </div>
-            
-            {/* Botão para Iniciar Próxima Rodada */}
-            {configuracoesSalvas && !(limiteExcedido && limiteRodadas > 0) && (
-              <div className="flex justify-center mt-6">
+            <div className="flex justify-center gap-4 mt-8">
+              {!configuracoesSalvas ? (
                 <Button 
-                  onClick={handleIniciarProximaRodada} 
+                  onClick={handleCriarNovaRodada} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 text-xl"
+                  disabled={loadingSequencia}
+                  size="lg"
+                >
+                  {loadingSequencia ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Criando Rodada...
+                    </>
+                  ) : (
+                    <>
+                      🎯 Criar Primeira Rodada
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleIniciarRodada} 
                   className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 text-lg"
                   disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa')}
                   size="lg"
@@ -785,6 +718,14 @@ const ProducaoScreen = () => {
                     <>🚀 Iniciar Rodada {proximoNumero}</>
                   )}
                 </Button>
+              )}
+            </div>
+
+            {configuracoesSalvas && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-sm text-green-700 text-center">
+                  ✅ Configurações salvas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
+                </div>
               </div>
             )}
           </CardContent>
@@ -1136,52 +1077,52 @@ const ProducaoScreen = () => {
               )}
             </CardContent>
           </Card>
-        </div>
 
-        {/* Conteúdo Principal com 4 Abas */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-            <TabsTrigger value="controle">🎮 Carrossel</TabsTrigger>
-            <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
-            <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
-            <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="controle" className="mt-6">
-            <ControleRodadasContent />
-          </TabsContent>
-          
-          <TabsContent value="gestao" className="mt-6">
-            <GestaoEquipes />
-          </TabsContent>
-          
-          <TabsContent value="sabores" className="mt-6">
-            <GerenciadorSabores />
-          </TabsContent>
-          
-          <TabsContent value="dashboard" className="mt-6">
-            <DashboardLojinha />
-          </TabsContent>
-        </Tabs>
+          {/* Conteúdo Principal com 4 Abas */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+              <TabsTrigger value="controle">🎮 Carrossel</TabsTrigger>
+              <TabsTrigger value="gestao">👥 Gestão</TabsTrigger>
+              <TabsTrigger value="sabores">🍕 Sabores</TabsTrigger>
+              <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="controle" className="mt-6">
+              <ControleRodadasContent />
+            </TabsContent>
+            
+            <TabsContent value="gestao" className="mt-6">
+              <GestaoEquipes />
+            </TabsContent>
+            
+            <TabsContent value="sabores" className="mt-6">
+              <GerenciadorSabores />
+            </TabsContent>
+            
+            <TabsContent value="dashboard" className="mt-6">
+              <DashboardLojinha />
+            </TabsContent>
+          </Tabs>
 
-        {/* Estatísticas Rápidas */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="text-center p-4 bg-white shadow-lg">
-            <div className="text-2xl font-bold text-red-600">{estatisticasGerais.totalPizzas}</div>
-            <div className="text-sm text-gray-600">Total de Pizzas</div>
-          </Card>
-          <Card className="text-center p-4 bg-white shadow-lg">
-            <div className="text-2xl font-bold text-green-600">{estatisticasGerais.pizzasAprovadas}</div>
-            <div className="text-sm text-gray-600">Aprovadas</div>
-          </Card>
-          <Card className="text-center p-4 bg-white shadow-lg">
-            <div className="text-2xl font-bold text-red-600">{estatisticasGerais.pizzasReprovadas}</div>
-            <div className="text-sm text-gray-600">Reprovadas</div>
-          </Card>
-          <Card className="text-center p-4 bg-white shadow-lg">
-            <div className="text-2xl font-bold text-purple-600">{estatisticasGerais.equipesAtivas}</div>
-            <div className="text-sm text-gray-600">Equipes Ativas</div>
-          </Card>
+          {/* Estatísticas Rápidas */}
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="text-center p-4 bg-white shadow-lg">
+              <div className="text-2xl font-bold text-red-600">{estatisticasGerais.totalPizzas}</div>
+              <div className="text-sm text-gray-600">Total de Pizzas</div>
+            </Card>
+            <Card className="text-center p-4 bg-white shadow-lg">
+              <div className="text-2xl font-bold text-green-600">{estatisticasGerais.pizzasAprovadas}</div>
+              <div className="text-sm text-gray-600">Aprovadas</div>
+            </Card>
+            <Card className="text-center p-4 bg-white shadow-lg">
+              <div className="text-2xl font-bold text-red-600">{estatisticasGerais.pizzasReprovadas}</div>
+              <div className="text-sm text-gray-600">Reprovadas</div>
+            </Card>
+            <Card className="text-center p-4 bg-white shadow-lg">
+              <div className="text-2xl font-bold text-purple-600">{estatisticasGerais.equipesAtivas}</div>
+              <div className="text-sm text-gray-600">Equipes Ativas</div>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
