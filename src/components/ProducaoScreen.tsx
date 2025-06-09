@@ -34,6 +34,7 @@ import GerenciadorItens from './GerenciadorItens';
 import GerenciadorSabores from './GerenciadorSabores';
 import VendasLoja from './VendasLoja';
 import HistoricoLoja from './HistoricoLoja';
+
 const ProducaoScreen = () => {
   const {
     rodadaAtual,
@@ -368,6 +369,34 @@ const ProducaoScreen = () => {
       console.log('Finalizando rodada...');
       await finalizarRodada(rodadaAtual.id);
       await refetchCounter();
+      
+      // Após finalizar, criar automaticamente a próxima rodada se não excedeu limite
+      if (podeIniciarNovaRodada()) {
+        setTimeout(async () => {
+          try {
+            console.log('Criando próxima rodada automaticamente após finalização...');
+            const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
+            if (novaRodada?.id) {
+              await salvarConfigRodada(novaRodada.id, numeroPizzas);
+              await criarSequenciaParaRodada(novaRodada.id, numeroPizzas);
+              await Promise.all([refetchCounter(), refetchHistorico()]);
+              
+              setTimeout(() => {
+                forceGlobalSync();
+                refetchHistorico();
+              }, 1000);
+              
+              toast.success(`🎯 Rodada ${proximoNumero} preparada! Clique em "Iniciar Rodada" quando estiver pronto.`, {
+                duration: 4000,
+                position: 'top-center'
+              });
+            }
+          } catch (error) {
+            console.error('Erro ao criar próxima rodada:', error);
+          }
+        }, 1000);
+      }
+      
       toast.success(`🏁 Rodada ${rodadaAtual.numero} finalizada!`, {
         duration: 3000,
         position: 'top-center'
@@ -1007,4 +1036,5 @@ const ProducaoScreen = () => {
       </div>
     </div>;
 };
+
 export default ProducaoScreen;
