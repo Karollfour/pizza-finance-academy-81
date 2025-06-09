@@ -17,6 +17,7 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   const lastIndexRef = useRef<number>(0);
   const saboresPassadosRef = useRef<any[]>([]);
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [forcarInicioCarrossel, setForcarInicioCarrossel] = useState(false);
   
   // Calcular intervalo de troca (tempo total ÷ número de pizzas) - memoizado
   const intervaloTroca = useMemo(() => {
@@ -71,19 +72,43 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
     };
   }, [rodada?.id, refetch]);
   
-  // Atualizar índice do sabor atual IMEDIATAMENTE quando rodada está ativa
+  // MUDANÇA: Escutar evento de rodada iniciada para forçar início do carrossel
+  useEffect(() => {
+    const handleRodadaIniciada = (event: CustomEvent) => {
+      const { rodadaId } = event.detail;
+      if (rodada?.id === rodadaId) {
+        console.log('Rodada iniciada - FORÇANDO início do cronômetro do carrossel IMEDIATAMENTE');
+        // Reset completo e forçar início
+        setSaborAtualIndex(0);
+        setSaboresPassados([]);
+        lastIndexRef.current = 0;
+        saboresPassadosRef.current = [];
+        lastUpdateRef.current = 0;
+        setForcarInicioCarrossel(true); // Forçar início do carrossel
+      }
+    };
+
+    window.addEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
+    
+    return () => {
+      window.removeEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
+    };
+  }, [rodada?.id]);
+  
+  // Atualizar índice do sabor atual - MODIFICADO para funcionar com forçar início
   useEffect(() => {
     if (!rodada || !historico.length || intervaloTroca <= 0) {
       return;
     }
     
-    // MUDANÇA: Iniciar cronômetro assim que a rodada estiver ativa, sem delay
-    if (rodada.status !== 'ativa') {
+    // MUDANÇA: Permitir funcionamento se rodada está ativa OU se foi forçado o início
+    const podeRodar = rodada.status === 'ativa' || forcarInicioCarrossel;
+    if (!podeRodar) {
       return;
     }
     
     const now = Date.now();
-    // MUDANÇA: Reduzir drasticamente o delay - atualizar a cada 500ms para resposta mais rápida
+    // Atualizar a cada 500ms para resposta mais rápida
     if (now - lastUpdateRef.current < 500) {
       return;
     }
@@ -135,37 +160,16 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
         }));
       }
     }
-  }, [timeRemaining, rodada, historico, intervaloTroca]);
+  }, [timeRemaining, rodada, historico, intervaloTroca, forcarInicioCarrossel]);
 
-  // MUDANÇA: Escutar evento de rodada iniciada para começar imediatamente
-  useEffect(() => {
-    const handleRodadaIniciada = (event: CustomEvent) => {
-      const { rodadaId } = event.detail;
-      if (rodada?.id === rodadaId) {
-        console.log('Rodada iniciada - iniciando cronômetro do carrossel imediatamente');
-        // Reset para começar do zero
-        setSaborAtualIndex(0);
-        setSaboresPassados([]);
-        lastIndexRef.current = 0;
-        saboresPassadosRef.current = [];
-        lastUpdateRef.current = 0; // Reset do delay para funcionar imediatamente
-      }
-    };
-
-    window.addEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
-    
-    return () => {
-      window.removeEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
-    };
-  }, [rodada?.id]);
-  
-  // Reset apenas quando rodada finaliza ou aguarda - não quando pausa
+  // Reset quando rodada finaliza ou muda
   useEffect(() => {
     if (!rodada || (rodada.status !== 'ativa' && rodada.status !== 'pausada')) {
       setSaborAtualIndex(0);
       setSaboresPassados([]);
       lastIndexRef.current = 0;
       saboresPassadosRef.current = [];
+      setForcarInicioCarrossel(false); // Reset do forçar início
     }
   }, [rodada?.id, rodada?.status]);
   
@@ -176,10 +180,10 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
   
   // Calcular tempo restante para próxima troca - memoizado
   const tempoProximaTroca = useMemo(() => {
-    if (!rodada || intervaloTroca <= 0 || rodada.status === 'pausada') return 0;
+    if (!rodada || intervaloTroca <= 0 || (rodada.status === 'pausada' && !forcarInicioCarrossel)) return 0;
     const tempoDecorrido = rodada.tempo_limite - timeRemaining;
     return Math.max(0, ((saborAtualIndex + 1) * intervaloTroca) - tempoDecorrido);
-  }, [rodada, intervaloTroca, timeRemaining, saborAtualIndex]);
+  }, [rodada, intervaloTroca, timeRemaining, saborAtualIndex, forcarInicioCarrossel]);
   
   return {
     saborAtual,
