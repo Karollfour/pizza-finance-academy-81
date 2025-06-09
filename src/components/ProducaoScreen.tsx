@@ -91,6 +91,7 @@ const ProducaoScreen = () => {
   const [numeroRodasUsuario, setNumeroRodasUsuario] = useState(5);
   const [configuracoesSalvas, setConfiguracoesSalvas] = useState(false);
   const [loadingConfiguracoes, setLoadingConfiguracoes] = useState(true);
+  const [configuracoesLocked, setConfiguracoesLocked] = useState(false);
 
   // Carregar configurações salvas ao inicializar
   useEffect(() => {
@@ -127,6 +128,20 @@ const ProducaoScreen = () => {
 
     carregarConfiguracoesSalvas();
   }, [getConfiguracao]);
+
+  // Verificar se as configurações devem estar bloqueadas
+  useEffect(() => {
+    const verificarConfiguracoesLocked = () => {
+      // Se há configurações salvas E já existem rodadas no sistema, bloquear
+      if (configuracoesSalvas && (rodadaAtual || proximoNumero > 1)) {
+        setConfiguracoesLocked(true);
+      } else {
+        setConfiguracoesLocked(false);
+      }
+    };
+
+    verificarConfiguracoesLocked();
+  }, [configuracoesSalvas, rodadaAtual, proximoNumero]);
 
   // Sincronização global ativa
   const {
@@ -228,7 +243,9 @@ const ProducaoScreen = () => {
       await atualizarLimiteRodadas(numeroRodasUsuario);
 
       setConfiguracoesSalvas(true);
-      toast.success('⚙️ Configurações do jogo salvas com sucesso!', {
+      setConfiguracoesLocked(true);
+      
+      toast.success('⚙️ Configurações do jogo salvas e bloqueadas!', {
         duration: 3000,
         position: 'top-center'
       });
@@ -252,8 +269,10 @@ const ProducaoScreen = () => {
         return;
       }
 
-      // Salvar configurações primeiro
-      await handleSalvarConfiguracoes();
+      // Salvar configurações primeiro se ainda não foram salvas
+      if (!configuracoesSalvas) {
+        await handleSalvarConfiguracoes();
+      }
 
       console.log('Criando nova rodada com configurações salvas...', {
         numero: proximoNumero,
@@ -306,7 +325,7 @@ const ProducaoScreen = () => {
         return;
       }
 
-      // Se já há uma rodada aguardando, iniciar ela
+      // Se há uma rodada aguardando, iniciar ela
       if (rodadaAtual?.status === 'aguardando') {
         console.log('Iniciando rodada existente...');
         await iniciarRodada(rodadaAtual.id);
@@ -321,7 +340,16 @@ const ProducaoScreen = () => {
         return;
       }
 
-      // Caso contrário, criar nova rodada e iniciar (usando configurações salvas)
+      // Se não há configurações salvas, forçar salvar primeiro
+      if (!configuracoesSalvas) {
+        toast.error('⚠️ Você deve criar a primeira rodada para salvar as configurações!', {
+          duration: 4000,
+          position: 'top-center'
+        });
+        return;
+      }
+
+      // Criar nova rodada usando configurações salvas e iniciar
       console.log('Criando e iniciando nova rodada com configurações salvas...');
       const novaRodada = await criarNovaRodada(proximoNumero, tempoLimite);
       if (novaRodada?.id) {
@@ -619,10 +647,15 @@ const ProducaoScreen = () => {
 
       {/* Configuração do Jogo - sempre visível */}
       {!loadingConfiguracoes && !(limiteExcedido && limiteRodadas > 0) && (
-        <Card className="shadow-lg border-2 border-blue-200">
+        <Card className={`shadow-lg border-2 ${configuracoesLocked ? 'border-gray-300 bg-gray-50' : 'border-blue-200'}`}>
           <CardHeader>
-            <CardTitle className="text-blue-600 text-center text-xl">
+            <CardTitle className={`text-center text-xl ${configuracoesLocked ? 'text-gray-600' : 'text-blue-600'}`}>
               🎮 Configuração do Jogo
+              {configuracoesLocked && (
+                <div className="text-sm text-gray-500 mt-2">
+                  🔒 Configurações bloqueadas - Complete as rodadas ou reset o jogo para alterar
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -637,6 +670,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="60"
                   max="1800"
+                  disabled={configuracoesLocked}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Recomendado: 300s (5 minutos)
@@ -653,6 +687,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="1" 
                   max="50" 
+                  disabled={configuracoesLocked}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Máximo que cada equipe pode produzir
@@ -669,6 +704,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="0" 
                   max="20" 
+                  disabled={configuracoesLocked}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   {numeroRodasUsuario === 0 ? 'Ilimitado' : `Total do jogo: ${numeroRodasUsuario} rodadas`}
@@ -680,7 +716,7 @@ const ProducaoScreen = () => {
               <Button 
                 onClick={handleCriarNovaRodada} 
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 text-lg"
-                disabled={loadingSequencia}
+                disabled={loadingSequencia || configuracoesLocked}
                 size="lg"
               >
                 {loadingSequencia ? (
@@ -688,17 +724,17 @@ const ProducaoScreen = () => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Criando Rodada...
                   </>
+                ) : configuracoesLocked ? (
+                  <>🔒 Configurações Salvas</>
                 ) : (
-                  <>
-                    🎯 Criar Rodada
-                  </>
+                  <>🎯 Criar Rodada</>
                 )}
               </Button>
               
               <Button 
                 onClick={handleIniciarRodada} 
                 className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 text-lg"
-                disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa')}
+                disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa') || (!configuracoesSalvas && !rodadaAtual)}
                 size="lg"
               >
                 {loadingSequencia ? (
@@ -710,6 +746,8 @@ const ProducaoScreen = () => {
                   <>⏸️ Rodada em Andamento</>
                 ) : rodadaAtual?.status === 'aguardando' ? (
                   <>🚀 Iniciar Rodada {rodadaAtual.numero}</>
+                ) : !configuracoesSalvas ? (
+                  <>⚠️ Crie a primeira rodada</>
                 ) : (
                   <>🚀 Iniciar Rodada</>
                 )}
@@ -904,7 +942,7 @@ const ProducaoScreen = () => {
                         🍕 PIZZA #{historico[carouselIndex]?.ordem || carouselIndex + 1}
                       </Badge>
                       <div className="text-4xl mb-3">🍕</div>
-                      <h3 className="font-bold text-yellow-700 mb-2 text-5xl">
+                      <h3 className="font-bold text-yellow-700 text-5xl">
                         {getSaborNome(historico[carouselIndex])}
                       </h3>
                       {getSaborDescricao(historico[carouselIndex]) && (
