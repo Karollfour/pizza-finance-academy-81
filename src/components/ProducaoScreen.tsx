@@ -637,7 +637,6 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="60"
                   max="1800"
-                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Recomendado: 300s (5 minutos)
@@ -654,7 +653,6 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="1" 
                   max="50" 
-                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Máximo que cada equipe pode produzir
@@ -671,7 +669,6 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="0" 
                   max="20" 
-                  disabled={configuracoesSalvas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   {numeroRodasUsuario === 0 ? 'Ilimitado' : `Total do jogo: ${numeroRodasUsuario} rodadas`}
@@ -680,45 +677,43 @@ const ProducaoScreen = () => {
             </div>
 
             <div className="flex justify-center gap-4 mt-8">
-              {!configuracoesSalvas ? (
-                <Button 
-                  onClick={handleCriarNovaRodada} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 text-xl"
-                  disabled={loadingSequencia}
-                  size="lg"
-                >
-                  {loadingSequencia ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Criando Rodada...
-                    </>
-                  ) : (
-                    <>
-                      🎯 Criar Primeira Rodada
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleIniciarRodada} 
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 text-lg"
-                  disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa')}
-                  size="lg"
-                >
-                  {loadingSequencia ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Criando...
-                    </>
-                  ) : rodadaAtual?.status === 'ativa' ? (
-                    <>⏸️ Rodada em Andamento</>
-                  ) : rodadaAtual?.status === 'aguardando' ? (
-                    <>🚀 Iniciar Rodada {rodadaAtual.numero}</>
-                  ) : (
-                    <>🚀 Iniciar Rodada {proximoNumero}</>
-                  )}
-                </Button>
-              )}
+              <Button 
+                onClick={handleCriarNovaRodada} 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 text-lg"
+                disabled={loadingSequencia}
+                size="lg"
+              >
+                {loadingSequencia ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Criando Rodada...
+                  </>
+                ) : (
+                  <>
+                    🎯 Criar Rodada
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={handleIniciarRodada} 
+                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 text-lg"
+                disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa')}
+                size="lg"
+              >
+                {loadingSequencia ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Criando...
+                  </>
+                ) : rodadaAtual?.status === 'ativa' ? (
+                  <>⏸️ Rodada em Andamento</>
+                ) : rodadaAtual?.status === 'aguardando' ? (
+                  <>🚀 Iniciar Rodada {rodadaAtual.numero}</>
+                ) : (
+                  <>🚀 Iniciar Rodada</>
+                )}
+              </Button>
             </div>
 
             {configuracoesSalvas && (
