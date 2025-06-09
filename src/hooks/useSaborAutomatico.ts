@@ -71,20 +71,20 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
     };
   }, [rodada?.id, refetch]);
   
-  // Atualizar índice do sabor atual apenas quando rodada está ativa (não pausada)
+  // Atualizar índice do sabor atual IMEDIATAMENTE quando rodada está ativa
   useEffect(() => {
     if (!rodada || !historico.length || intervaloTroca <= 0) {
       return;
     }
     
-    // Só calcular progresso se a rodada estiver ativa
+    // MUDANÇA: Iniciar cronômetro assim que a rodada estiver ativa, sem delay
     if (rodada.status !== 'ativa') {
       return;
     }
     
     const now = Date.now();
-    // Evitar atualizações muito frequentes - aumentar para 3 segundos
-    if (now - lastUpdateRef.current < 3000) {
+    // MUDANÇA: Reduzir drasticamente o delay - atualizar a cada 500ms para resposta mais rápida
+    if (now - lastUpdateRef.current < 500) {
       return;
     }
     lastUpdateRef.current = now;
@@ -136,6 +136,28 @@ export const useSaborAutomatico = ({ rodada, numeroPizzas }: UseSaborAutomaticoP
       }
     }
   }, [timeRemaining, rodada, historico, intervaloTroca]);
+
+  // MUDANÇA: Escutar evento de rodada iniciada para começar imediatamente
+  useEffect(() => {
+    const handleRodadaIniciada = (event: CustomEvent) => {
+      const { rodadaId } = event.detail;
+      if (rodada?.id === rodadaId) {
+        console.log('Rodada iniciada - iniciando cronômetro do carrossel imediatamente');
+        // Reset para começar do zero
+        setSaborAtualIndex(0);
+        setSaboresPassados([]);
+        lastIndexRef.current = 0;
+        saboresPassadosRef.current = [];
+        lastUpdateRef.current = 0; // Reset do delay para funcionar imediatamente
+      }
+    };
+
+    window.addEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
+    
+    return () => {
+      window.removeEventListener('rodada-iniciada', handleRodadaIniciada as EventListener);
+    };
+  }, [rodada?.id]);
   
   // Reset apenas quando rodada finaliza ou aguarda - não quando pausa
   useEffect(() => {
