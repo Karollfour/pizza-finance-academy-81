@@ -7,6 +7,7 @@ export const useControleRodadas = () => {
   const [rodadasFinalizadas, setRodadasFinalizadas] = useState(0);
   const [limiteExcedido, setLimiteExcedido] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [configuracoesBloqueadas, setConfiguracoesBloqueadas] = useState(false);
 
   const verificarLimite = async () => {
     try {
@@ -15,8 +16,11 @@ export const useControleRodadas = () => {
       // Se o limite for 0, não aplicar restrições
       if (resultado.limite === 0) {
         setLimiteExcedido(false);
+        setConfiguracoesBloqueadas(false);
       } else {
         setLimiteExcedido(resultado.excedeu);
+        // Bloquear configurações se já existem rodadas no sistema
+        setConfiguracoesBloqueadas(resultado.totalRodadas > 0 || resultado.excedeu);
       }
       setRodadasFinalizadas(resultado.totalRodadas);
       setLimiteRodadas(resultado.limite);
@@ -48,6 +52,11 @@ export const useControleRodadas = () => {
     return !limiteExcedido;
   };
 
+  const podeAlterarConfiguracoes = () => {
+    // Permitir alterações apenas se não há rodadas no sistema
+    return !configuracoesBloqueadas;
+  };
+
   const getMensagemLimite = () => {
     // Se o limite for 0, não mostrar mensagem de limite
     if (limiteRodadas === 0) {
@@ -58,6 +67,16 @@ export const useControleRodadas = () => {
       return `🏁 Todas as ${limiteRodadas} rodadas foram finalizadas! Para continuar, você precisa resetar o jogo.`;
     }
     return `Rodadas restantes: ${Math.max(0, limiteRodadas - rodadasFinalizadas)}/${limiteRodadas}`;
+  };
+
+  const getMensagemConfiguracoesBloqueadas = () => {
+    if (!configuracoesBloqueadas) return '';
+    
+    if (limiteExcedido) {
+      return '🔒 Configurações bloqueadas - Todas as rodadas foram finalizadas. Reset o jogo para alterar.';
+    }
+    
+    return `🔒 Configurações bloqueadas - ${rodadasFinalizadas} de ${limiteRodadas} rodadas em andamento. Complete todas as rodadas ou reset o jogo para alterar.`;
   };
 
   useEffect(() => {
@@ -86,9 +105,12 @@ export const useControleRodadas = () => {
     rodadasFinalizadas,
     limiteExcedido,
     loading,
+    configuracoesBloqueadas,
     verificarLimite,
     atualizarLimiteRodadas,
     podeIniciarNovaRodada,
-    getMensagemLimite
+    podeAlterarConfiguracoes,
+    getMensagemLimite,
+    getMensagemConfiguracoesBloqueadas
   };
 };

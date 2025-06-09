@@ -77,9 +77,12 @@ const ProducaoScreen = () => {
     limiteRodadas,
     rodadasFinalizadas,
     limiteExcedido,
+    configuracoesBloqueadas,
     atualizarLimiteRodadas,
     podeIniciarNovaRodada,
-    getMensagemLimite
+    podeAlterarConfiguracoes,
+    getMensagemLimite,
+    getMensagemConfiguracoesBloqueadas
   } = useControleRodadas();
 
   // Persistir estado da aba ativa - controle como padrão
@@ -129,19 +132,11 @@ const ProducaoScreen = () => {
     carregarConfiguracoesSalvas();
   }, [getConfiguracao]);
 
-  // Verificar se as configurações devem estar bloqueadas
+  // Remove the old configuracoesLocked useEffect and replace with new logic
   useEffect(() => {
-    const verificarConfiguracoesLocked = () => {
-      // Se há configurações salvas E já existem rodadas no sistema, bloquear
-      if (configuracoesSalvas && (rodadaAtual || proximoNumero > 1)) {
-        setConfiguracoesLocked(true);
-      } else {
-        setConfiguracoesLocked(false);
-      }
-    };
-
-    verificarConfiguracoesLocked();
-  }, [configuracoesSalvas, rodadaAtual, proximoNumero]);
+    // Use the new hook's logic for determining if configurations are locked
+    setConfiguracoesLocked(configuracoesBloqueadas);
+  }, [configuracoesBloqueadas]);
 
   // Sincronização global ativa
   const {
@@ -647,13 +642,13 @@ const ProducaoScreen = () => {
 
       {/* Configuração do Jogo - sempre visível */}
       {!loadingConfiguracoes && !(limiteExcedido && limiteRodadas > 0) && (
-        <Card className={`shadow-lg border-2 ${configuracoesLocked ? 'border-gray-300 bg-gray-50' : 'border-blue-200'}`}>
+        <Card className={`shadow-lg border-2 ${!podeAlterarConfiguracoes() ? 'border-gray-300 bg-gray-50' : 'border-blue-200'}`}>
           <CardHeader>
-            <CardTitle className={`text-center text-xl ${configuracoesLocked ? 'text-gray-600' : 'text-blue-600'}`}>
+            <CardTitle className={`text-center text-xl ${!podeAlterarConfiguracoes() ? 'text-gray-600' : 'text-blue-600'}`}>
               🎮 Configuração do Jogo
-              {configuracoesLocked && (
+              {!podeAlterarConfiguracoes() && (
                 <div className="text-sm text-gray-500 mt-2">
-                  🔒 Configurações bloqueadas - Complete as rodadas ou reset o jogo para alterar
+                  {getMensagemConfiguracoesBloqueadas()}
                 </div>
               )}
             </CardTitle>
@@ -670,7 +665,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="60"
                   max="1800"
-                  disabled={configuracoesLocked}
+                  disabled={!podeAlterarConfiguracoes()}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Recomendado: 300s (5 minutos)
@@ -687,7 +682,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="1" 
                   max="50" 
-                  disabled={configuracoesLocked}
+                  disabled={!podeAlterarConfiguracoes()}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Máximo que cada equipe pode produzir
@@ -704,7 +699,7 @@ const ProducaoScreen = () => {
                   className="text-lg p-3"
                   min="0" 
                   max="20" 
-                  disabled={configuracoesLocked}
+                  disabled={!podeAlterarConfiguracoes()}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   {numeroRodasUsuario === 0 ? 'Ilimitado' : `Total do jogo: ${numeroRodasUsuario} rodadas`}
@@ -716,7 +711,7 @@ const ProducaoScreen = () => {
               <Button 
                 onClick={handleCriarNovaRodada} 
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 text-lg"
-                disabled={loadingSequencia || configuracoesLocked}
+                disabled={loadingSequencia || !podeAlterarConfiguracoes()}
                 size="lg"
               >
                 {loadingSequencia ? (
@@ -724,8 +719,8 @@ const ProducaoScreen = () => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Criando Rodada...
                   </>
-                ) : configuracoesLocked ? (
-                  <>🔒 Configurações Salvas</>
+                ) : !podeAlterarConfiguracoes() ? (
+                  <>🔒 Configurações Bloqueadas</>
                 ) : (
                   <>🎯 Criar Rodada</>
                 )}
@@ -758,6 +753,14 @@ const ProducaoScreen = () => {
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="text-sm text-green-700 text-center">
                   ✅ Configurações salvas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
+                </div>
+              </div>
+            )}
+
+            {!podeAlterarConfiguracoes() && rodadasFinalizadas < limiteRodadas && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="text-sm text-amber-700 text-center">
+                  🔐 As configurações foram bloqueadas após criar a primeira rodada. Complete todas as {limiteRodadas} rodadas ou reset o jogo para alterar as configurações.
                 </div>
               </div>
             )}
