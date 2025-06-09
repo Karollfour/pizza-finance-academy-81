@@ -759,8 +759,8 @@ const ProducaoScreen = () => {
           </CardContent>
         </Card>}
 
-      {/* Carrossel de Sabores - MODIFICADO: mostrar sempre que há rodada ativa ou aguardando e historico existe */}
-      {historico.length > 0 && rodadaAtual && (rodadaAtual.status === 'ativa' || rodadaAtual.status === 'aguardando') && !(limiteExcedido && limiteRodadas > 0) && <Card className="shadow-lg border-2 border-orange-200">
+      {/* Carrossel de Sabores - MODIFICADO: mostrar sempre que há rodada criada e historico existe, nunca sumir */}
+      {historico.length > 0 && rodadaAtual && !(limiteExcedido && limiteRodadas > 0) && <Card className="shadow-lg border-2 border-orange-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-xl font-bold text-orange-600">🍕 Carrossel de Sabores</span>
@@ -780,12 +780,13 @@ const ProducaoScreen = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Se rodada está ativa, mostrar sabor automático com cronômetro */}
             {rodadaAtual?.status === 'ativa' && saborAtual ? <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Sabor Atual */}
                 <div className="lg:col-span-2">
                   <Card className="shadow-lg border-2 border-green-400 bg-green-100">
                     <CardContent className="p-6 text-center">
-                      <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO</Badge>
+                      <Badge className="bg-green-500 text-white text-sm px-3 py-1 mb-3">🍕 EM PRODUÇÃO - AUTOMÁTICO</Badge>
                       <div className="text-4xl mb-3">🍕</div>
                       <h3 className="font-bold text-green-700 mb-2 text-4xl">
                         {getSaborNome(saborAtual)}
@@ -845,7 +846,7 @@ const ProducaoScreen = () => {
                       </CardContent>
                     </Card>}
                 </div>
-              </div> : (/* Visualização Estática do Carrossel quando aguardando início */
+              </div> : (/* Visualização Estática do Carrossel quando aguardando ou pausada - SEM CRONÔMETRO */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
                   <Card className="shadow-lg border-2 border-yellow-400 bg-yellow-50">
@@ -864,7 +865,13 @@ const ProducaoScreen = () => {
                         Pizza #{historico[carouselIndex]?.ordem || carouselIndex + 1} de {historico.length}
                       </div>
                       {rodadaAtual.status === 'aguardando' && <div className="mt-3 text-lg text-yellow-700 font-semibold">
-                          Aguardando início da rodada
+                          ⏳ Aguardando início da rodada - cronômetro não iniciado
+                        </div>}
+                      {rodadaAtual.status === 'pausada' && <div className="mt-3 text-lg text-orange-700 font-semibold">
+                          ⏸️ Rodada pausada - cronômetro pausado
+                        </div>}
+                      {rodadaAtual.status === 'finalizada' && <div className="mt-3 text-lg text-gray-700 font-semibold">
+                          🏁 Rodada finalizada
                         </div>}
                     </CardContent>
                   </Card>
@@ -899,7 +906,7 @@ const ProducaoScreen = () => {
                 </div>
               </div>)}
 
-            {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas */}
+            {/* Histórico Visual da Rodada Atual - Apenas pizzas já produzidas quando ativa */}
             {rodadaAtual?.status === 'ativa' && historico.length > 0 && saboresPassados.length > 0 && <div className="mt-6 pt-4 border-t border-orange-200">
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {saboresPassados.map((sabor, index) => {
