@@ -88,13 +88,27 @@ const ProducaoScreen = () => {
   // Persistir estado da aba ativa - controle como padrão
   const [activeTab, setActiveTab] = usePersistedState('producao-active-tab', 'controle');
 
-  // Estados para controle do carrossel - valores padrão
-  const [tempoLimite, setTempoLimite] = useState(300);
-  const [numeroPizzas, setNumeroPizzas] = useState(10);
-  const [numeroRodasUsuario, setNumeroRodasUsuario] = useState(5);
+  // Estados persistidos para controle do carrossel - AGORA PERSISTIDOS
+  const [tempoLimite, setTempoLimite] = usePersistedState('config-tempo-limite', 300);
+  const [numeroPizzas, setNumeroPizzas] = usePersistedState('config-numero-pizzas', 10);
+  const [numeroRodasUsuario, setNumeroRodasUsuario] = usePersistedState('config-numero-rodadas', 5);
+  
+  // Estados para controle das configurações
   const [configuracoesSalvas, setConfiguracoesSalvas] = useState(false);
   const [loadingConfiguracoes, setLoadingConfiguracoes] = useState(true);
-  const [configuracoesLocked, setConfiguracoesLocked] = useState(false);
+
+  // Estados para estatísticas
+  const [estatisticasGerais, setEstatisticasGerais] = useState({
+    totalPizzas: 0,
+    pizzasAprovadas: 0,
+    pizzasReprovadas: 0,
+    pizzasPendentes: 0,
+    totalGastos: 0,
+    equipesAtivas: 0
+  });
+
+  // Carousel controls for the sabores display
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   // Carregar configurações salvas ao inicializar
   useEffect(() => {
@@ -108,17 +122,23 @@ const ProducaoScreen = () => {
         const rodasSalvas = getConfiguracao('numero_rodadas_padrao');
         
         if (tempoSalvo && pizzasSalvas && rodasSalvas) {
-          setTempoLimite(parseInt(tempoSalvo));
-          setNumeroPizzas(parseInt(pizzasSalvas));
-          setNumeroRodasUsuario(parseInt(rodasSalvas));
+          // Se existem configurações salvas no banco, usar elas e atualizar os estados persistidos
+          const tempoValue = parseInt(tempoSalvo);
+          const pizzasValue = parseInt(pizzasSalvas);
+          const rodasValue = parseInt(rodasSalvas);
+          
+          setTempoLimite(tempoValue);
+          setNumeroPizzas(pizzasValue);
+          setNumeroRodasUsuario(rodasValue);
           setConfiguracoesSalvas(true);
-          console.log('Configurações carregadas do banco:', {
-            tempo: parseInt(tempoSalvo),
-            pizzas: parseInt(pizzasSalvas),
-            rodadas: parseInt(rodasSalvas)
+          
+          console.log('Configurações carregadas do banco e sincronizadas:', {
+            tempo: tempoValue,
+            pizzas: pizzasValue,
+            rodadas: rodasValue
           });
         } else {
-          console.log('Nenhuma configuração salva encontrada, usando valores padrão');
+          console.log('Nenhuma configuração salva encontrada, usando valores persistidos localmente');
           setConfiguracoesSalvas(false);
         }
       } catch (error) {
@@ -130,12 +150,7 @@ const ProducaoScreen = () => {
     };
 
     carregarConfiguracoesSalvas();
-  }, [getConfiguracao]);
-
-  // Use the new hook's logic for determining if configurations are locked
-  useEffect(() => {
-    setConfiguracoesLocked(configuracoesBloqueadas);
-  }, [configuracoesBloqueadas]);
+  }, [getConfiguracao, setTempoLimite, setNumeroPizzas, setNumeroRodasUsuario]);
 
   // Sincronização global ativa
   const {
@@ -216,7 +231,7 @@ const ProducaoScreen = () => {
         setTempoLimite(rodadaAtual.tempo_limite);
       }
     }
-  }, [rodadaAtual, configuracoesSalvas]);
+  }, [rodadaAtual, configuracoesSalvas, setTempoLimite]);
 
   const handleSalvarConfiguracoes = async () => {
     try {
@@ -237,7 +252,6 @@ const ProducaoScreen = () => {
       await atualizarLimiteRodadas(numeroRodasUsuario);
 
       setConfiguracoesSalvas(true);
-      setConfiguracoesLocked(true);
       
       toast.success('⚙️ Configurações do jogo salvas e bloqueadas!', {
         duration: 3000,
@@ -264,7 +278,7 @@ const ProducaoScreen = () => {
       }
 
       // Salvar configurações primeiro se ainda não foram salvas
-      if (!configuracoesSalvas) {
+      if (!configuracoesBloqueadas) {
         await handleSalvarConfiguracoes();
       }
 
@@ -342,7 +356,7 @@ const ProducaoScreen = () => {
       }
 
       // Se não há configurações salvas, forçar salvar primeiro
-      if (!configuracoesSalvas) {
+      if (!configuracoesBloqueadas) {
         toast.error('⚠️ Você deve criar a primeira rodada para salvar as configurações!', {
           duration: 4000,
           position: 'top-center'
@@ -494,6 +508,10 @@ const ProducaoScreen = () => {
     try {
       console.log('Resetando jogo...');
       await resetarJogo();
+      
+      // Resetar também os estados de configuração
+      setConfiguracoesSalvas(false);
+      
       await Promise.all([refetchCounter(), refetchPizzas()]);
       toast.success('🔄 Jogo resetado com sucesso!', {
         duration: 3000,
@@ -648,11 +666,11 @@ const ProducaoScreen = () => {
 
       {/* Configuração do Jogo - sempre visível */}
       {!loadingConfiguracoes && !(limiteExcedido && limiteRodadas > 0) && (
-        <Card className={`shadow-lg border-2 ${!podeAlterarConfiguracoes() ? 'border-gray-300 bg-gray-50' : 'border-blue-200'}`}>
+        <Card className={`shadow-lg border-2 ${configuracoesBloqueadas ? 'border-gray-300 bg-gray-50' : 'border-blue-200'}`}>
           <CardHeader>
-            <CardTitle className={`text-center text-xl ${!podeAlterarConfiguracoes() ? 'text-gray-600' : 'text-blue-600'}`}>
+            <CardTitle className={`text-center text-xl ${configuracoesBloqueadas ? 'text-gray-600' : 'text-blue-600'}`}>
               🎮 Configuração do Jogo
-              {!podeAlterarConfiguracoes() && (
+              {configuracoesBloqueadas && (
                 <div className="text-sm text-gray-500 mt-2">
                   {getMensagemConfiguracoesBloqueadas()}
                 </div>
@@ -668,10 +686,10 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={tempoLimite} 
                   onChange={e => setTempoLimite(Number(e.target.value))} 
-                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  className={`text-lg p-3 ${configuracoesBloqueadas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="60"
                   max="1800"
-                  disabled={!podeAlterarConfiguracoes()}
+                  disabled={configuracoesBloqueadas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Recomendado: 300s (5 minutos)
@@ -685,10 +703,10 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={numeroPizzas} 
                   onChange={e => setNumeroPizzas(Number(e.target.value))} 
-                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  className={`text-lg p-3 ${configuracoesBloqueadas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="1" 
                   max="50" 
-                  disabled={!podeAlterarConfiguracoes()}
+                  disabled={configuracoesBloqueadas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   Máximo que cada equipe pode produzir
@@ -702,10 +720,10 @@ const ProducaoScreen = () => {
                   type="number" 
                   value={numeroRodasUsuario} 
                   onChange={e => setNumeroRodasUsuario(Number(e.target.value))} 
-                  className={`text-lg p-3 ${!podeAlterarConfiguracoes() ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  className={`text-lg p-3 ${configuracoesBloqueadas ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   min="0" 
                   max="20" 
-                  disabled={!podeAlterarConfiguracoes()}
+                  disabled={configuracoesBloqueadas}
                 />
                 <div className="text-sm text-gray-600 mt-1">
                   {numeroRodasUsuario === 0 ? 'Ilimitado' : `Total do jogo: ${numeroRodasUsuario} rodadas`}
@@ -735,7 +753,7 @@ const ProducaoScreen = () => {
               <Button 
                 onClick={handleIniciarRodada} 
                 className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 text-lg"
-                disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa') || (!configuracoesSalvas && !rodadaAtual)}
+                disabled={loadingSequencia || (rodadaAtual && rodadaAtual.status === 'ativa') || (!configuracoesBloqueadas && !rodadaAtual)}
                 size="lg"
               >
                 {loadingSequencia ? (
@@ -747,7 +765,7 @@ const ProducaoScreen = () => {
                   <>⏸️ Rodada em Andamento</>
                 ) : rodadaAtual?.status === 'aguardando' ? (
                   <>🚀 Iniciar Rodada {rodadaAtual.numero}</>
-                ) : !configuracoesSalvas ? (
+                ) : !configuracoesBloqueadas ? (
                   <>⚠️ Crie a primeira rodada</>
                 ) : (
                   <>🚀 Iniciar Rodada</>
@@ -755,15 +773,15 @@ const ProducaoScreen = () => {
               </Button>
             </div>
 
-            {configuracoesSalvas && !podeAlterarConfiguracoes() && (
+            {configuracoesBloqueadas && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="text-sm text-green-700 text-center">
-                  ✅ Configurações bloqueadas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
+                  🔒 Configurações bloqueadas: {tempoLimite}s por rodada, {numeroPizzas} pizzas, {numeroRodasUsuario === 0 ? 'ilimitadas' : numeroRodasUsuario} rodadas total
                 </div>
               </div>
             )}
 
-            {!podeAlterarConfiguracoes() && rodadasFinalizadas < limiteRodadas && (
+            {configuracoesBloqueadas && rodadasFinalizadas < limiteRodadas && (
               <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="text-sm text-amber-700 text-center">
                   🔐 As configurações foram bloqueadas após criar a primeira rodada. Complete todas as {limiteRodadas} rodadas ou reset o jogo para alterar as configurações.
